@@ -4,6 +4,9 @@
   "name": "esj",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "build": {
+    "command": "npx @opennextjs/cloudflare@1.15.1 build"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
