@@ -2,23 +2,39 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   Bell,
   BookOpen,
   FileText,
   LayoutDashboard,
   Newspaper,
+  Users,
   Video,
   LogOut,
 } from "lucide-react";
 import {
   DEFAULT_PUBLICACAO,
   LIVROS_ANTERIORES,
-  readPublicacao,
-  writePublicacao,
+  loadPublicacao,
   type Publicacao,
 } from "@/lib/publicacao";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import {
+  cmsError,
+  isMissingTable,
+  listAnunciosGestao,
+  listInscricoesGestao,
+  listNoticiasGestao,
+  listVideosGestao,
+  loadEditalVigente,
+  publishAnuncio,
+  publishEdital,
+  publishNoticia,
+  publishPublicacao,
+  publishVideo,
+} from "@/lib/cms";
+import SchemaInstall from "@/components/gestao/SchemaInstall";
 
 const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
@@ -26,25 +42,45 @@ const NAV = [
   { id: "publicacoes", label: "Publicações", icon: BookOpen },
   { id: "noticias", label: "Notícias", icon: Newspaper },
   { id: "videos", label: "Vídeos", icon: Video },
+  { id: "candidaturas", label: "Candidaturas", icon: Users },
   { id: "anuncios", label: "Anúncios", icon: Bell },
 ] as const;
 
 type Section = (typeof NAV)[number]["id"];
 
-const EDONDZO = [
-  { curso: "Jornalismo", maputo: 186, manica: 42 },
-  { curso: "Publicidade e Marketing", maputo: 121, manica: 28 },
-  { curso: "Relações Públicas", maputo: 97, manica: 19 },
-  { curso: "Biblioteconomia e Documentação", maputo: 64, manica: 11 },
-];
-
 export default function GestaoDashboard() {
   const [section, setSection] = useState<Section>("painel");
   const [note, setNote] = useState("");
+  const [needsSchema, setNeedsSchema] = useState(false);
+
+  useEffect(() => {
+    try {
+      const supabase = createBrowserSupabase();
+      void supabase
+        .from("noticias")
+        .select("slug")
+        .limit(1)
+        .then(({ error }) => {
+          if (error && isMissingTable(error)) setNeedsSchema(true);
+        });
+    } catch {
+      /* env em falta */
+    }
+  }, []);
 
   const showNote = (msg: string) => {
     setNote(msg);
-    window.setTimeout(() => setNote(""), 3200);
+    window.setTimeout(() => setNote(""), 4200);
+  };
+
+  const sair = async () => {
+    try {
+      const supabase = createBrowserSupabase();
+      await supabase.auth.signOut();
+    } catch {
+      /* env em falta */
+    }
+    window.location.href = "/";
   };
 
   return (
@@ -59,7 +95,7 @@ export default function GestaoDashboard() {
             className="h-12 w-12 object-contain rounded-sm"
           />
           <p className="mt-4 font-serif font-bold leading-tight">Área de gestão</p>
-          <p className="mt-1 text-[11px] text-white/50">Proposta — ESJ</p>
+          <p className="mt-1 text-[11px] text-white/50">Secretaria académica</p>
         </div>
         <nav className="flex-1 py-4">
           {NAV.map(({ id, label, icon: Icon }) => (
@@ -79,13 +115,14 @@ export default function GestaoDashboard() {
           ))}
         </nav>
         <div className="px-5 py-5 border-t border-white/10 space-y-3">
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={sair}
             className="flex items-center gap-2 text-sm text-white/70 hover:text-sky-300"
           >
             <LogOut size={15} />
-            Sair para o sítio
-          </Link>
+            Sair
+          </button>
         </div>
       </aside>
 
@@ -100,7 +137,7 @@ export default function GestaoDashboard() {
             </h1>
           </div>
           <p className="text-xs text-navy-900/50 max-w-sm text-right leading-relaxed">
-            Esboço. Ainda sem ligação ao eDondzo nem à base de dados.
+            Notícias, publicações, edital e candidaturas gravam na base da ESJ.
           </p>
         </header>
 
@@ -108,11 +145,13 @@ export default function GestaoDashboard() {
           {note && (
             <p className="mb-5 bg-navy-800 text-white text-sm px-4 py-3">{note}</p>
           )}
+          {needsSchema && <SchemaInstall />}
           {section === "painel" && <Painel onGo={setSection} />}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "publicacoes" && <Publicacoes onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
+          {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && <Anuncios onAction={showNote} />}
         </main>
       </div>
@@ -126,7 +165,7 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
       id: "edital" as Section,
       title: "Edital",
       text: "Substituir o PDF de admissão publicado no sítio.",
-      meta: "Edital 2020.pdf · visível em /edital",
+      meta: "Visível em /edital",
     },
     {
       id: "publicacoes" as Section,
@@ -138,36 +177,33 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
       id: "noticias" as Section,
       title: "Notícias",
       text: "Publicar comunicados, eventos e vida académica.",
-      meta: "3 rascunhos de exemplo",
+      meta: "Visível em /noticias",
     },
     {
       id: "videos" as Section,
       title: "Vídeos",
-      text: "Colocar reportagens e peças da ESJ TV na página.",
-      meta: "2 ligações de exemplo",
+      text: "Guardar reportagens e peças da ESJ TV.",
+      meta: "Ligações YouTube ou Vimeo",
+    },
+    {
+      id: "candidaturas" as Section,
+      title: "Candidaturas",
+      text: "Pré-inscrições submetidas no sítio.",
+      meta: "Formulário em /inscricoes",
     },
     {
       id: "anuncios" as Section,
-      title: "Anúncios eDondzo",
-      text: "Enviar avisos aos estudantes, por curso ou delegação.",
-      meta: `${EDONDZO.reduce((n, c) => n + c.maputo + c.manica, 0)} estudantes (amostra)`,
+      title: "Anúncios",
+      text: "Guardar avisos da secretaria (o envio ao eDondzo fica para mais tarde).",
+      meta: "Tabela anuncios",
     },
   ];
 
   return (
     <div>
       <p className="text-navy-900/70 max-w-3xl leading-relaxed">
-        Este painel destina-se à gestão do sítio da ESJ: trocar o edital, publicar
-        notícias e vídeos, e mandar anúncios aos estudantes com os dados do portal{" "}
-        <a
-          href="https://esj.edondzo.ac.mz"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sky font-semibold hover:text-crimson"
-        >
-          eDondzo
-        </a>
-        .
+        Este painel gere o sítio da ESJ: edital, notícias, publicações,
+        candidaturas e anúncios. Tudo grava na mesma base Supabase.
       </p>
       <div className="mt-8 grid md:grid-cols-2 gap-5">
         {cards.map((c) => (
@@ -188,6 +224,35 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
 }
 
 function Edital({ onAction }: { onAction: (m: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [current, setCurrent] = useState<{ title: string; file_url: string } | null>(null);
+
+  useEffect(() => {
+    loadEditalVigente()
+      .then(setCurrent)
+      .catch(() => setCurrent(null));
+  }, []);
+
+  const publish = async () => {
+    if (!file) {
+      onAction("Escolha o PDF do novo edital.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await publishEdital(file, "Edital de Admissão 2026");
+      const next = await loadEditalVigente();
+      setCurrent(next);
+      setFile(null);
+      onAction("O edital foi publicado e já aparece em /edital.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl bg-white border border-navy-100 p-8">
       <h2 className="font-serif text-2xl font-bold text-navy-900">Edital em vigor</h2>
@@ -196,24 +261,32 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
         <Link href="/edital" className="text-sky hover:underline">
           /edital
         </Link>
-        . Para o ano lectivo seguinte, carrega o novo PDF e publica-o.
+        .
       </p>
       <div className="mt-6 border border-dashed border-navy-100 px-4 py-5 text-sm">
         <p className="font-bold text-navy-900">Ficheiro actual</p>
-        <p className="mt-1 text-navy-900/65">Edital 2020.pdf — visível como Edital 2026</p>
+        <p className="mt-1 text-navy-900/65">
+          {current ? current.title : "Ainda o PDF local (Edital 2020.pdf), até publicar um novo."}
+        </p>
       </div>
       <label className="mt-5 block">
         <span className="block text-sm font-bold text-navy-900 mb-1.5">
           Novo PDF do edital
         </span>
-        <input type="file" accept=".pdf" className="esj-field-file" />
+        <input
+          type="file"
+          accept=".pdf"
+          className="esj-field-file"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
       </label>
       <button
         type="button"
-        onClick={() => onAction("O edital não foi alterado — este ecrã é só um esboço.")}
-        className="mt-6 bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+        disabled={busy}
+        onClick={publish}
+        className="mt-6 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
       >
-        PUBLICAR EDITAL
+        {busy ? "A PUBLICAR…" : "PUBLICAR EDITAL"}
       </button>
     </div>
   );
@@ -221,23 +294,33 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
 
 function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
   const [data, setData] = useState<Publicacao>(DEFAULT_PUBLICACAO);
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setData(readPublicacao());
+    loadPublicacao().then(setData);
   }, []);
 
-  const onFile = (file: File | null) => {
-    if (!file) return;
+  const onFile = (next: File | null) => {
+    if (!next) return;
+    setFile(next);
     const reader = new FileReader();
     reader.onload = () => {
       setData((prev) => ({ ...prev, image: String(reader.result) }));
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(next);
   };
 
-  const publish = () => {
-    writePublicacao(data);
-    onAction("O cartaz A4 da secção de ensino foi actualizado.");
+  const publish = async () => {
+    setBusy(true);
+    try {
+      await publishPublicacao(data, file);
+      onAction("O cartaz A4 da secção de ensino foi publicado.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -266,18 +349,9 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
             </div>
           )}
         </div>
-        <p className="mt-2 text-xs text-navy-900/50">
-          {data.tipo === "livro"
-            ? "Os três livros preenchem o espaço vazio dentro do A4."
-            : "Anúncio a preencher o A4. Nada aparece por baixo."}
-        </p>
       </div>
       <div className="bg-white border border-navy-100 p-8 space-y-4">
         <h2 className="font-serif text-2xl font-bold text-navy-900">Lançamento na página de ensino</h2>
-        <p className="text-sm text-navy-900/65 leading-relaxed">
-          Substitui o cartaz publicado à direita de «Formamos, comunicamos e Investigamos». O espaço
-          no sítio tem o tamanho A4.
-        </p>
         <fieldset className="space-y-2">
           <legend className="text-sm font-bold text-navy-900 mb-1.5">Tipo de anúncio</legend>
           <label className="flex items-start gap-2 text-sm text-navy-900/80">
@@ -288,7 +362,7 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
               onChange={() => setData({ ...data, tipo: "livro" })}
               className="mt-1"
             />
-            <span>Lançamento de livro — a imagem ajusta-se ao A4 e os três livros preenchem o espaço que sobra, dentro da moldura.</span>
+            <span>Lançamento de livro — a imagem ajusta-se ao A4 e os três livros preenchem o espaço que sobra.</span>
           </label>
           <label className="flex items-start gap-2 text-sm text-navy-900/80">
             <input
@@ -344,10 +418,11 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
         </label>
         <button
           type="button"
+          disabled={busy}
           onClick={publish}
-          className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
         >
-          PUBLICAR CARTAZ
+          {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
         </button>
       </div>
     </div>
@@ -355,48 +430,81 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
 }
 
 function Noticias({ onAction }: { onAction: (m: string) => void }) {
-  const items = [
-    { title: "Calendário de exames de admissão", estado: "Rascunho" },
-    { title: "Semana da Comunicação e Informação", estado: "Rascunho" },
-    { title: "Cerimónia de graduação na sede", estado: "Rascunho" },
-  ];
+  const [items, setItems] = useState<{ slug: string; title: string; date_label: string }[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = () => {
+    listNoticiasGestao()
+      .then(setItems)
+      .catch(() => setItems([]));
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    setBusy(true);
+    try {
+      await publishNoticia({
+        title: String(fd.get("title") || "").trim(),
+        excerpt: String(fd.get("excerpt") || "").trim(),
+        body: String(fd.get("body") || "").trim(),
+        image: (fd.get("image") as File | null)?.size ? (fd.get("image") as File) : null,
+      });
+      form.reset();
+      refresh();
+      onAction("A notícia foi publicada em /noticias.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
-      <form
-        className="bg-white border border-navy-100 p-8 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onAction("A notícia não foi publicada — este ecrã é só um esboço.");
-        }}
-      >
+      <form className="bg-white border border-navy-100 p-8 space-y-4" onSubmit={onSubmit}>
         <h2 className="font-serif text-2xl font-bold text-navy-900">Nova notícia</h2>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-          <input className="esj-field" placeholder="Título do comunicado" />
+          <input name="title" required className="esj-field" placeholder="Título do comunicado" />
         </label>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Resumo</span>
-          <input className="esj-field" placeholder="Duas linhas para a página inicial" />
+          <input name="excerpt" required className="esj-field" placeholder="Duas linhas para a página inicial" />
         </label>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Texto</span>
-          <textarea className="esj-field h-32 py-3" placeholder="Corpo da notícia" />
+          <textarea name="body" required className="esj-field h-32 py-3" placeholder="Corpo da notícia" />
+        </label>
+        <label className="block">
+          <span className="block text-sm font-bold text-navy-900 mb-1.5">Imagem (opcional)</span>
+          <input name="image" type="file" accept=".jpg,.jpeg,.png" className="esj-field-file" />
         </label>
         <button
           type="submit"
-          className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          disabled={busy}
+          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
         >
-          PUBLICAR NOTÍCIA
+          {busy ? "A PUBLICAR…" : "PUBLICAR NOTÍCIA"}
         </button>
       </form>
       <aside className="bg-white border border-navy-100 p-6">
-        <h3 className="font-serif font-bold text-navy-900">Na fila</h3>
+        <h3 className="font-serif font-bold text-navy-900">Publicadas</h3>
         <ul className="mt-4 space-y-3">
+          {items.length === 0 && (
+            <li className="text-sm text-navy-900/50">Ainda sem notícias na base.</li>
+          )}
           {items.map((n) => (
-            <li key={n.title} className="text-sm">
-              <span className="block font-semibold text-navy-900">{n.title}</span>
-              <span className="text-[11px] text-navy-900/50">{n.estado}</span>
+            <li key={n.slug} className="text-sm">
+              <Link href={`/noticias/${n.slug}`} className="block font-semibold text-navy-900 hover:text-crimson">
+                {n.title}
+              </Link>
+              <span className="text-[11px] text-navy-900/50">{n.date_label}</span>
             </li>
           ))}
         </ul>
@@ -406,75 +514,175 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
 }
 
 function Videos({ onAction }: { onAction: (m: string) => void }) {
+  const [items, setItems] = useState<{ id: string; title: string; url: string }[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = () => {
+    listVideosGestao()
+      .then(setItems)
+      .catch(() => setItems([]));
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    setBusy(true);
+    try {
+      await publishVideo(String(fd.get("title") || "").trim(), String(fd.get("url") || "").trim());
+      form.reset();
+      refresh();
+      onAction("O vídeo foi gravado.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl bg-white border border-navy-100 p-8">
       <h2 className="font-serif text-2xl font-bold text-navy-900">Vídeos da ESJ TV</h2>
-      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-        Publica peças de televisão, rádio e reportagem para a galeria e a página
-        inicial.
-      </p>
       <ul className="mt-6 space-y-3 text-sm">
-        <li className="border border-navy-100 px-4 py-3">
-          <span className="font-semibold text-navy-900">Abertura do ano lectivo</span>
-          <span className="block text-navy-900/50 text-xs mt-0.5">YouTube · rascunho</span>
-        </li>
-        <li className="border border-navy-100 px-4 py-3">
-          <span className="font-semibold text-navy-900">Estúdio de televisão em prática</span>
-          <span className="block text-navy-900/50 text-xs mt-0.5">YouTube · rascunho</span>
-        </li>
+        {items.length === 0 && (
+          <li className="text-navy-900/50">Ainda sem vídeos na base.</li>
+        )}
+        {items.map((v) => (
+          <li key={v.id} className="border border-navy-100 px-4 py-3">
+            <span className="font-semibold text-navy-900">{v.title}</span>
+            <a href={v.url} className="block text-sky text-xs mt-0.5 break-all" target="_blank" rel="noreferrer">
+              {v.url}
+            </a>
+          </li>
+        ))}
       </ul>
-      <form
-        className="mt-6 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onAction("O vídeo não foi publicado — este ecrã é só um esboço.");
-        }}
-      >
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-          <input className="esj-field" placeholder="Título do vídeo" />
+          <input name="title" required className="esj-field" placeholder="Título do vídeo" />
         </label>
         <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">
-            Ligação YouTube ou Vimeo
-          </span>
-          <input className="esj-field" placeholder="https://" />
+          <span className="block text-sm font-bold text-navy-900 mb-1.5">Ligação YouTube ou Vimeo</span>
+          <input name="url" type="url" required className="esj-field" placeholder="https://" />
         </label>
         <button
           type="submit"
-          className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          disabled={busy}
+          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
         >
-          PUBLICAR VÍDEO
+          {busy ? "A PUBLICAR…" : "PUBLICAR VÍDEO"}
         </button>
       </form>
     </div>
   );
 }
 
+function Candidaturas() {
+  const [items, setItems] = useState<
+    { protocolo: string; nome: string; email: string | null; curso: string; delegacao: string | null; created_at: string }[]
+  >([]);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    listInscricoesGestao()
+      .then(setItems)
+      .catch((err) => {
+        if (isMissingTable(err)) setMissing(true);
+        else setError(cmsError(err));
+      });
+  }, []);
+
+  return (
+    <div className="bg-white border border-navy-100 p-8">
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Pré-inscrições</h2>
+      <p className="mt-2 text-sm text-navy-900/65">Candidaturas submetidas em /inscricoes.</p>
+      {missing && <SchemaInstall />}
+      {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
+      <ul className="mt-6 divide-y divide-navy-100">
+        {items.length === 0 && !error && !missing && (
+          <li className="py-3 text-sm text-navy-900/50">Ainda não há candidaturas.</li>
+        )}
+        {items.map((c) => (
+          <li key={c.protocolo} className="py-4">
+            <p className="font-semibold text-navy-900">{c.nome}</p>
+            <p className="text-xs text-sky mt-0.5">{c.protocolo}</p>
+            <p className="text-sm text-navy-900/65 mt-1">
+              {c.curso}
+              {c.delegacao ? ` · ${c.delegacao}` : ""}
+            </p>
+            {c.email && <p className="text-xs text-navy-900/50 mt-1">{c.email}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Anuncios({ onAction }: { onAction: (m: string) => void }) {
-  const total = EDONDZO.reduce((n, c) => n + c.maputo + c.manica, 0);
+  const [items, setItems] = useState<
+    { id: string; destinatarios: string; assunto: string; mensagem: string }[]
+  >([]);
+  const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
+
+  const refresh = () => {
+    listAnunciosGestao()
+      .then((rows) => {
+        setItems(rows);
+        setMissing(false);
+      })
+      .catch((err) => {
+        if (isMissingTable(err)) setMissing(true);
+        else setItems([]);
+      });
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    setBusy(true);
+    try {
+      await publishAnuncio({
+        destinatarios: String(fd.get("destinatarios") || "Todos os estudantes"),
+        assunto: String(fd.get("assunto") || "").trim(),
+        mensagem: String(fd.get("mensagem") || "").trim(),
+      });
+      form.reset();
+      refresh();
+      onAction("O anúncio foi gravado na base da ESJ.");
+    } catch (error) {
+      if (isMissingTable(error)) setMissing(true);
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
-      <form
-        className="bg-white border border-navy-100 p-8 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onAction("O anúncio não saiu para o eDondzo — este ecrã é só um esboço.");
-        }}
-      >
+      <form className="bg-white border border-navy-100 p-8 space-y-4" onSubmit={onSubmit}>
         <h2 className="font-serif text-2xl font-bold text-navy-900">
           Anúncio aos estudantes
         </h2>
         <p className="text-sm text-navy-900/65 leading-relaxed">
-          Os destinatários virão da plataforma eDondzo (
-          <span className="text-navy-900">esj.edondzo.ac.mz</span>
-          ), por curso, turno e delegação.
+          Os avisos ficam guardados aqui. O envio automático para o eDondzo ainda
+          não está ligado.
         </p>
+        {missing && <SchemaInstall />}
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Destinatários</span>
-          <select className="esj-field">
-            <option>Todos os estudantes ({total})</option>
+          <select name="destinatarios" className="esj-field">
+            <option>Todos os estudantes</option>
             <option>Maputo — Sede</option>
             <option>Manica — Delegação Académica</option>
             <option>Licenciatura em Jornalismo</option>
@@ -485,32 +693,35 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
         </label>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Assunto</span>
-          <input className="esj-field" placeholder="Assunto do anúncio" />
+          <input name="assunto" required className="esj-field" placeholder="Assunto do anúncio" />
         </label>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Mensagem</span>
           <textarea
+            name="mensagem"
+            required
             className="esj-field h-32 py-3"
-            placeholder="Texto a enviar aos estudantes"
+            placeholder="Texto do anúncio"
           />
         </label>
         <button
           type="submit"
-          className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          disabled={busy}
+          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
         >
-          ENVIAR PELO EDONDZO
+          {busy ? "A GRAVAR…" : "GRAVAR ANÚNCIO"}
         </button>
       </form>
       <aside className="bg-white border border-navy-100 p-6">
-        <h3 className="font-serif font-bold text-navy-900">Amostra eDondzo</h3>
-        <p className="mt-1 text-xs text-navy-900/50">Números fictícios para o esboço</p>
+        <h3 className="font-serif font-bold text-navy-900">Anúncios gravados</h3>
         <ul className="mt-4 space-y-3 text-sm">
-          {EDONDZO.map((c) => (
-            <li key={c.curso}>
-              <span className="block font-semibold text-navy-900">{c.curso}</span>
-              <span className="text-navy-900/55 text-xs">
-                Maputo {c.maputo} · Manica {c.manica}
-              </span>
+          {items.length === 0 && (
+            <li className="text-navy-900/50">Ainda sem anúncios.</li>
+          )}
+          {items.map((a) => (
+            <li key={a.id}>
+              <span className="block font-semibold text-navy-900">{a.assunto}</span>
+              <span className="text-navy-900/55 text-xs">{a.destinatarios}</span>
             </li>
           ))}
         </ul>

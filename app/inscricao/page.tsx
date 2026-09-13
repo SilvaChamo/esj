@@ -32,9 +32,11 @@ export default function InscricaoPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14 overflow-x-hidden">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-8 items-start">
-          <InscricaoForm />
+          <div className="min-w-0 max-w-full">
+            <InscricaoForm />
+          </div>
           <InscricaoSidebar />
         </div>
       </section>

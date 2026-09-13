@@ -5,7 +5,8 @@ import { X } from "lucide-react";
 import {
   DEFAULT_PUBLICACAO,
   LIVROS_ANTERIORES,
-  readPublicacao,
+  loadLivros,
+  loadPublicacao,
   type LivroThumb,
   type Publicacao,
 } from "@/lib/publicacao";
@@ -13,10 +14,14 @@ import {
 export default function Academics() {
   const [open, setOpen] = useState(false);
   const [book, setBook] = useState<Publicacao>(DEFAULT_PUBLICACAO);
+  const [livros, setLivros] = useState<LivroThumb[]>(LIVROS_ANTERIORES);
   const [viewer, setViewer] = useState<LivroThumb | null>(null);
 
   useEffect(() => {
-    const load = () => setBook(readPublicacao());
+    const load = () => {
+      loadPublicacao().then(setBook);
+      loadLivros().then(setLivros);
+    };
     load();
     window.addEventListener("esj-publicacao", load);
     window.addEventListener("storage", load);
@@ -111,7 +116,7 @@ export default function Academics() {
 
           {isLivro && (
             <div className="grid grid-cols-3 gap-1 px-1.5 pb-1.5 flex-[0_0_27%]">
-              {LIVROS_ANTERIORES.map((liv) => (
+              {livros.map((liv) => (
                 <button
                   key={liv.image}
                   type="button"

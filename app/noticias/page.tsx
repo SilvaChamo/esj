@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { noticias } from "@/lib/noticias";
+import { listNoticias } from "@/lib/noticias";
 
 export const metadata = {
   title: "Notícias | ESJ",
@@ -8,7 +8,11 @@ export const metadata = {
     "Notícias da Escola Superior de Jornalismo: lançamentos, conferências, vida académica e comunicação institucional.",
 };
 
-export default function NoticiasPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NoticiasPage() {
+  const items = await listNoticias();
+
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
@@ -23,7 +27,7 @@ export default function NoticiasPage() {
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {noticias.map((item) => (
+          {items.map((item) => (
             <Link
               key={item.slug}
               href={`/noticias/${item.slug}`}

@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { noticiasDestaque } from "@/lib/noticias";
+import { listNoticiasDestaque } from "@/lib/noticias";
 
-export default function News() {
+export default async function News() {
+  const items = await listNoticiasDestaque();
+
   return (
     <section id="noticias" className="bg-cream py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -20,7 +22,7 @@ export default function News() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {noticiasDestaque.map((item) => (
+          {items.map((item) => (
             <Link
               key={item.slug}
               href={`/noticias/${item.slug}`}

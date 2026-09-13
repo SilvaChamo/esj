@@ -3,5 +3,7 @@ node_modules
 out
 .DS_Store
 *.pem
+.env
 .env*.local
 npm-debug.log*
+supabase/.temp

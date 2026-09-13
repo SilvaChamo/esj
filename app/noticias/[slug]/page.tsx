@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getNoticia, noticias } from "@/lib/noticias";
+import { findNoticia, noticias } from "@/lib/noticias";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return noticias.map((item) => ({ slug: item.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const item = getNoticia(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const item = await findNoticia(params.slug);
   if (!item) return { title: "Notícia | ESJ" };
   return {
     title: `${item.title} | ESJ`,
@@ -15,8 +17,8 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function NoticiaPage({ params }: { params: { slug: string } }) {
-  const item = getNoticia(params.slug);
+export default async function NoticiaPage({ params }: { params: { slug: string } }) {
+  const item = await findNoticia(params.slug);
   if (!item) notFound();
 
   return (

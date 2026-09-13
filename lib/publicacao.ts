@@ -1,3 +1,5 @@
+import { getSupabase } from "@/lib/supabase";
+
 export const PUBLICACAO_KEY = "esj-publicacao";
 
 export type PublicacaoTipo = "livro" | "cartaz";
@@ -60,4 +62,39 @@ export function readPublicacao(): Publicacao {
 export function writePublicacao(data: Publicacao) {
   window.localStorage.setItem(PUBLICACAO_KEY, JSON.stringify(data));
   window.dispatchEvent(new Event("esj-publicacao"));
+}
+
+export async function loadPublicacao(): Promise<Publicacao> {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data } = await supabase
+      .from("publicacoes")
+      .select("title, subtitle, authors, date_label, venue, image, tipo")
+      .eq("destaque", true)
+      .maybeSingle();
+    if (data) {
+      return {
+        image: data.image,
+        title: data.title,
+        subtitle: data.subtitle,
+        authors: data.authors,
+        date: data.date_label,
+        venue: data.venue,
+        tipo: data.tipo === "cartaz" ? "cartaz" : "livro",
+      };
+    }
+  }
+  return readPublicacao();
+}
+
+export async function loadLivros(): Promise<LivroThumb[]> {
+  const supabase = getSupabase();
+  if (supabase) {
+    const { data } = await supabase
+      .from("livros")
+      .select("title, image")
+      .order("sort_order", { ascending: true });
+    if (data?.length) return data;
+  }
+  return LIVROS_ANTERIORES;
 }

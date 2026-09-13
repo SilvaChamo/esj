@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
 import EditalPdfViewer from "@/components/EditalPdfViewer";
-import { EDITAL_PDF } from "@/lib/inscricao";
+import { loadEdital } from "@/lib/editais";
 
 export const metadata = {
   title: "Edital de Admissão 2026 | ESJ",
@@ -9,7 +9,11 @@ export const metadata = {
     "Consulte o edital de admissão da Escola Superior de Jornalismo e faça a pré-inscrição para o ano lectivo 2026.",
 };
 
-export default function EditalPage() {
+export const dynamic = "force-dynamic";
+
+export default async function EditalPage() {
+  const edital = await loadEdital();
+
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
@@ -34,7 +38,7 @@ export default function EditalPage() {
               INSCREVA-SE
             </Link>
             <a
-              href={EDITAL_PDF}
+              href={edital.file_url}
               download
               className="bg-white text-navy-900 hover:bg-cream font-semibold text-xs tracking-wide px-5 py-3 inline-flex items-center gap-2 transition-colors"
             >
@@ -46,7 +50,7 @@ export default function EditalPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
-        <EditalPdfViewer src={EDITAL_PDF} />
+        <EditalPdfViewer src={edital.file_url} />
       </section>
     </main>
   );

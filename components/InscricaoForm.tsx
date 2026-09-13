@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
+import { submitInscricao } from "@/lib/inscricoes";
+import { cmsError } from "@/lib/cms";
 import Link from "next/link";
 import {
   COURSES,
@@ -31,17 +33,13 @@ const STEPS = [
   { title: "Declaração", tab: "Declaração", docs: ["pagamento"] },
 ];
 
-function protocolNumber() {
-  const n = Math.floor(100000 + Math.random() * 900000);
-  return `ESJ-2026-${n}`;
-}
-
 export default function InscricaoForm() {
   const [step, setStep] = useState(0);
   const [files, setFiles] = useState<FileMap>(emptyFiles);
   const [course1, setCourse1] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const last = step === STEPS.length - 1;
 
   const onFile = (id: string, file: File | null) => {
@@ -65,20 +63,28 @@ export default function InscricaoForm() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!last) {
       goNext();
       return;
     }
     setError("");
-    setSubmitted(protocolNumber());
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setBusy(true);
+    try {
+      const protocolo = await submitInscricao(new FormData(e.currentTarget), files);
+      setSubmitted(protocolo);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setError(cmsError(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (submitted) {
     return (
-      <div className="border border-navy-100 bg-white p-8 md:p-12">
+      <div className="border border-navy-100 bg-white p-5 sm:p-8 md:p-12 min-w-0">
         <p className="text-leaf font-semibold text-sm">Pré-inscrição recebida</p>
         <h2 className="font-serif text-3xl font-bold text-navy-900 mt-2">
           Guarde o número de protocolo
@@ -107,11 +113,14 @@ export default function InscricaoForm() {
   }
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full overflow-x-hidden">
       <nav aria-label="Etapas da pré-inscrição" className="bg-white border border-navy-100 border-b-0">
-        <ul className="flex overflow-x-auto">
+        <p className="px-4 pt-3 text-xs font-semibold text-navy-900/55 sm:hidden">
+          Etapa {step + 1} de {STEPS.length} — {STEPS[step].title}
+        </p>
+        <ul className="grid grid-cols-5">
           {STEPS.map((item, i) => (
-            <li key={item.tab} className="flex-1 min-w-max">
+            <li key={item.tab} className="min-w-0">
               <button
                 type="button"
                 onClick={() => {
@@ -119,27 +128,30 @@ export default function InscricaoForm() {
                   setStep(i);
                 }}
                 aria-current={i === step ? "step" : undefined}
-                className={`w-full px-4 py-3.5 text-sm font-bold text-center whitespace-nowrap border-b-2 transition-colors ${
+                aria-label={item.tab}
+                className={`w-full min-w-0 px-1 py-3 text-[10px] sm:text-sm font-bold text-center leading-tight border-b-2 transition-colors ${
                   i === step
                     ? "text-leaf border-leaf"
                     : "text-navy-900/60 border-transparent hover:text-navy-900/85"
                 }`}
               >
-                {item.tab}
+                <span className="sm:hidden">{i + 1}</span>
+                <span className="hidden sm:inline">{item.tab}</span>
               </button>
             </li>
           ))}
         </ul>
       </nav>
 
-      <form noValidate onSubmit={onSubmit} className="border border-navy-100 bg-white">
-        <div className="px-6 md:px-10 py-8 md:py-10">
+      <form noValidate onSubmit={onSubmit} className="border border-navy-100 bg-white min-w-0">
+        <div className="px-4 sm:px-6 md:px-10 py-8 md:py-10 min-w-0">
         <h2 className="font-serif text-2xl font-bold text-navy-900 mb-6">{STEPS[step].title}</h2>
 
         <div data-step="0" className={step === 0 ? "space-y-6" : "hidden"}>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-5 min-w-0">
             <Field label="Primeira opção" required>
               <select
+                name="curso1"
                 required={step === 0}
                 value={course1}
                 onChange={(e) => setCourse1(e.target.value)}
@@ -190,7 +202,7 @@ export default function InscricaoForm() {
         </div>
 
         <div data-step="1" className={step === 1 ? "space-y-6" : "hidden"}>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-5 min-w-0">
             <Field label="Nome completo" required className="md:col-span-2">
               <input name="nome" required={step === 1} autoComplete="name" className="esj-field" />
             </Field>
@@ -255,7 +267,7 @@ export default function InscricaoForm() {
         </div>
 
         <div data-step="2" className={step === 2 ? "space-y-6" : "hidden"}>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-5 min-w-0">
             <Field label="Telemóvel" required>
               <input name="telefone" type="tel" required={step === 2} autoComplete="tel" className="esj-field" />
             </Field>
@@ -285,7 +297,7 @@ export default function InscricaoForm() {
         </div>
 
         <div data-step="3" className={step === 3 ? "space-y-6" : "hidden"}>
-          <div className="grid md:grid-cols-2 gap-5">
+          <div className="grid md:grid-cols-2 gap-5 min-w-0">
             <Field label="Escola de proveniência" required className="md:col-span-2">
               <input name="escola" required={step === 3} className="esj-field" />
             </Field>
@@ -334,12 +346,12 @@ export default function InscricaoForm() {
           </p>
         )}
 
-        <div className="mt-8 flex flex-wrap items-center gap-3">
+        <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
           {step > 0 && (
             <button
               type="button"
               onClick={goBack}
-              className="border border-navy-800 text-navy-800 hover:bg-navy-800 hover:text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+              className="w-full sm:w-auto border border-navy-800 text-navy-800 hover:bg-navy-800 hover:text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
             >
               ANTERIOR
             </button>
@@ -347,14 +359,15 @@ export default function InscricaoForm() {
           {last ? (
             <button
               type="submit"
-              className="bg-sky hover:bg-crimson text-white font-semibold text-xs tracking-wide px-8 py-3.5 transition-colors"
+              disabled={busy}
+              className="w-full sm:w-auto bg-sky hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-8 py-3.5 transition-colors"
             >
-              SUBMETER PRÉ-INSCRIÇÃO
+              {busy ? "A REGISTAR…" : "REGISTAR"}
             </button>
           ) : (
             <button
               type="submit"
-              className="bg-sky hover:bg-crimson text-white font-semibold text-xs tracking-wide px-8 py-3.5 transition-colors"
+              className="w-full sm:w-auto bg-sky hover:bg-crimson text-white font-semibold text-xs tracking-wide px-8 py-3.5 transition-colors"
             >
               SEGUINTE
             </button>
@@ -387,7 +400,7 @@ function Attachments({
   if (!docs.length) return null;
 
   return (
-    <div className="border-t border-navy-100 pt-6">
+    <div className="border-t border-navy-100 pt-6 min-w-0">
       <h3 className="font-serif text-lg font-bold text-navy-900 mb-1">Anexos desta página</h3>
       <p className="text-sm text-navy-900/60 mb-4">PDF, JPG ou PNG até 5 MB.</p>
       <div className="space-y-4">
@@ -427,7 +440,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <label className={`block ${className}`}>
+    <label className={`block min-w-0 ${className}`}>
       <span className="block text-sm font-bold text-navy-900 mb-1.5">
         {label}
         {required ? " *" : ""}

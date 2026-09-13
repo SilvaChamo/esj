@@ -1,3 +1,5 @@
+import { getSupabase } from "@/lib/supabase";
+
 export type Noticia = {
   slug: string;
   date: string;
@@ -108,6 +110,54 @@ export const noticias: Noticia[] = [
 
 export const noticiasDestaque = noticias.slice(0, 4);
 
+type NoticiaRow = {
+  slug: string;
+  date_label: string;
+  title: string;
+  excerpt: string;
+  image: string;
+  body: string[] | null;
+};
+
+function fromRow(row: NoticiaRow): Noticia {
+  return {
+    slug: row.slug,
+    date: row.date_label,
+    title: row.title,
+    excerpt: row.excerpt,
+    image: row.image,
+    body: row.body ?? [],
+  };
+}
+
+export async function listNoticias(): Promise<Noticia[]> {
+  const supabase = getSupabase();
+  if (!supabase) return noticias;
+  const { data, error } = await supabase
+    .from("noticias")
+    .select("slug, date_label, title, excerpt, image, body")
+    .order("published_at", { ascending: false });
+  if (error || !data?.length) return noticias;
+  return data.map(fromRow);
+}
+
+export async function listNoticiasDestaque(): Promise<Noticia[]> {
+  const all = await listNoticias();
+  return all.slice(0, 4);
+}
+
 export function getNoticia(slug: string) {
   return noticias.find((item) => item.slug === slug);
+}
+
+export async function findNoticia(slug: string): Promise<Noticia | undefined> {
+  const supabase = getSupabase();
+  if (!supabase) return getNoticia(slug);
+  const { data, error } = await supabase
+    .from("noticias")
+    .select("slug, date_label, title, excerpt, image, body")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error || !data) return getNoticia(slug);
+  return fromRow(data);
 }
