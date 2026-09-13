@@ -22,9 +22,12 @@ create table if not exists publicacoes (
   venue text not null default '',
   image text not null,
   tipo text not null default 'livro' check (tipo in ('livro', 'cartaz')),
+  categoria text not null default 'livro' check (categoria in ('livro', 'evento')),
   destaque boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table publicacoes add column if not exists categoria text not null default 'livro';
 
 create table if not exists livros (
   id uuid primary key default gen_random_uuid(),
@@ -84,6 +87,22 @@ create table if not exists contactos (
   created_at timestamptz not null default now()
 );
 
+create table if not exists calendario_academico (
+  id int primary key default 1,
+  inscricoes text not null default '',
+  exames text not null default '',
+  resultados text not null default '',
+  inicio_ano text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists resultados_admissao (
+  id uuid primary key default gen_random_uuid(),
+  curso text not null unique,
+  file_url text not null default '',
+  updated_at timestamptz not null default now()
+);
+
 alter table noticias enable row level security;
 alter table publicacoes enable row level security;
 alter table livros enable row level security;
@@ -93,6 +112,8 @@ alter table inscricoes enable row level security;
 alter table anuncios enable row level security;
 alter table newsletter enable row level security;
 alter table contactos enable row level security;
+alter table calendario_academico enable row level security;
+alter table resultados_admissao enable row level security;
 
 drop policy if exists "noticias_public_read" on noticias;
 drop policy if exists "noticias_auth_write" on noticias;
@@ -111,6 +132,10 @@ drop policy if exists "newsletter_public_insert" on newsletter;
 drop policy if exists "newsletter_auth_read" on newsletter;
 drop policy if exists "contactos_public_insert" on contactos;
 drop policy if exists "contactos_auth_read" on contactos;
+drop policy if exists "calendario_public_read" on calendario_academico;
+drop policy if exists "calendario_auth_write" on calendario_academico;
+drop policy if exists "resultados_public_read" on resultados_admissao;
+drop policy if exists "resultados_auth_write" on resultados_admissao;
 
 create policy "noticias_public_read" on noticias for select using (true);
 create policy "noticias_auth_write" on noticias for all to authenticated using (true) with check (true);
@@ -129,6 +154,10 @@ create policy "newsletter_public_insert" on newsletter for insert with check (tr
 create policy "newsletter_auth_read" on newsletter for select to authenticated using (true);
 create policy "contactos_public_insert" on contactos for insert with check (true);
 create policy "contactos_auth_read" on contactos for select to authenticated using (true);
+create policy "calendario_public_read" on calendario_academico for select using (true);
+create policy "calendario_auth_write" on calendario_academico for all to authenticated using (true) with check (true);
+create policy "resultados_public_read" on resultados_admissao for select using (true);
+create policy "resultados_auth_write" on resultados_admissao for all to authenticated using (true) with check (true);
 
 insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
@@ -265,6 +294,37 @@ select
   'livro',
   true
 where not exists (select 1 from publicacoes);
+
+insert into publicacoes (title, subtitle, authors, date_label, venue, image, tipo, categoria, destaque)
+select
+  'Agenda de eventos da ESJ',
+  'Conferências, colóquios e a Semana da Comunicação e Informação',
+  '',
+  'Brevemente',
+  'Campus da ESJ, Maputo',
+  '/Sala de conferencias.jpg',
+  'cartaz',
+  'evento',
+  true
+where not exists (select 1 from publicacoes where categoria = 'evento');
+
+insert into calendario_academico (id, inscricoes, exames, resultados, inicio_ano)
+select
+  1,
+  'O prazo de pré-inscrição para o ano lectivo 2026 encontra-se encerrado. O próximo período, para o ano lectivo 2027, deverá abrir em Novembro.',
+  'Provas de Português e História, para todas as licenciaturas, em data a anunciar no edital do próximo ciclo.',
+  'Divulgados pela Secretaria Académica através deste portal, após a correcção dos exames de admissão.',
+  'Datas e calendário de matrículas publicados no edital de admissão, disponível em /edital.'
+where not exists (select 1 from calendario_academico where id = 1);
+
+insert into resultados_admissao (curso, file_url)
+select * from (values
+  ('Jornalismo', ''),
+  ('Publicidade e Marketing', ''),
+  ('Relações Públicas', ''),
+  ('Biblioteconomia e Documentação', '')
+) as v(curso, file_url)
+where not exists (select 1 from resultados_admissao);
 
 insert into livros (title, image, sort_order)
 select * from (values

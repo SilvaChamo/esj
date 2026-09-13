@@ -1,5 +1,7 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import type { Publicacao } from "@/lib/publicacao";
+import type { Calendario } from "@/lib/calendario";
+import type { Categoria, Publicacao } from "@/lib/publicacao";
+import { CURSOS_RESULTADOS } from "@/lib/resultados";
 
 export function slugify(text: string) {
   const slug = text
@@ -43,10 +45,18 @@ export async function uploadMedia(file: File, folder: string) {
   return data.publicUrl;
 }
 
-export async function publishPublicacao(data: Publicacao, file?: File | null) {
+export async function publishPublicacao(
+  data: Publicacao,
+  file?: File | null,
+  categoria: Categoria = "livro"
+) {
   const supabase = createBrowserSupabase();
   const image = file ? await uploadMedia(file, "publicacoes") : data.image;
-  const unset = await supabase.from("publicacoes").update({ destaque: false }).eq("destaque", true);
+  const unset = await supabase
+    .from("publicacoes")
+    .update({ destaque: false })
+    .eq("destaque", true)
+    .eq("categoria", categoria);
   if (unset.error) throw unset.error;
   const { error } = await supabase.from("publicacoes").insert({
     title: data.title,
@@ -56,6 +66,7 @@ export async function publishPublicacao(data: Publicacao, file?: File | null) {
     venue: data.venue,
     image,
     tipo: data.tipo,
+    categoria,
     destaque: true,
   });
   if (error) throw error;
@@ -178,6 +189,50 @@ export async function listAnunciosGestao() {
     .select("id, destinatarios, assunto, mensagem, created_at")
     .order("created_at", { ascending: false })
     .limit(30);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function publishCalendario(data: Calendario) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("calendario_academico").upsert({
+    id: 1,
+    inscricoes: data.inscricoes,
+    exames: data.exames,
+    resultados: data.resultados,
+    inicio_ano: data.inicioAno,
+  });
+  if (error) throw error;
+}
+
+export async function listResultadosGestao() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("resultados_admissao")
+    .select("curso, file_url, updated_at");
+  if (error) throw error;
+  return CURSOS_RESULTADOS.map((curso) => {
+    const row = data?.find((d) => d.curso === curso);
+    return { curso, fileUrl: row?.file_url ?? "", updatedAt: row?.updated_at ?? null };
+  });
+}
+
+export async function publishResultado(curso: string, file: File) {
+  const supabase = createBrowserSupabase();
+  const file_url = await uploadMedia(file, "resultados");
+  const { error } = await supabase
+    .from("resultados_admissao")
+    .upsert({ curso, file_url, updated_at: new Date().toISOString() }, { onConflict: "curso" });
+  if (error) throw error;
+}
+
+export async function listNewsletterGestao() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("newsletter")
+    .select("id, email, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
   if (error) throw error;
   return data ?? [];
 }

@@ -10,3 +10,4 @@ supabase/.temp
 .open-next
 .wrangler
 .dev.vars
+tsconfig.tsbuildinfo

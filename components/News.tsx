@@ -9,7 +9,7 @@ export default async function News() {
     <section id="noticias" className="bg-cream py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
-          <h2 className="font-serif text-4xl md:text-5xl font-bold text-navy-800 leading-tight">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
             Notícias da ESJ
           </h2>
           <Link

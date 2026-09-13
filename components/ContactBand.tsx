@@ -170,7 +170,7 @@ export default function ContactBand() {
         </div>
       </div>
 
-      <div className="relative bg-[#0c3348]/85">
+      <div className="relative bg-sky-600">
         <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 py-9 md:py-12">
           <form
             onSubmit={subscribe}

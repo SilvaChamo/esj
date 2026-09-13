@@ -4,34 +4,49 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
+  Award,
   Bell,
   BookOpen,
+  Calendar,
   FileText,
   LayoutDashboard,
+  Mail,
   Newspaper,
   Users,
   Video,
   LogOut,
 } from "lucide-react";
 import {
+  DEFAULT_CALENDARIO,
+  loadCalendario,
+  type Calendario,
+} from "@/lib/calendario";
+import {
+  DEFAULT_EVENTO,
   DEFAULT_PUBLICACAO,
   LIVROS_ANTERIORES,
   loadPublicacao,
+  type Categoria,
   type Publicacao,
 } from "@/lib/publicacao";
+import { CURSOS_RESULTADOS } from "@/lib/resultados";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
   cmsError,
   isMissingTable,
   listAnunciosGestao,
   listInscricoesGestao,
+  listNewsletterGestao,
   listNoticiasGestao,
+  listResultadosGestao,
   listVideosGestao,
   loadEditalVigente,
   publishAnuncio,
+  publishCalendario,
   publishEdital,
   publishNoticia,
   publishPublicacao,
+  publishResultado,
   publishVideo,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
@@ -40,10 +55,13 @@ const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
   { id: "edital", label: "Edital", icon: FileText },
   { id: "publicacoes", label: "Publicações", icon: BookOpen },
+  { id: "calendario", label: "Calendário Académico", icon: Calendar },
+  { id: "resultados", label: "Resultados", icon: Award },
   { id: "noticias", label: "Notícias", icon: Newspaper },
   { id: "videos", label: "Vídeos", icon: Video },
   { id: "candidaturas", label: "Candidaturas", icon: Users },
   { id: "anuncios", label: "Anúncios", icon: Bell },
+  { id: "subscritores", label: "Subscritores", icon: Mail },
 ] as const;
 
 type Section = (typeof NAV)[number]["id"];
@@ -149,10 +167,13 @@ export default function GestaoDashboard() {
           {section === "painel" && <Painel onGo={setSection} />}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "publicacoes" && <Publicacoes onAction={showNote} />}
+          {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
+          {section === "resultados" && <Resultados onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && <Anuncios onAction={showNote} />}
+          {section === "subscritores" && <Subscritores />}
         </main>
       </div>
     </div>
@@ -170,8 +191,20 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
     {
       id: "publicacoes" as Section,
       title: "Publicações",
-      text: "Trocar o cartaz A4 do lançamento na secção de ensino.",
-      meta: "Formato A4 · visível em /#ensino",
+      text: "Trocar os cartazes de lançamento de livro e de eventos na secção de ensino.",
+      meta: "Visível em /#ensino",
+    },
+    {
+      id: "calendario" as Section,
+      title: "Calendário Académico",
+      text: "Editar as datas de inscrições, exames, resultados e início do ano lectivo.",
+      meta: "Visível em /#ensino",
+    },
+    {
+      id: "resultados" as Section,
+      title: "Resultados",
+      text: "Carregar os PDFs com os resultados de admissão, por curso.",
+      meta: "Visível em /resultados",
     },
     {
       id: "noticias" as Section,
@@ -196,6 +229,12 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
       title: "Anúncios",
       text: "Guardar avisos da secretaria (o envio ao eDondzo fica para mais tarde).",
       meta: "Tabela anuncios",
+    },
+    {
+      id: "subscritores" as Section,
+      title: "Subscritores",
+      text: "Lista de correios inscritos na newsletter do sítio.",
+      meta: "Formulário em /#contacto",
     },
   ];
 
@@ -293,13 +332,16 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
 }
 
 function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
+  const [categoria, setCategoria] = useState<Categoria>("livro");
   const [data, setData] = useState<Publicacao>(DEFAULT_PUBLICACAO);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    loadPublicacao().then(setData);
-  }, []);
+    setFile(null);
+    loadPublicacao(categoria).then(setData);
+  }, [categoria]);
 
   const onFile = (next: File | null) => {
     if (!next) return;
@@ -314,9 +356,15 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
   const publish = async () => {
     setBusy(true);
     try {
-      await publishPublicacao(data, file);
-      onAction("O cartaz A4 da secção de ensino foi publicado.");
+      await publishPublicacao(data, file, categoria);
+      setMissing(false);
+      onAction(
+        categoria === "livro"
+          ? "O cartaz do lançamento do livro foi publicado."
+          : "O cartaz de eventos foi publicado."
+      );
     } catch (error) {
+      if (isMissingTable(error)) setMissing(true);
       onAction(cmsError(error));
     } finally {
       setBusy(false);
@@ -326,8 +374,36 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
   return (
     <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
       <div>
-        <p className="text-sm font-bold text-navy-900 mb-3">Pré-visualização A4</p>
-        <div className="relative w-full aspect-[210/297] bg-cream border border-navy-100 overflow-hidden flex flex-col">
+        <div className="flex gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setCategoria("livro")}
+            className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
+              categoria === "livro"
+                ? "bg-navy-800 text-white"
+                : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
+            }`}
+          >
+            LANÇAMENTO DO LIVRO
+          </button>
+          <button
+            type="button"
+            onClick={() => setCategoria("evento")}
+            className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
+              categoria === "evento"
+                ? "bg-navy-800 text-white"
+                : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
+            }`}
+          >
+            EVENTOS
+          </button>
+        </div>
+        <p className="text-sm font-bold text-navy-900 mb-3">Pré-visualização do cartaz</p>
+        <div
+          className={`relative w-full bg-cream border border-navy-100 overflow-hidden flex flex-col ${
+            categoria === "evento" ? "aspect-[210/297]" : "aspect-square"
+          }`}
+        >
           <div className={`relative min-h-0 ${data.tipo === "livro" ? "flex-1" : "h-full"}`}>
             <img
               src={data.image}
@@ -351,7 +427,14 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
         </div>
       </div>
       <div className="bg-white border border-navy-100 p-8 space-y-4">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Lançamento na página de ensino</h2>
+        <h2 className="font-serif text-2xl font-bold text-navy-900">
+          {categoria === "livro" ? "Lançamento do livro" : "Cartaz de eventos"} na página de ensino
+        </h2>
+        <p className="text-sm text-navy-900/65 leading-relaxed -mt-2">
+          Aparece em /#ensino ao clicar no botão &ldquo;
+          {categoria === "livro" ? "Lançamento do livro" : "Eventos"}&rdquo;.
+        </p>
+        {missing && <SchemaInstall />}
         <fieldset className="space-y-2">
           <legend className="text-sm font-bold text-navy-900 mb-1.5">Tipo de anúncio</legend>
           <label className="flex items-start gap-2 text-sm text-navy-900/80">
@@ -424,6 +507,139 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
         >
           {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
+  const [data, setData] = useState<Calendario>(DEFAULT_CALENDARIO);
+  const [busy, setBusy] = useState(false);
+  const [missing, setMissing] = useState(false);
+
+  useEffect(() => {
+    loadCalendario().then(setData);
+  }, []);
+
+  const publish = async () => {
+    setBusy(true);
+    try {
+      await publishCalendario(data);
+      setMissing(false);
+      onAction("O calendário académico foi actualizado em /#ensino.");
+    } catch (error) {
+      if (isMissingTable(error)) setMissing(true);
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const fields: { key: keyof Calendario; label: string }[] = [
+    { key: "inscricoes", label: "Inscrições" },
+    { key: "exames", label: "Exames de admissão" },
+    { key: "resultados", label: "Publicação de resultados" },
+    { key: "inicioAno", label: "Início do ano lectivo" },
+  ];
+
+  return (
+    <div className="max-w-4xl bg-white border border-navy-100 p-8 space-y-4">
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Calendário Académico</h2>
+      <p className="text-sm text-navy-900/65 leading-relaxed">
+        Estes textos aparecem na secção Ensino e História, separador &ldquo;Calendário
+        Académico&rdquo;, em /#ensino.
+      </p>
+      {missing && <SchemaInstall />}
+      <div className="grid sm:grid-cols-2 gap-4">
+        {fields.map((f) => (
+          <label key={f.key} className="block">
+            <span className="block text-sm font-bold text-navy-900 mb-1.5">{f.label}</span>
+            <textarea
+              className="esj-field min-h-[76px] py-2.5"
+              value={data[f.key]}
+              onChange={(e) => setData({ ...data, [f.key]: e.target.value })}
+            />
+          </label>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={publish}
+        className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+      >
+        {busy ? "A GRAVAR…" : "GUARDAR CALENDÁRIO"}
+      </button>
+    </div>
+  );
+}
+
+function Resultados({ onAction }: { onAction: (m: string) => void }) {
+  const [items, setItems] = useState<{ curso: string; fileUrl: string; updatedAt: string | null }[]>(
+    CURSOS_RESULTADOS.map((curso) => ({ curso, fileUrl: "", updatedAt: null }))
+  );
+  const [busyCurso, setBusyCurso] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
+
+  const refresh = () => {
+    listResultadosGestao()
+      .then((rows) => {
+        setItems(rows);
+        setMissing(false);
+      })
+      .catch((err) => {
+        if (isMissingTable(err)) setMissing(true);
+      });
+  };
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const onFile = async (curso: string, file: File | null) => {
+    if (!file) return;
+    setBusyCurso(curso);
+    try {
+      await publishResultado(curso, file);
+      refresh();
+      onAction(`Resultados de ${curso} publicados em /resultados.`);
+    } catch (error) {
+      if (isMissingTable(error)) setMissing(true);
+      onAction(cmsError(error));
+    } finally {
+      setBusyCurso(null);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl bg-white border border-navy-100 p-8">
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Resultados de admissão</h2>
+      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
+        Um PDF por curso. Aparecem em{" "}
+        <Link href="/resultados" className="text-sky hover:underline">
+          /resultados
+        </Link>
+        , ligados a partir do calendário académico em /#ensino.
+      </p>
+      {missing && <SchemaInstall />}
+      <div className="mt-6 space-y-4">
+        {items.map((r) => (
+          <div key={r.curso} className="border border-navy-100 px-5 py-4">
+            <p className="font-semibold text-navy-900 text-sm">{r.curso}</p>
+            <p className="mt-1 text-xs text-navy-900/50">
+              {r.fileUrl ? "PDF publicado." : "Ainda sem PDF."}
+            </p>
+            <label className="mt-3 block">
+              <input
+                type="file"
+                accept=".pdf"
+                disabled={busyCurso === r.curso}
+                className="esj-field-file"
+                onChange={(e) => onFile(r.curso, e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -616,6 +832,75 @@ function Candidaturas() {
               {c.delegacao ? ` · ${c.delegacao}` : ""}
             </p>
             {c.email && <p className="text-xs text-navy-900/50 mt-1">{c.email}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Subscritores() {
+  const [items, setItems] = useState<{ id: string; email: string; created_at: string }[]>([]);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    listNewsletterGestao()
+      .then(setItems)
+      .catch((err) => {
+        if (isMissingTable(err)) setMissing(true);
+        else setError(cmsError(err));
+      });
+  }, []);
+
+  const copiarLista = async () => {
+    try {
+      await navigator.clipboard.writeText(items.map((i) => i.email).join(", "));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      /* clipboard indisponível */
+    }
+  };
+
+  return (
+    <div className="bg-white border border-navy-100 p-8">
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Subscritores da newsletter</h2>
+      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed max-w-2xl">
+        Esta é a lista de correios inscritos no formulário de newsletter (secção de
+        contacto da página inicial). É a esta lista que, no futuro, serão enviadas
+        as novas publicações do sítio — o envio automático ainda não está ligado,
+        por agora a lista fica disponível aqui para copiar.
+      </p>
+      {missing && <SchemaInstall />}
+      {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
+      {!missing && (
+        <div className="mt-6 flex items-center gap-4">
+          <p className="text-sm font-semibold text-navy-900">
+            {items.length} subscritor{items.length === 1 ? "" : "es"}
+          </p>
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={copiarLista}
+              className="text-xs font-semibold tracking-wide text-sky hover:text-crimson"
+            >
+              {copied ? "LISTA COPIADA" : "COPIAR LISTA DE CORREIOS"}
+            </button>
+          )}
+        </div>
+      )}
+      <ul className="mt-4 divide-y divide-navy-100">
+        {items.length === 0 && !error && !missing && (
+          <li className="py-3 text-sm text-navy-900/50">Ainda sem subscritores.</li>
+        )}
+        {items.map((s) => (
+          <li key={s.id} className="py-3 flex items-center justify-between gap-4">
+            <span className="text-sm text-navy-900">{s.email}</span>
+            <span className="text-[11px] text-navy-900/50 shrink-0">
+              {new Date(s.created_at).toLocaleDateString("pt-PT")}
+            </span>
           </li>
         ))}
       </ul>

@@ -1,8 +1,10 @@
 import { getSupabase } from "@/lib/supabase";
 
 export const PUBLICACAO_KEY = "esj-publicacao";
+export const EVENTO_KEY = "esj-publicacao-evento";
 
 export type PublicacaoTipo = "livro" | "cartaz";
+export type Categoria = "livro" | "evento";
 
 export type Publicacao = {
   image: string;
@@ -38,39 +40,59 @@ export const DEFAULT_PUBLICACAO: Publicacao = {
   tipo: "livro",
 };
 
-export function readPublicacao(): Publicacao {
-  if (typeof window === "undefined") return DEFAULT_PUBLICACAO;
+export const DEFAULT_EVENTO: Publicacao = {
+  image: "/Sala de conferencias.jpg",
+  title: "Agenda de eventos da ESJ",
+  subtitle: "Conferências, colóquios e a Semana da Comunicação e Informação",
+  authors: "",
+  date: "Brevemente",
+  venue: "Campus da ESJ, Maputo",
+  tipo: "cartaz",
+};
+
+function keyFor(categoria: Categoria) {
+  return categoria === "evento" ? EVENTO_KEY : PUBLICACAO_KEY;
+}
+
+function defaultFor(categoria: Categoria) {
+  return categoria === "evento" ? DEFAULT_EVENTO : DEFAULT_PUBLICACAO;
+}
+
+export function readPublicacao(categoria: Categoria = "livro"): Publicacao {
+  const fallback = defaultFor(categoria);
+  if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.localStorage.getItem(PUBLICACAO_KEY);
-    if (!raw) return DEFAULT_PUBLICACAO;
+    const raw = window.localStorage.getItem(keyFor(categoria));
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<Publicacao> & { meta?: string };
     return {
-      ...DEFAULT_PUBLICACAO,
+      ...fallback,
       ...parsed,
       authors: parsed.authors?.includes("-PHD") || parsed.authors?.includes("Jeremias")
-        ? DEFAULT_PUBLICACAO.authors
-        : parsed.authors ?? DEFAULT_PUBLICACAO.authors,
-      date: parsed.date ?? DEFAULT_PUBLICACAO.date,
-      venue: parsed.venue ?? DEFAULT_PUBLICACAO.venue,
-      tipo: parsed.tipo === "cartaz" ? "cartaz" : "livro",
+        ? fallback.authors
+        : parsed.authors ?? fallback.authors,
+      date: parsed.date ?? fallback.date,
+      venue: parsed.venue ?? fallback.venue,
+      tipo: parsed.tipo === "cartaz" ? "cartaz" : categoria === "evento" ? "cartaz" : "livro",
     };
   } catch {
-    return DEFAULT_PUBLICACAO;
+    return fallback;
   }
 }
 
-export function writePublicacao(data: Publicacao) {
-  window.localStorage.setItem(PUBLICACAO_KEY, JSON.stringify(data));
+export function writePublicacao(data: Publicacao, categoria: Categoria = "livro") {
+  window.localStorage.setItem(keyFor(categoria), JSON.stringify(data));
   window.dispatchEvent(new Event("esj-publicacao"));
 }
 
-export async function loadPublicacao(): Promise<Publicacao> {
+export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Publicacao> {
   const supabase = getSupabase();
   if (supabase) {
     const { data } = await supabase
       .from("publicacoes")
       .select("title, subtitle, authors, date_label, venue, image, tipo")
       .eq("destaque", true)
+      .eq("categoria", categoria)
       .maybeSingle();
     if (data) {
       return {
@@ -84,7 +106,7 @@ export async function loadPublicacao(): Promise<Publicacao> {
       };
     }
   }
-  return readPublicacao();
+  return readPublicacao(categoria);
 }
 
 export async function loadLivros(): Promise<LivroThumb[]> {
