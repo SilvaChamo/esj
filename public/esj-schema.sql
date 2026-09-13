@@ -70,6 +70,20 @@ create table if not exists anuncios (
   created_at timestamptz not null default now()
 );
 
+create table if not exists newsletter (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists contactos (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  email text not null,
+  mensagem text not null,
+  created_at timestamptz not null default now()
+);
+
 alter table noticias enable row level security;
 alter table publicacoes enable row level security;
 alter table livros enable row level security;
@@ -77,6 +91,8 @@ alter table videos enable row level security;
 alter table editais enable row level security;
 alter table inscricoes enable row level security;
 alter table anuncios enable row level security;
+alter table newsletter enable row level security;
+alter table contactos enable row level security;
 
 drop policy if exists "noticias_public_read" on noticias;
 drop policy if exists "noticias_auth_write" on noticias;
@@ -91,6 +107,10 @@ drop policy if exists "editais_auth_write" on editais;
 drop policy if exists "inscricoes_public_insert" on inscricoes;
 drop policy if exists "inscricoes_auth_read" on inscricoes;
 drop policy if exists "anuncios_auth_all" on anuncios;
+drop policy if exists "newsletter_public_insert" on newsletter;
+drop policy if exists "newsletter_auth_read" on newsletter;
+drop policy if exists "contactos_public_insert" on contactos;
+drop policy if exists "contactos_auth_read" on contactos;
 
 create policy "noticias_public_read" on noticias for select using (true);
 create policy "noticias_auth_write" on noticias for all to authenticated using (true) with check (true);
@@ -105,6 +125,10 @@ create policy "editais_auth_write" on editais for all to authenticated using (tr
 create policy "inscricoes_public_insert" on inscricoes for insert with check (true);
 create policy "inscricoes_auth_read" on inscricoes for select to authenticated using (true);
 create policy "anuncios_auth_all" on anuncios for all to authenticated using (true) with check (true);
+create policy "newsletter_public_insert" on newsletter for insert with check (true);
+create policy "newsletter_auth_read" on newsletter for select to authenticated using (true);
+create policy "contactos_public_insert" on contactos for insert with check (true);
+create policy "contactos_auth_read" on contactos for select to authenticated using (true);
 
 insert into storage.buckets (id, name, public)
 values ('media', 'media', true)

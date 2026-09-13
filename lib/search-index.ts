@@ -100,7 +100,7 @@ export const searchIndex: SearchItem[] = [
   {
     title: "Contacto",
     excerpt:
-      "Sede na Av. 24 de Julho, antiga Escola Industrial, Maputo. Telefone +258 21 302 721.",
+      "Sede na Av. 24 de Julho, antiga Escola Industrial, Maputo. Telefone +258 21 302 721. Boletim e mensagem no fim da página inicial.",
     href: "/#contacto",
     category: "Contacto",
   },

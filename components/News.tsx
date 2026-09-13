@@ -8,10 +8,9 @@ export default async function News() {
   return (
     <section id="noticias" className="bg-cream py-20">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <p className="text-sky font-bold tracking-widest text-sm mb-3">NOTÍCIAS</p>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-800 leading-tight">
-            Da página da ESJ
+          <h2 className="font-serif text-4xl md:text-5xl font-bold text-navy-800 leading-tight">
+            Notícias da ESJ
           </h2>
           <Link
             href="/noticias"
@@ -43,7 +42,7 @@ export default async function News() {
                 <h3 className="mt-2 font-serif font-bold text-navy-900 leading-snug group-hover:text-crimson transition-colors">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm text-navy-900/65 leading-relaxed min-h-[4.5rem]">
+                <p className="mt-2 text-[11px] text-navy-900/65 leading-relaxed min-h-[4.5rem]">
                   {item.excerpt}
                 </p>
               </div>
