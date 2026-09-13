@@ -11,7 +11,7 @@ export default function SchemaInstall({ onCopied }: { onCopied?: () => void }) {
   const copy = async () => {
     setStatus("A copiar…");
     try {
-      const res = await fetch("/api/esj-schema");
+      const res = await fetch("/esj-schema.sql");
       if (!res.ok) throw new Error("Não foi possível ler o SQL.");
       const sql = await res.text();
       await navigator.clipboard.writeText(sql);
