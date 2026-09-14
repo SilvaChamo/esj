@@ -6,11 +6,17 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   Award,
   Bell,
+  Book,
   BookOpen,
   Calendar,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
   ChevronUp,
   Eye,
   FileText,
+  GraduationCap,
+  Image as ImageIcon,
   Images,
   KeyRound,
   LayoutDashboard,
@@ -40,7 +46,6 @@ import {
   listAnunciosGestao,
   listInscricoesGestao,
   listNewsletterGestao,
-  listNoticiasGestao,
   listVideosGestao,
   loadEditalVigente,
   publishAnuncio,
@@ -55,27 +60,99 @@ import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
 import ImageSelector from "@/components/gestao/ImageSelector";
 
-const NAV = [
-  { id: "painel", label: "Painel", icon: LayoutDashboard },
-  { id: "edital", label: "Edital", icon: FileText },
-  { id: "publicacoes", label: "Publicações", icon: BookOpen },
-  { id: "galeria", label: "Galeria", icon: Images },
-  { id: "calendario", label: "Calendário Académico", icon: Calendar },
-  { id: "resultados", label: "Resultados", icon: Award },
-  { id: "noticias", label: "Notícias", icon: Newspaper },
-  { id: "videos", label: "Vídeos", icon: Video },
-  { id: "candidaturas", label: "Candidaturas", icon: Users },
-  { id: "anuncios", label: "Anúncios", icon: Bell },
-  { id: "subscritores", label: "Subscritores", icon: Mail },
-] as const;
+type Section =
+  | "painel"
+  | "candidaturas"
+  | "resultados"
+  | "calendario"
+  | "edital"
+  | "noticias"
+  | "anuncios"
+  | "eventos"
+  | "livros"
+  | "galeria"
+  | "videos"
+  | "subscritores";
 
-type Section = (typeof NAV)[number]["id"];
+type NavIcon = typeof LayoutDashboard;
+type NavLeaf = { id: Section; label: string; icon: NavIcon };
+type NavGroup = { label: string; icon: NavIcon; children: NavLeaf[] };
+type NavEntry = NavLeaf | NavGroup;
+
+function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return "children" in entry;
+}
+
+const NAV: NavEntry[] = [
+  { id: "painel", label: "Painel", icon: LayoutDashboard },
+  {
+    label: "Ano lectivo",
+    icon: GraduationCap,
+    children: [
+      { id: "candidaturas", label: "Candidaturas", icon: Users },
+      { id: "resultados", label: "Resultados", icon: Award },
+      { id: "calendario", label: "Calendário Académico", icon: Calendar },
+      { id: "edital", label: "Edital", icon: FileText },
+    ],
+  },
+  {
+    label: "Publicações",
+    icon: BookOpen,
+    children: [
+      { id: "noticias", label: "Notícias", icon: Newspaper },
+      { id: "anuncios", label: "Anúncios", icon: Bell },
+      { id: "eventos", label: "Eventos", icon: CalendarDays },
+    ],
+  },
+  { id: "livros", label: "Livros", icon: Book },
+  {
+    label: "Galeria",
+    icon: Images,
+    children: [
+      { id: "galeria", label: "Imagens", icon: ImageIcon },
+      { id: "videos", label: "Vídeos", icon: Video },
+    ],
+  },
+  { id: "subscritores", label: "Subscritores", icon: Mail },
+];
+
+function sectionLabel(section: Section): string {
+  for (const entry of NAV) {
+    if (isNavGroup(entry)) {
+      const child = entry.children.find((c) => c.id === section);
+      if (child) return child.label;
+    } else if (entry.id === section) {
+      return entry.label;
+    }
+  }
+  return "";
+}
+
+function groupOf(section: Section): NavGroup | undefined {
+  return NAV.find(
+    (entry): entry is NavGroup => isNavGroup(entry) && entry.children.some((c) => c.id === section)
+  );
+}
 
 export default function GestaoDashboard() {
   const [section, setSection] = useState<Section>("painel");
   const [note, setNote] = useState("");
   const [needsSchema, setNeedsSchema] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const active = groupOf(section);
+    if (active) setOpenGroups((prev) => new Set(prev).add(active.label));
+  }, [section]);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      next.has(label) ? next.delete(label) : next.add(label);
+      return next;
+    });
+  };
 
   useEffect(() => {
     try {
@@ -125,21 +202,70 @@ export default function GestaoDashboard() {
           <p className="mt-1 text-[11px] text-white/50">Secretaria académica</p>
         </div>
         <nav className="flex-1 py-4">
-          {NAV.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setSection(id)}
-              className={`w-full flex items-center gap-3 px-5 py-3 text-sm text-left transition-colors ${
-                section === id
-                  ? "bg-white/10 text-white font-bold border-l-2 border-leaf"
-                  : "text-white/70 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
+          {NAV.map((entry) => {
+            if (!isNavGroup(entry)) {
+              const { id, label, icon: Icon } = entry;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSection(id)}
+                  className={`w-full flex items-center gap-3 px-5 py-3 text-sm text-left transition-colors ${
+                    section === id
+                      ? "bg-white/10 text-white font-bold border-l-2 border-leaf"
+                      : "text-white/70 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
+              );
+            }
+
+            const GroupIcon = entry.icon;
+            const isOpen = openGroups.has(entry.label);
+            const hasActiveChild = entry.children.some((c) => c.id === section);
+
+            return (
+              <div key={entry.label}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(entry.label)}
+                  className={`w-full flex items-center justify-between gap-3 px-5 py-3 text-sm text-left transition-colors ${
+                    hasActiveChild ? "text-white font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <GroupIcon size={16} />
+                    {entry.label}
+                  </span>
+                  {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+                {isOpen && (
+                  <div className="pb-1">
+                    {entry.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      return (
+                        <button
+                          key={child.id}
+                          type="button"
+                          onClick={() => setSection(child.id)}
+                          className={`w-full flex items-center gap-3 pl-11 pr-5 py-2.5 text-[13px] text-left transition-colors ${
+                            section === child.id
+                              ? "bg-white/10 text-white font-bold border-l-2 border-leaf"
+                              : "text-white/60 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
+                          }`}
+                        >
+                          <ChildIcon size={14} />
+                          {child.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
         <div className="px-5 py-4 border-t border-white/10 bg-black/20 flex items-center gap-3">
           <div className="h-9 w-9 shrink-0 rounded-full bg-sky flex items-center justify-center text-sm font-bold text-navy-900">
@@ -156,7 +282,7 @@ export default function GestaoDashboard() {
               SECRETARIA ACADÉMICA
             </p>
             <h1 className="font-serif text-xl font-bold text-navy-900">
-              {NAV.find((n) => n.id === section)?.label}
+              {sectionLabel(section)}
             </h1>
           </div>
           <button
@@ -176,7 +302,8 @@ export default function GestaoDashboard() {
           {needsSchema && <SchemaInstall />}
           {section === "painel" && <Painel onGo={setSection} />}
           {section === "edital" && <Edital onAction={showNote} />}
-          {section === "publicacoes" && <Publicacoes onAction={showNote} />}
+          {section === "livros" && <Publicacoes onAction={showNote} defaultCategoria="livro" />}
+          {section === "eventos" && <Publicacoes onAction={showNote} defaultCategoria="evento" />}
           {section === "galeria" && <Galeria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
@@ -200,9 +327,15 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
       meta: "Visível em /edital",
     },
     {
-      id: "publicacoes" as Section,
-      title: "Publicações",
-      text: "Trocar os cartazes de lançamento de livro e de eventos na secção de ensino.",
+      id: "livros" as Section,
+      title: "Livros",
+      text: "Trocar o cartaz de lançamento do livro na secção de ensino.",
+      meta: "Visível em /#ensino",
+    },
+    {
+      id: "eventos" as Section,
+      title: "Eventos",
+      text: "Trocar o cartaz de eventos da secção de ensino.",
       meta: "Visível em /#ensino",
     },
     {
@@ -344,8 +477,14 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
   );
 }
 
-function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
-  const [categoria, setCategoria] = useState<Categoria>("livro");
+function Publicacoes({
+  onAction,
+  defaultCategoria = "livro",
+}: {
+  onAction: (m: string) => void;
+  defaultCategoria?: Categoria;
+}) {
+  const [categoria, setCategoria] = useState<Categoria>(defaultCategoria);
   const [data, setData] = useState<Publicacao>(DEFAULT_PUBLICACAO);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -593,7 +732,6 @@ const noticiaInputClass =
 const RASCUNHO_NOTICIA_KEY = "esj-rascunho-noticia";
 
 function Noticias({ onAction }: { onAction: (m: string) => void }) {
-  const [items, setItems] = useState<{ slug: string; title: string; date_label: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -601,14 +739,7 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
   const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
-  const refresh = () => {
-    listNoticiasGestao()
-      .then(setItems)
-      .catch(() => setItems([]));
-  };
-
   useEffect(() => {
-    refresh();
     try {
       const raw = window.localStorage.getItem(RASCUNHO_NOTICIA_KEY);
       if (raw) {
@@ -645,7 +776,6 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
       setBody("");
       setImageUrl("");
       window.localStorage.removeItem(RASCUNHO_NOTICIA_KEY);
-      refresh();
       onAction("A notícia foi publicada em /noticias.");
     } catch (error) {
       onAction(cmsError(error));
@@ -759,36 +889,17 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
               <button
                 type="button"
                 onClick={guardarRascunho}
-                className="px-4 py-2 bg-white border border-[#ccd0d4] text-[#50575e] text-[13px] font-semibold rounded-[4px] hover:bg-[#f0f0f1]"
+                className="px-3 py-2 bg-white border border-[#ccd0d4] text-[#50575e] text-[12px] font-semibold rounded-[4px] hover:bg-[#f0f0f1] whitespace-nowrap"
               >
                 Guardar rascunho
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="px-6 py-2 bg-[#2271b1] text-white text-[14px] font-medium rounded-[4px] hover:bg-[#135e96] disabled:opacity-50"
+                className="px-4 py-2 bg-[#2271b1] text-white text-[13px] font-medium rounded-[4px] hover:bg-[#135e96] disabled:opacity-50 whitespace-nowrap"
               >
                 {busy ? "A publicar…" : "Publicar"}
               </button>
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
-              <h2 className="font-semibold text-[14px] text-[#1d2327]">Publicadas</h2>
-            </div>
-            <div className="p-3 bg-white max-h-64 overflow-y-auto">
-              <ul className="space-y-3">
-                {items.length === 0 && <li className="text-sm text-[#787c82]">Ainda sem notícias na base.</li>}
-                {items.map((n) => (
-                  <li key={n.slug} className="text-sm">
-                    <Link href={`/noticias/${n.slug}`} className="block font-semibold text-[#2271b1] hover:text-[#135e96]">
-                      {n.title}
-                    </Link>
-                    <span className="text-[11px] text-[#787c82]">{n.date_label}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </div>
