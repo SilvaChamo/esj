@@ -15,7 +15,7 @@ export default function ResultadosLista() {
       <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
         <AdmissaoSidebar inscricoesHref />
         <div className="min-w-0">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 gap-5">
             {cursos.map((curso) => (
               <Link
                 key={curso.slug}
