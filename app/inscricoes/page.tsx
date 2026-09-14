@@ -55,33 +55,6 @@ export default function InscricoesEncerradasPage() {
             </div>
 
             <div className="p-5">
-              <h2 className="font-serif font-bold text-navy-900">Cálculo da média</h2>
-              <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
-                <li>Português — 50%</li>
-                <li>História — 50%</li>
-                <li>Admitido: média ≥ 10,00</li>
-              </ul>
-            </div>
-
-            <div className="p-5">
-              <h2 className="font-serif font-bold text-navy-900">Cursos</h2>
-              <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
-                <li>Jornalismo</li>
-                <li>Publicidade e Marketing</li>
-                <li>Relações Públicas</li>
-                <li>Biblioteconomia e Documentação</li>
-              </ul>
-            </div>
-
-            <div className="p-5">
-              <h2 className="font-serif font-bold text-navy-900">Delegações</h2>
-              <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
-                <li>Maputo (Sede)</li>
-                <li>Manica (Delegação Académica)</li>
-              </ul>
-            </div>
-
-            <div className="p-5">
               <h2 className="font-serif font-bold text-navy-900">Documentos</h2>
               <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
                 <li>BI ou passaporte</li>
