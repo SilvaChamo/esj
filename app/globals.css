@@ -20,7 +20,7 @@ body {
 }
 
 @media print {
-  header, footer, .print\:hidden {
+  [data-site-chrome], .print\:hidden {
     display: none !important;
   }
   body {

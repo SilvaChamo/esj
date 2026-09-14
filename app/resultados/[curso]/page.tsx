@@ -67,10 +67,12 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
-        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12 print:py-0 print:px-0 print:max-w-full">
+        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start print:block">
           <Suspense fallback={null}>
-            <AdmissaoSidebar inscricoesHref />
+            <div className="lg:sticky lg:top-24 print:hidden">
+              <AdmissaoSidebar inscricoesHref />
+            </div>
           </Suspense>
           <div className="min-w-0 space-y-5">
             <PautaAdmissao

@@ -21,7 +21,7 @@ const info: { label: string; href?: string }[] = [
 
 export default function Footer() {
   return (
-    <footer className="bg-navy-900 text-white/80">
+    <footer data-site-chrome className="bg-navy-900 text-white/80">
       <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 grid sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-12">
         <div>
           <Link href="/" className="inline-block mb-5">

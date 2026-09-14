@@ -169,7 +169,7 @@ export default function Header() {
       </div>
 
       {/* Main nav */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
+      <header data-site-chrome className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center h-[80px]">
           <Link href="/" className="flex items-center">
             <Image

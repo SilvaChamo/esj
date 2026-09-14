@@ -10,7 +10,7 @@ import {
   type CursoAdmissao,
   type Regime,
 } from "@/lib/admissao";
-import { rankingMerito, type LinhaPauta } from "@/lib/pauta";
+import { type LinhaPauta } from "@/lib/pauta";
 
 type Props = {
   curso: CursoAdmissao;
@@ -27,8 +27,7 @@ export default function PautaAdmissao({
 }: Props) {
   const [query, setQuery] = useState("");
   const [pagina, setPagina] = useState(1);
-  const porPagina = 20;
-  const merito = rankingMerito(linhas);
+  const porPagina = 40;
   const comOrdem = linhas.map((linha, index) => ({ linha, ordem: index + 1 }));
   const termo = query.trim().toLowerCase();
   const visiveis = termo
@@ -52,6 +51,9 @@ export default function PautaAdmissao({
           className="h-16 w-16 object-contain rounded-sm shrink-0"
         />
         <div className="min-w-0">
+          <p className="text-[9px] font-bold tracking-widest text-sky">
+            ESCOLA SUPERIOR DE JORNALISMO
+          </p>
           <h1 className="font-serif text-lg sm:text-xl font-bold text-navy-900 leading-tight">
             {tituloPauta()}
           </h1>
@@ -93,13 +95,12 @@ export default function PautaAdmissao({
               <th className="px-3 py-3 text-center">História (50%)</th>
               <th className="px-3 py-3 text-center">Média final</th>
               <th className="px-3 py-3 text-center">Resultado</th>
-              <th className="px-3 py-3 text-center">Mérito</th>
             </tr>
           </thead>
           <tbody>
             {visiveis.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-navy-900/50">
+                <td colSpan={7} className="px-5 py-10 text-center text-navy-900/50">
                   {linhas.length === 0
                     ? "Ainda não há resultados publicados para este curso e regime."
                     : "Nenhum nome corresponde à procura."}
@@ -132,14 +133,11 @@ export default function PautaAdmissao({
                   {formatNota(linha.media)}
                 </td>
                 <td
-                  className={`px-3 py-1.5 text-center font-semibold ${
+                  className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
                     linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
                   }`}
                 >
                   {linha.resultado}
-                </td>
-                <td className="px-3 py-1.5 text-center text-navy-900/60">
-                  {merito.get(linha.id)}
                 </td>
               </tr>
               );
