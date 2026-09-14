@@ -9,7 +9,7 @@ import {
   type CursoAdmissao,
   type Regime,
 } from "@/lib/admissao";
-import { letraGrupo, rankingMerito, type LinhaPauta } from "@/lib/pauta";
+import { rankingMerito, type LinhaPauta } from "@/lib/pauta";
 
 type Props = {
   curso: CursoAdmissao;
@@ -51,15 +51,14 @@ export default function PautaAdmissao({
       <div className="px-5 sm:px-8 py-4 text-sm text-navy-900/70 leading-relaxed border-b border-navy-100">
         Média final = (Português × {PESO_PORTUGUES * 100}%) + (História × {PESO_HISTORIA * 100}%).
         Admitido se a média for igual ou superior a {formatNota(MEDIA_MINIMA)} valores.
-        Os nomes estão em ordem alfabética (A, B, C…). O número de ordem desce a partir de {total || 0}.
+        Lista por ordem alfabética do apelido, numerada de 1 a {total || 0}.
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3">Letra</th>
-              <th className="px-3 py-3">N.º</th>
+              <th className="px-3 py-3 w-12">Ord.</th>
               <th className="px-3 py-3">Apelido</th>
               <th className="px-3 py-3">Nome</th>
               <th className="px-3 py-3 text-right">Português (50%)</th>
@@ -72,44 +71,37 @@ export default function PautaAdmissao({
           <tbody>
             {linhas.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-5 py-10 text-center text-navy-900/50">
+                <td colSpan={8} className="px-5 py-10 text-center text-navy-900/50">
                   Ainda não há resultados publicados para este curso e regime.
                 </td>
               </tr>
             )}
-            {linhas.map((linha, index) => {
-              const letra = letraGrupo(linha.apelido);
-              const showLetra = index === 0 || letraGrupo(linhas[index - 1].apelido) !== letra;
-              return (
-                <tr key={linha.id} className="border-t border-navy-100">
-                  <td className="px-3 py-2.5 font-serif font-bold text-navy-900">
-                    {showLetra ? letra : ""}
-                  </td>
-                  <td className="px-3 py-2.5 font-semibold text-navy-900">{total - index}</td>
-                  <td className="px-3 py-2.5 font-semibold text-navy-900">{linha.apelido}</td>
-                  <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {formatNota(linha.notaPortugues)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {formatNota(linha.notaHistoria)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-navy-900">
-                    {formatNota(linha.media)}
-                  </td>
-                  <td
-                    className={`px-3 py-2.5 font-semibold ${
-                      linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
-                    }`}
-                  >
-                    {linha.resultado}
-                  </td>
-                  <td className="px-3 py-2.5 text-right text-navy-900/60">
-                    {merito.get(linha.id)}
-                  </td>
-                </tr>
-              );
-            })}
+            {linhas.map((linha, index) => (
+              <tr key={linha.id} className="border-t border-navy-100">
+                <td className="px-3 py-2.5 text-xs text-navy-900/50">{index + 1}</td>
+                <td className="px-3 py-2.5 font-semibold text-navy-900">{linha.apelido}</td>
+                <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">
+                  {formatNota(linha.notaPortugues)}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">
+                  {formatNota(linha.notaHistoria)}
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-navy-900">
+                  {formatNota(linha.media)}
+                </td>
+                <td
+                  className={`px-3 py-2.5 font-semibold ${
+                    linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
+                  }`}
+                >
+                  {linha.resultado}
+                </td>
+                <td className="px-3 py-2.5 text-right text-navy-900/60">
+                  {merito.get(linha.id)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
