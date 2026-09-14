@@ -27,7 +27,7 @@ export default function InscricoesEncerradasPage() {
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
-          <aside className="bg-white border border-navy-100 divide-y divide-navy-100 order-2 lg:order-1">
+          <aside className="bg-white border border-navy-100 order-2 lg:order-1">
             <div className="p-5">
               <h2 className="font-serif font-bold text-navy-900">Edital 2026</h2>
               <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
@@ -42,6 +42,8 @@ export default function InscricoesEncerradasPage() {
               </Link>
             </div>
 
+            <div className="mx-5 h-px bg-navy-100" />
+
             <div className="p-5">
               <h2 className="font-serif font-bold text-navy-900">Exames de admissão</h2>
               <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
@@ -53,6 +55,8 @@ export default function InscricoesEncerradasPage() {
                 diurno e pós-laboral.
               </p>
             </div>
+
+            <div className="mx-5 h-px bg-navy-100" />
 
             <div className="p-5">
               <h2 className="font-serif font-bold text-navy-900">Documentos</h2>
@@ -108,7 +112,7 @@ export default function InscricoesEncerradasPage() {
             <p className="mt-10 pt-6 border-t border-navy-100">
               <Link
                 href="/inscricao"
-                className="text-[10px] text-navy-900/35 hover:text-navy-900/60 transition-colors"
+                className="text-xs text-navy-900/40 hover:text-navy-900/70 transition-colors"
               >
                 Testar registo
               </Link>
