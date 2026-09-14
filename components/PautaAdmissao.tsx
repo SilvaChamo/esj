@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Search } from "lucide-react";
 import {
   ANO_LECTIVO,
   REGIME_LABEL,
@@ -17,6 +18,7 @@ type Props = {
   regime: Regime;
   anoLectivo?: string;
   linhas: LinhaPauta[];
+  voltarHref: string;
 };
 
 export default function PautaAdmissao({
@@ -24,6 +26,7 @@ export default function PautaAdmissao({
   regime,
   anoLectivo = ANO_LECTIVO,
   linhas,
+  voltarHref,
 }: Props) {
   const [query, setQuery] = useState("");
   const merito = rankingMerito(linhas);
@@ -47,7 +50,7 @@ export default function PautaAdmissao({
           <p className="text-[11px] font-bold tracking-widest text-sky">
             ESCOLA SUPERIOR DE JORNALISMO
           </p>
-          <h1 className="font-serif text-xl sm:text-2xl font-bold text-navy-900 mt-1 leading-tight">
+          <h1 className="font-serif text-lg sm:text-xl font-bold text-navy-900 mt-1 leading-tight">
             {tituloPauta(curso, regime)}
           </h1>
           <p className="mt-1 text-sm text-navy-900/65">
@@ -56,7 +59,7 @@ export default function PautaAdmissao({
         </div>
       </header>
 
-      <div className="px-5 sm:px-8 py-3 border-b border-navy-100 print:hidden">
+      <div className="px-5 sm:px-8 py-3 border-b border-navy-100 print:hidden flex flex-wrap items-center gap-4">
         <label className="relative flex items-center w-1/2 h-9 border border-navy-100 bg-white focus-within:border-sky">
           <Search size={14} className="pointer-events-none ml-3 shrink-0 text-navy-900/40" />
           <input
@@ -67,6 +70,13 @@ export default function PautaAdmissao({
             className="w-full min-w-0 h-full bg-transparent px-2 text-xs text-navy-900 outline-none placeholder:text-navy-900/40"
           />
         </label>
+        <Link
+          href={voltarHref}
+          className="inline-flex items-center gap-1.5 text-sm text-sky hover:underline"
+        >
+          <ArrowLeft size={14} />
+          Voltar aos cursos
+        </Link>
       </div>
 
       <div className="overflow-x-auto">

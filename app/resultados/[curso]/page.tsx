@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import Link from "next/link";
 import AdmissaoSidebar from "@/components/AdmissaoSidebar";
 import PautaAdmissao from "@/components/PautaAdmissao";
 import {
@@ -50,8 +49,8 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-2">
             PAUTA DE ADMISSÃO
           </p>
-          <h1 className="font-serif text-2xl md:text-3xl font-bold max-w-2xl">{curso.titulo}</h1>
-          <p className="mt-3 text-white/70 text-sm leading-relaxed max-w-2xl">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold max-w-lg">{curso.titulo}</h1>
+          <p className="mt-3 text-white/70 text-sm leading-relaxed max-w-lg">
             Média final = (Português × {PESO_PORTUGUES * 100}%) + (História ×{" "}
             {PESO_HISTORIA * 100}%). Admitido se a média for igual ou superior a{" "}
             {formatNota(MEDIA_MINIMA)} valores.
@@ -70,15 +69,8 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
               regime={filtro.regime}
               anoLectivo={pauta.anoLectivo}
               linhas={pauta.linhas}
+              voltarHref={`/resultados?${query}`}
             />
-            <div className="flex flex-wrap gap-4 print:hidden">
-              <Link href={`/resultados?${query}`} className="text-sm text-sky hover:underline">
-                ← Voltar aos cursos
-              </Link>
-              <Link href="/#ensino" className="text-sm text-sky hover:underline">
-                Calendário académico
-              </Link>
-            </div>
           </div>
         </div>
       </section>
