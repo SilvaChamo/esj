@@ -222,6 +222,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
+              <th className="px-3 py-3 w-12 text-center border-r border-navy-100">Ord.</th>
               <th className="px-4 py-3">Apelido</th>
               <th className="px-4 py-3">Nome</th>
               <th className="px-4 py-3 text-right">Português</th>
@@ -234,16 +235,20 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-navy-900/50">
+                <td colSpan={8} className="px-4 py-8 text-navy-900/50">
                   Ainda sem candidatos nesta pauta.
                 </td>
               </tr>
             )}
-            {itemsPagina.map((row) => {
+            {itemsPagina.map((row, i) => {
               const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
               const resultado = classificacao(media);
+              const ordem = (paginaAtual - 1) * porPagina + i + 1;
               return (
                 <tr key={row.id} className="border-t border-navy-100">
+                  <td className="px-3 py-3 text-center text-xs text-navy-900/50 border-r border-navy-100">
+                    {ordem}
+                  </td>
                   <td className="px-4 py-3 font-semibold">{row.apelido}</td>
                   <td className="px-4 py-3">{row.nome}</td>
                   <td className="px-4 py-3 text-right tabular-nums">
