@@ -73,14 +73,14 @@ export default function PautaAdmissao({
         <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3 w-12 border-r border-navy-100">Ord.</th>
+              <th className="px-3 py-3 w-12 text-center border-r border-navy-100">Ord.</th>
               <th className="px-3 py-3">Apelido</th>
               <th className="px-3 py-3">Nome</th>
-              <th className="px-3 py-3 text-right">Português (50%)</th>
-              <th className="px-3 py-3 text-right">História (50%)</th>
-              <th className="px-3 py-3 text-right">Média final</th>
-              <th className="px-3 py-3">Resultado</th>
-              <th className="px-3 py-3 text-right">Mérito</th>
+              <th className="px-3 py-3 text-center">Português (50%)</th>
+              <th className="px-3 py-3 text-center">História (50%)</th>
+              <th className="px-3 py-3 text-center">Média final</th>
+              <th className="px-3 py-3 text-center">Resultado</th>
+              <th className="px-3 py-3 text-center">Mérito</th>
             </tr>
           </thead>
           <tbody>
@@ -98,28 +98,28 @@ export default function PautaAdmissao({
                 key={linha.id}
                 className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
               >
-                <td className="px-3 py-2.5 text-xs text-navy-900/50 border-r border-navy-100">
+                <td className="px-3 py-2.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
                   {ordem}
                 </td>
                 <td className="px-3 py-2.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
                 <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums">
+                <td className="px-3 py-2.5 text-center tabular-nums">
                   {formatNota(linha.notaPortugues)}
                 </td>
-                <td className="px-3 py-2.5 text-right tabular-nums">
+                <td className="px-3 py-2.5 text-center tabular-nums">
                   {formatNota(linha.notaHistoria)}
                 </td>
-                <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-navy-900">
+                <td className="px-3 py-2.5 text-center tabular-nums font-semibold text-navy-900">
                   {formatNota(linha.media)}
                 </td>
                 <td
-                  className={`px-3 py-2.5 font-semibold ${
+                  className={`px-3 py-2.5 text-center font-semibold ${
                     linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
                   }`}
                 >
                   {linha.resultado}
                 </td>
-                <td className="px-3 py-2.5 text-right text-navy-900/60">
+                <td className="px-3 py-2.5 text-center text-navy-900/60">
                   {merito.get(linha.id)}
                 </td>
               </tr>

@@ -46,12 +46,12 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white print:hidden">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-2">
             PAUTA DE ADMISSÃO
           </p>
-          <h1 className="font-serif text-2xl md:text-3xl font-bold">{curso.titulo}</h1>
-          <p className="mt-3 text-white/70 text-sm leading-relaxed">
+          <h1 className="font-serif text-2xl md:text-3xl font-bold max-w-2xl">{curso.titulo}</h1>
+          <p className="mt-3 text-white/70 text-sm leading-relaxed max-w-2xl">
             Média final = (Português × {PESO_PORTUGUES * 100}%) + (História ×{" "}
             {PESO_HISTORIA * 100}%). Admitido se a média for igual ou superior a{" "}
             {formatNota(MEDIA_MINIMA)} valores.
