@@ -23,7 +23,7 @@ export default function InscricoesEncerradasPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-3xl px-4 lg:px-8 py-14 md:py-20">
+      <section className="mx-auto max-w-5xl px-4 lg:px-8 py-14 md:py-20">
         <div className="bg-white border border-navy-100 px-6 py-10 md:px-12 md:py-12">
           <p className="text-leaf font-bold tracking-widest text-[11px]">
             SECRETARIA ACADÉMICA
@@ -70,6 +70,72 @@ export default function InscricoesEncerradasPage() {
               Testar registo
             </Link>
           </p>
+        </div>
+
+        <div className="mt-8 grid sm:grid-cols-2 gap-5">
+          <div className="bg-white border border-navy-100 p-5">
+            <h2 className="font-serif font-bold text-navy-900">Edital 2026</h2>
+            <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
+              Os prazos, vagas e critérios de ponderação estão no documento oficial.
+              Leia-o antes de submeter o boletim.
+            </p>
+            <Link
+              href="/edital"
+              className="mt-4 inline-block text-sm font-semibold text-sky hover:text-crimson"
+            >
+              Consultar o edital
+            </Link>
+          </div>
+
+          <div className="bg-white border border-navy-100 p-5">
+            <h2 className="font-serif font-bold text-navy-900">Exames de admissão</h2>
+            <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
+              <li>Português — 50%</li>
+              <li>História — 50%</li>
+            </ul>
+            <p className="mt-3 text-sm text-navy-900/60 leading-relaxed">
+              As duas disciplinas aplicam-se a todas as licenciaturas, nos turnos
+              diurno e pós-laboral.
+            </p>
+          </div>
+
+          <div className="bg-white border border-navy-100 p-5">
+            <h2 className="font-serif font-bold text-navy-900">Cálculo da média</h2>
+            <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
+              <li>Português — 50%</li>
+              <li>História — 50%</li>
+              <li>Admitido: média ≥ 10,00</li>
+            </ul>
+          </div>
+
+          <div className="bg-white border border-navy-100 p-5">
+            <h2 className="font-serif font-bold text-navy-900">Cursos</h2>
+            <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
+              <li>Jornalismo</li>
+              <li>Publicidade e Marketing</li>
+              <li>Relações Públicas</li>
+              <li>Biblioteconomia e Documentação</li>
+            </ul>
+          </div>
+
+          <div className="bg-white border border-navy-100 p-5">
+            <h2 className="font-serif font-bold text-navy-900">Delegações</h2>
+            <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
+              <li>Maputo (Sede)</li>
+              <li>Manica (Delegação Académica)</li>
+            </ul>
+          </div>
+
+          <div className="bg-white border border-navy-100 p-5 sm:col-span-2">
+            <h2 className="font-serif font-bold text-navy-900">Documentos</h2>
+            <ul className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-navy-900/75">
+              <li>BI ou passaporte</li>
+              <li>Fotografia tipo passe</li>
+              <li>Certidão de nascimento</li>
+              <li>Certificado da 12.ª classe</li>
+              <li>Recibo da taxa de pré-inscrição</li>
+            </ul>
+          </div>
         </div>
       </section>
     </main>

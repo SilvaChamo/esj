@@ -14,9 +14,10 @@ import {
 
 type Props = {
   inscricoesHref?: boolean;
+  mostrarMedia?: boolean;
 };
 
-export default function AdmissaoSidebar({ inscricoesHref = false }: Props) {
+export default function AdmissaoSidebar({ inscricoesHref = false, mostrarMedia = true }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,7 +28,7 @@ export default function AdmissaoSidebar({ inscricoesHref = false }: Props) {
   };
 
   return (
-    <aside className="lg:sticky lg:top-28 space-y-5 print:hidden">
+    <aside className="space-y-5 print:hidden">
       <div className="bg-white border border-navy-100 p-5">
         <p className="text-[11px] font-bold tracking-widest text-sky">FILTROS</p>
         <h2 className="font-serif font-bold text-navy-900 mt-1">Inscrições {ANO_LECTIVO}</h2>
@@ -82,14 +83,16 @@ export default function AdmissaoSidebar({ inscricoesHref = false }: Props) {
         )}
       </div>
 
-      <div className="bg-white border border-navy-100 p-5">
-        <h2 className="font-serif font-bold text-navy-900">Cálculo da média</h2>
-        <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
-          <li>Português — 50%</li>
-          <li>História — 50%</li>
-          <li>Admitido: média ≥ 10,00</li>
-        </ul>
-      </div>
+      {mostrarMedia && (
+        <div className="bg-white border border-navy-100 p-5">
+          <h2 className="font-serif font-bold text-navy-900">Cálculo da média</h2>
+          <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
+            <li>Português — 50%</li>
+            <li>História — 50%</li>
+            <li>Admitido: média ≥ 10,00</li>
+          </ul>
+        </div>
+      )}
     </aside>
   );
 }

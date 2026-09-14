@@ -176,12 +176,6 @@ export default function InscricaoForm() {
         <h2 className="font-serif text-2xl font-bold text-navy-900 mb-6">{STEPS[step].title}</h2>
 
         <div data-step="0" className={step === 0 ? "space-y-6" : "hidden"}>
-          {(lock.nivel || lock.regime || lock.curso) && (
-            <p className="text-sm text-navy-900/65 bg-cream border border-navy-100 px-4 py-3">
-              Nível e regime já vêm do filtro da barra lateral. Esses campos ficam
-              bloqueados neste boletim.
-            </p>
-          )}
           <div className="grid md:grid-cols-2 gap-5 min-w-0">
             {lock.nivel ? (
               <Field label="Nível">
