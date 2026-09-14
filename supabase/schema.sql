@@ -361,3 +361,21 @@ select * from (values
   ('2026', 'Licenciatura', 'Jornalismo', 'Pós-laboral', 'Tembe', 'Rui', 13.00, 12.50, true)
 ) as v(ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado)
 where not exists (select 1 from pauta_admissao);
+
+create table if not exists media_galeria (
+  id uuid primary key default gen_random_uuid(),
+  path text not null unique,
+  url text not null,
+  filename text not null,
+  titulo text not null default '',
+  legenda text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table media_galeria enable row level security;
+
+drop policy if exists "media_galeria_public_read" on media_galeria;
+drop policy if exists "media_galeria_auth_write" on media_galeria;
+
+create policy "media_galeria_public_read" on media_galeria for select using (true);
+create policy "media_galeria_auth_write" on media_galeria for all to authenticated using (true) with check (true);

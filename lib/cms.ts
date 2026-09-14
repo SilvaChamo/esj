@@ -265,44 +265,66 @@ export async function deletePautaLinha(id: string) {
   if (error) throw error;
 }
 
-export type ImagemGaleria = {
-  src: string;
+export type MediaGaleria = {
+  id: string;
+  path: string;
+  url: string;
+  filename: string;
   titulo: string;
-  origem: "Notícia" | "Publicação";
-  data: string;
+  legenda: string;
+  created_at: string;
 };
 
-export async function listGaleria(): Promise<ImagemGaleria[]> {
+export async function listMediaGaleria(): Promise<MediaGaleria[]> {
   const supabase = createBrowserSupabase();
-  const [noticiasRes, publicacoesRes] = await Promise.all([
-    supabase
-      .from("noticias")
-      .select("title, image, date_label, created_at")
-      .order("created_at", { ascending: false })
-      .limit(60),
-    supabase
-      .from("publicacoes")
-      .select("title, image, date_label, created_at")
-      .order("created_at", { ascending: false })
-      .limit(60),
-  ]);
-  if (noticiasRes.error) throw noticiasRes.error;
-  if (publicacoesRes.error) throw publicacoesRes.error;
+  const { data, error } = await supabase
+    .from("media_galeria")
+    .select("id, path, url, filename, titulo, legenda, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return data ?? [];
+}
 
-  const daNoticias: ImagemGaleria[] = (noticiasRes.data ?? []).map((n) => ({
-    src: n.image,
-    titulo: n.title,
-    origem: "Notícia",
-    data: n.date_label,
-  }));
-  const dasPublicacoes: ImagemGaleria[] = (publicacoesRes.data ?? []).map((p) => ({
-    src: p.image,
-    titulo: p.title,
-    origem: "Publicação",
-    data: p.date_label,
-  }));
+export async function uploadMediaGaleria(file: File): Promise<MediaGaleria> {
+  const supabase = createBrowserSupabase();
+  const url = await uploadMedia(file, "galeria");
+  const path = url.split("/media/").pop() || file.name;
+  const { data, error } = await supabase
+    .from("media_galeria")
+    .insert({ path, url, filename: file.name, titulo: file.name })
+    .select("id, path, url, filename, titulo, legenda, created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
 
-  return [...daNoticias, ...dasPublicacoes].filter((img) => img.src);
+export async function updateMediaGaleria(
+  id: string,
+  input: { titulo: string; legenda: string }
+) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase
+    .from("media_galeria")
+    .update({ titulo: input.titulo, legenda: input.legenda })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteMediaGaleria(items: { id: string; path: string }[]) {
+  const supabase = createBrowserSupabase();
+  const paths = items.map((i) => i.path).filter(Boolean);
+  if (paths.length) {
+    await supabase.storage.from("media").remove(paths);
+  }
+  const { error } = await supabase
+    .from("media_galeria")
+    .delete()
+    .in(
+      "id",
+      items.map((i) => i.id)
+    );
+  if (error) throw error;
 }
 
 export async function listNewsletterGestao() {
