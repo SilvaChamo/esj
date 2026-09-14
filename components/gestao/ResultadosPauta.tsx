@@ -219,23 +219,23 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
       </form>
 
       <div className="bg-white border border-navy-100 overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[760px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
               <th className="px-3 py-3 w-12 text-center border-r border-navy-100">Ord.</th>
-              <th className="px-4 py-3">Apelido</th>
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3 text-right">Português</th>
-              <th className="px-4 py-3 text-right">História</th>
-              <th className="px-4 py-3 text-right">Média</th>
-              <th className="px-4 py-3">Resultado</th>
-              <th className="px-4 py-3"></th>
+              <th className="px-3 py-3">Apelido</th>
+              <th className="px-3 py-3">Nome</th>
+              <th className="px-3 py-3 text-center">Português (50%)</th>
+              <th className="px-3 py-3 text-center">História (50%)</th>
+              <th className="px-3 py-3 text-center">Média final</th>
+              <th className="px-3 py-3 text-center">Resultado</th>
+              <th className="px-3 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-navy-900/50">
+                <td colSpan={8} className="px-5 py-10 text-center text-navy-900/50">
                   Ainda sem candidatos nesta pauta.
                 </td>
               </tr>
@@ -245,26 +245,35 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
               const resultado = classificacao(media);
               const ordem = (paginaAtual - 1) * porPagina + i + 1;
               return (
-                <tr key={row.id} className="border-t border-navy-100">
-                  <td className="px-3 py-3 text-center text-xs text-navy-900/50 border-r border-navy-100">
+                <tr
+                  key={row.id}
+                  className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
+                >
+                  <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
                     {ordem}
                   </td>
-                  <td className="px-4 py-3 font-semibold">{row.apelido}</td>
-                  <td className="px-4 py-3">{row.nome}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  <td className="px-3 py-1.5 text-[11px] font-semibold text-navy-900 uppercase">
+                    {row.apelido}
+                  </td>
+                  <td className="px-3 py-1.5 text-navy-900">{row.nome}</td>
+                  <td className="px-3 py-1.5 text-center tabular-nums">
                     {formatNota(Number(row.nota_portugues))}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  <td className="px-3 py-1.5 text-center tabular-nums">
                     {formatNota(Number(row.nota_historia))}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                  <td className="px-3 py-1.5 text-center tabular-nums font-semibold text-navy-900">
                     {formatNota(media)}
                   </td>
-                  <td className={`px-4 py-3 font-semibold ${resultado === "Admitido" ? "text-leaf" : "text-crimson"}`}>
+                  <td
+                    className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
+                      resultado === "Admitido" ? "text-leaf" : "text-crimson"
+                    }`}
+                  >
                     {resultado}
                     {!row.publicado ? " · rascunho" : ""}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-1.5 text-right">
                     <button
                       type="button"
                       onClick={() => void remover(row.id)}

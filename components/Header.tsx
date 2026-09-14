@@ -9,17 +9,21 @@ import {
   MapPin,
   Search,
   ChevronDown,
+  Facebook,
+  Instagram,
   LogIn,
+  LogOut,
   Menu,
   X,
+  Youtube,
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 type MenuChild = { label: string; href?: string };
 type MenuItem = { label: string; href?: string; children?: MenuChild[] };
 
 const menu: MenuItem[] = [
-  { label: "INÍCIO", href: "/#inicio" },
   {
     label: "ENSINO",
     href: "/#ensino",
@@ -68,7 +72,32 @@ export default function Header() {
   const [openSub, setOpenSub] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      const supabase = createBrowserSupabase();
+      void supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        setLoggedIn(!!session?.user);
+      });
+      return () => sub.subscription.unsubscribe();
+    } catch {
+      /* env em falta */
+    }
+  }, []);
+
+  const sair = async () => {
+    try {
+      const supabase = createBrowserSupabase();
+      await supabase.auth.signOut();
+    } catch {
+      /* env em falta */
+    }
+    router.push("/");
+    router.refresh();
+  };
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -116,20 +145,14 @@ export default function Header() {
                     : "opacity-100 translate-x-0"
                 }`}
               >
-                <a
-                  href="https://esj.edondzo.ac.mz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-sky-300 transition-colors whitespace-nowrap"
-                >
-                  Portal eDondzo
-                </a>
-                <a
-                  href="/noticias"
-                  className="hover:text-sky-300 transition-colors whitespace-nowrap"
-                >
-                  Notícias
-                </a>
+                {loggedIn && (
+                  <Link
+                    href="/gestao"
+                    className="hover:text-sky-300 transition-colors whitespace-nowrap"
+                  >
+                    Painel
+                  </Link>
+                )}
               </div>
               <form
                 className={`absolute inset-0 flex items-center transition-all duration-300 ease-out ${
@@ -155,16 +178,43 @@ export default function Header() {
                 />
               </form>
             </div>
-            <button
-              aria-label={searchOpen ? "Fechar pesquisa" : "Pesquisar"}
-              className="flex items-center hover:text-sky-300 transition-colors"
-              onClick={() => {
-                if (searchOpen) closeSearch();
-                else setSearchOpen(true);
-              }}
-            >
-              {searchOpen ? <X size={14} /> : <Search size={14} />}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                aria-label={searchOpen ? "Fechar pesquisa" : "Pesquisar"}
+                className="flex items-center justify-center w-6 h-6 rounded-full border border-white/60 hover:border-sky-300 hover:text-sky-300 transition-colors"
+                onClick={() => {
+                  if (searchOpen) closeSearch();
+                  else setSearchOpen(true);
+                }}
+              >
+                {searchOpen ? <X size={12} /> : <Search size={12} />}
+              </button>
+              <a
+                href="https://www.youtube.com/@EscolaSuperiordeJornalismo"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube da ESJ"
+                className="hidden sm:flex items-center justify-center w-6 h-6 rounded-full bg-[#FF0000] hover:bg-[#CC0000] text-white transition-colors"
+              >
+                <Youtube size={12} strokeWidth={1.75} />
+              </a>
+              <a
+                href="https://www.facebook.com/ESJ.mz"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook da ESJ"
+                className="hidden sm:flex items-center justify-center w-6 h-6 rounded-full bg-[#1877F2] hover:bg-[#166FE5] text-white transition-colors"
+              >
+                <Facebook size={12} strokeWidth={1.75} />
+              </a>
+              <span
+                aria-label="Instagram da ESJ (brevemente)"
+                title="Brevemente"
+                className="hidden sm:flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-white/40 cursor-default"
+              >
+                <Instagram size={12} strokeWidth={1.75} />
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -231,13 +281,24 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center justify-end gap-4">
-            <Link
-              href="/entrar"
-              className="hidden lg:inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
-            >
-              <LogIn size={14} />
-              ENTRAR
-            </Link>
+            {loggedIn ? (
+              <button
+                type="button"
+                onClick={() => void sair()}
+                className="hidden lg:inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+              >
+                <LogOut size={14} />
+                SAIR
+              </button>
+            ) : (
+              <Link
+                href="/entrar"
+                className="hidden lg:inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+              >
+                <LogIn size={14} />
+                ENTRAR
+              </Link>
+            )}
             <button
               aria-label="Abrir menu"
               className="lg:hidden text-navy-900"
@@ -301,14 +362,28 @@ export default function Header() {
               </div>
             ))}
             <div className="px-5 py-4">
-              <Link
-                href="/entrar"
-                className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                <LogIn size={14} />
-                ENTRAR
-              </Link>
+              {loggedIn ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void sair();
+                  }}
+                  className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+                >
+                  <LogOut size={14} />
+                  SAIR
+                </button>
+              ) : (
+                <Link
+                  href="/entrar"
+                  className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <LogIn size={14} />
+                  ENTRAR
+                </Link>
+              )}
             </div>
           </div>
         )}
