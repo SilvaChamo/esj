@@ -5,10 +5,10 @@ export default function VoltarBanner({ href, label }: { href: string; label: str
   return (
     <Link
       href={href}
-      className="mt-4 inline-flex items-center gap-2 text-leaf font-semibold text-sm hover:text-white transition-colors"
+      className="group mt-4 inline-flex items-center gap-2 text-leaf font-semibold text-sm hover:text-crimson transition-colors"
     >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/40">
-        <ArrowLeft size={14} className="text-white" />
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/40 group-hover:border-crimson transition-colors">
+        <ArrowLeft size={14} className="text-white group-hover:text-crimson transition-colors" />
       </span>
       {label}
     </Link>
