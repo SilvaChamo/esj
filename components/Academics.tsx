@@ -127,22 +127,25 @@ export default function Academics() {
     titulo: string;
     texto: string;
     icon: LucideIcon;
+    numero: number;
     link?: { href: string; label: string };
   }[] = [
     {
       titulo: "Inscrições",
       texto: cal.inscricoes,
       icon: ClipboardList,
+      numero: 1,
       link: { href: "/inscricao", label: "Inscrever-se" },
     },
-    { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine },
     {
       titulo: "Publicação de resultados",
       texto: cal.resultados,
       icon: Award,
+      numero: 3,
       link: { href: "/resultados", label: "Ver resultados" },
     },
-    { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays },
+    { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine, numero: 2 },
+    { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays, numero: 4 },
   ];
 
   return (
@@ -278,10 +281,24 @@ export default function Academics() {
             </p>
             <div className="mt-10 grid sm:grid-cols-2 gap-5">
               {DATAS.map((d) => (
-                <div key={d.titulo} className="bg-cream border border-navy-100 p-6 flex gap-4">
-                  <d.icon size={22} className="shrink-0 mt-0.5 text-sky" />
-                  <div className="min-w-0">
-                    <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
+                <div
+                  key={d.titulo}
+                  className="relative overflow-hidden bg-cream border border-navy-100 p-6 flex gap-4"
+                >
+                  <span
+                    aria-hidden
+                    className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
+                  >
+                    {d.numero}
+                  </span>
+                  <d.icon size={22} className="relative shrink-0 mt-0.5 text-sky" />
+                  <div className="relative min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-navy-800 text-white text-[10px] font-bold">
+                        {d.numero}
+                      </span>
+                      <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
+                    </div>
                     <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
                     {d.link && (
                       <Link
