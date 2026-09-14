@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ClipboardList,
   GraduationCap,
+  HeartHandshake,
   Megaphone,
   Newspaper,
   PenLine,
@@ -31,14 +32,6 @@ import {
   type LivroThumb,
   type Publicacao,
 } from "@/lib/publicacao";
-import {
-  NIVEIS,
-  REGIME_LABEL,
-  REGIMES,
-  filtroQuery,
-  type Nivel,
-  type Regime,
-} from "@/lib/admissao";
 
 type SectionTab = "ensino" | "calendario" | "cursos";
 
@@ -74,10 +67,15 @@ const CURSOS: { titulo: string; texto: string; icon: LucideIcon }[] = [
     texto: "Percursos de especialização e investigação avançada em Ciências da Comunicação.",
     icon: GraduationCap,
   },
+  {
+    titulo: "Serviços Sociais",
+    texto: "Apoio à vida académica dos estudantes: alojamento, alimentação, saúde e apoio social.",
+    icon: HeartHandshake,
+  },
 ];
 
 export default function Academics() {
-  const [tab, setTab] = useState<SectionTab>("ensino");
+  const [tab, setTab] = useState<SectionTab>("cursos");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<Categoria>("livro");
   const [livroBook, setLivroBook] = useState<Publicacao>(DEFAULT_PUBLICACAO);
@@ -85,8 +83,6 @@ export default function Academics() {
   const [livros, setLivros] = useState<LivroThumb[]>(LIVROS_ANTERIORES);
   const [viewer, setViewer] = useState<LivroThumb | null>(null);
   const [cal, setCal] = useState<Calendario>(DEFAULT_CALENDARIO);
-  const [calNivel, setCalNivel] = useState<Nivel>("Licenciatura");
-  const [calRegime, setCalRegime] = useState<Regime>("Diurno");
 
   useEffect(() => {
     const load = () => {
@@ -127,23 +123,24 @@ export default function Academics() {
   const book = active === "livro" ? livroBook : eventoBook;
   const isLivro = active === "livro" && book.tipo === "livro";
 
-  const inscricoesHref = `/inscricao?${filtroQuery({ nivel: calNivel, regime: calRegime })}`;
-  const resultadosHref = `/resultados?${filtroQuery({ nivel: calNivel, regime: calRegime })}`;
-
   const DATAS: {
     titulo: string;
     texto: string;
     icon: LucideIcon;
     link?: { href: string; label: string };
-    extra?: "inscrever";
   }[] = [
-    { titulo: "Inscrições", texto: cal.inscricoes, icon: ClipboardList, extra: "inscrever" },
+    {
+      titulo: "Inscrições",
+      texto: cal.inscricoes,
+      icon: ClipboardList,
+      link: { href: "/inscricao", label: "Inscrever-se" },
+    },
     { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine },
     {
       titulo: "Publicação de resultados",
       texto: cal.resultados,
       icon: Award,
-      link: { href: resultadosHref, label: "Ver resultados" },
+      link: { href: "/resultados", label: "Ver resultados" },
     },
     { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays },
   ];
@@ -286,48 +283,6 @@ export default function Academics() {
                   <div className="min-w-0">
                     <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
                     <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
-                    {d.extra === "inscrever" && (
-                      <div className="mt-4 space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                          {NIVEIS.map((nivel) => (
-                            <button
-                              key={nivel}
-                              type="button"
-                              onClick={() => setCalNivel(nivel)}
-                              className={`px-3 py-1.5 text-[11px] font-bold tracking-wide ${
-                                calNivel === nivel
-                                  ? "bg-navy-800 text-white"
-                                  : "bg-white border border-navy-100 text-navy-800"
-                              }`}
-                            >
-                              {nivel}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {REGIMES.map((regime) => (
-                            <button
-                              key={regime}
-                              type="button"
-                              onClick={() => setCalRegime(regime)}
-                              className={`px-3 py-1.5 text-[11px] font-bold tracking-wide ${
-                                calRegime === regime
-                                  ? "bg-navy-800 text-white"
-                                  : "bg-white border border-navy-100 text-navy-800"
-                              }`}
-                            >
-                              {REGIME_LABEL[regime]}
-                            </button>
-                          ))}
-                        </div>
-                        <Link
-                          href={inscricoesHref}
-                          className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-5 py-2.5 transition-colors"
-                        >
-                          INSCREVER-SE →
-                        </Link>
-                      </div>
-                    )}
                     {d.link && (
                       <Link
                         href={d.link.href}
