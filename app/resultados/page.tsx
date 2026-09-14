@@ -13,7 +13,7 @@ export default function ResultadosPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
-        <div className="w-full px-4 lg:px-8 py-10 md:py-12">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
             ADMISSÕES
           </p>

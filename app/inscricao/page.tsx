@@ -14,7 +14,7 @@ export default function InscricaoPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
-        <div className="w-full px-4 lg:px-8 py-10 md:py-12">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
             ANO LECTIVO 2026
           </p>
@@ -34,7 +34,7 @@ export default function InscricaoPage() {
         </div>
       </section>
 
-      <section className="w-full px-4 lg:px-8 py-10 md:py-14 overflow-x-hidden">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14 overflow-x-hidden">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <Suspense fallback={null}>
             <div className="space-y-5">

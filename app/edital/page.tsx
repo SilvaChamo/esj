@@ -17,7 +17,7 @@ export default async function EditalPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
-        <div className="w-full px-4 lg:px-8 py-10 md:py-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
               ADMISSÕES — ANO LECTIVO 2026
@@ -49,7 +49,7 @@ export default async function EditalPage() {
         </div>
       </section>
 
-      <section className="w-full px-4 lg:px-8 py-8">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
         <EditalPdfViewer src={edital.file_url} />
       </section>
     </main>

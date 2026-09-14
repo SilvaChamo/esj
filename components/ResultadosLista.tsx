@@ -11,7 +11,7 @@ export default function ResultadosLista() {
   const query = filtroQuery(filtro);
 
   return (
-    <section className="w-full px-4 lg:px-8 py-10 md:py-14">
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14">
       <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
         <AdmissaoSidebar inscricoesHref />
         <div className="min-w-0">

@@ -38,7 +38,7 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white print:hidden">
-        <div className="w-full px-4 lg:px-8 py-8">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-2">
             PAUTA DE ADMISSÃO
           </p>
@@ -46,7 +46,7 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      <section className="w-full px-4 lg:px-8 py-10 md:py-12">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <Suspense fallback={null}>
             <AdmissaoSidebar inscricoesHref />
