@@ -10,9 +10,10 @@ import {
   BookOpen,
   Calendar,
   CalendarDays,
-  ChevronDown,
   ChevronRight,
   ChevronUp,
+  ClipboardList,
+  ExternalLink,
   Eye,
   FileText,
   GraduationCap,
@@ -21,10 +22,15 @@ import {
   KeyRound,
   LayoutDashboard,
   Mail,
+  Menu,
   Newspaper,
+  PanelLeftClose,
+  PanelLeftOpen,
+  TrendingUp,
   Users,
   Video,
   LogOut,
+  X,
 } from "lucide-react";
 import {
   DEFAULT_CALENDARIO,
@@ -46,6 +52,7 @@ import {
   listAnunciosGestao,
   listInscricoesGestao,
   listNewsletterGestao,
+  listNoticiasGestao,
   listVideosGestao,
   loadEditalVigente,
   publishAnuncio,
@@ -54,11 +61,13 @@ import {
   publishNoticia,
   publishPublicacao,
   publishVideo,
+  statsAnoLectivo,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
 import ImageSelector from "@/components/gestao/ImageSelector";
+import Documentos from "@/components/gestao/Documentos";
 
 type Section =
   | "painel"
@@ -72,6 +81,7 @@ type Section =
   | "livros"
   | "galeria"
   | "videos"
+  | "documentos"
   | "subscritores";
 
 type NavIcon = typeof LayoutDashboard;
@@ -102,15 +112,17 @@ const NAV: NavEntry[] = [
       { id: "noticias", label: "Notícias", icon: Newspaper },
       { id: "anuncios", label: "Anúncios", icon: Bell },
       { id: "eventos", label: "Eventos", icon: CalendarDays },
+      { id: "livros", label: "Livros", icon: Book },
+      { id: "resultados", label: "Pautas", icon: ClipboardList },
     ],
   },
-  { id: "livros", label: "Livros", icon: Book },
   {
     label: "Galeria",
     icon: Images,
     children: [
       { id: "galeria", label: "Imagens", icon: ImageIcon },
       { id: "videos", label: "Vídeos", icon: Video },
+      { id: "documentos", label: "Documentos", icon: FileText },
     ],
   },
   { id: "subscritores", label: "Subscritores", icon: Mail },
@@ -139,19 +151,30 @@ export default function GestaoDashboard() {
   const [note, setNote] = useState("");
   const [needsSchema, setNeedsSchema] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const active = groupOf(section);
-    if (active) setOpenGroups((prev) => new Set(prev).add(active.label));
+    if (active) setOpenGroup(active.label);
   }, [section]);
 
-  const toggleGroup = (label: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      next.has(label) ? next.delete(label) : next.add(label);
-      return next;
-    });
+  // Clicar no cabeçalho de um grupo abre-o e navega logo para o seu
+  // primeiro item — o chevron, à parte, só expande/colapsa sem navegar.
+  const goToGroup = (label: string, firstId: Section) => {
+    setOpenGroup(label);
+    setSection(firstId);
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleGroupOnly = (label: string) => {
+    setOpenGroup((prev) => (prev === label ? null : label));
+  };
+
+  const goToLeaf = (id: Section) => {
+    setSection(id);
+    setIsMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -188,20 +211,69 @@ export default function GestaoDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-cream flex">
-      <aside className="w-[240px] shrink-0 bg-navy-900 text-white flex flex-col">
-        <div className="px-5 py-6 border-b border-white/10">
+    <div className="min-h-screen bg-cream">
+      {/* Barra móvel */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-navy-900 border-b border-white/10 z-[80] flex items-center justify-between px-4">
+        <span className="flex items-center gap-2.5 overflow-hidden">
           <Image
             src="/esj-logo-mark.png"
             alt="ESJ"
-            width={52}
-            height={52}
-            className="h-12 w-12 object-contain rounded-sm"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain rounded-sm shrink-0"
           />
-          <p className="mt-4 font-serif font-bold leading-tight">Área de gestão</p>
-          <p className="mt-1 text-[11px] text-white/50">Secretaria académica</p>
+          <span className="font-serif font-bold text-white text-sm truncate">Área de gestão</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen((v) => !v)}
+          className="p-2 text-white/80 hover:text-white"
+        >
+          {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </header>
+
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 z-[70]"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-[80] lg:z-30 bg-navy-900 text-white flex flex-col transition-all duration-300 transform
+          ${isCollapsed ? "w-20" : "w-[240px]"}
+          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+      >
+        <div
+          className={`flex items-center border-b border-white/10 transition-all ${
+            isCollapsed ? "justify-center py-5" : "justify-between px-5 py-6"
+          }`}
+        >
+          {!isCollapsed && (
+            <div className="overflow-hidden">
+              <Image
+                src="/esj-logo-mark.png"
+                alt="ESJ"
+                width={52}
+                height={52}
+                className="h-12 w-12 object-contain rounded-sm"
+              />
+              <p className="mt-4 font-serif font-bold leading-tight truncate">Área de gestão</p>
+              <p className="mt-1 text-[11px] text-white/50 truncate">Secretaria académica</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((v) => !v)}
+            className="hidden lg:block text-white/50 hover:text-white transition-colors p-1.5"
+            title={isCollapsed ? "Expandir" : "Colapsar"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
         </div>
-        <nav className="flex-1 py-4">
+
+        <nav className="flex-1 py-4 overflow-y-auto">
           {NAV.map((entry) => {
             if (!isNavGroup(entry)) {
               const { id, label, icon: Icon } = entry;
@@ -209,54 +281,87 @@ export default function GestaoDashboard() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setSection(id)}
-                  className={`w-full flex items-center gap-3 px-5 py-3 text-sm text-left transition-colors ${
+                  onClick={() => goToLeaf(id)}
+                  title={isCollapsed ? label : undefined}
+                  className={`w-full flex items-center gap-3 text-sm text-left transition-colors ${
+                    isCollapsed ? "justify-center px-2 py-3" : "px-5 py-3"
+                  } ${
                     section === id
-                      ? "bg-white/10 text-white font-bold border-l-2 border-leaf"
+                      ? "bg-sky/10 text-sky-300 font-bold border-l-2 border-sky-300"
                       : "text-white/70 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
                   }`}
                 >
-                  <Icon size={16} />
-                  {label}
+                  <Icon size={16} className="shrink-0" />
+                  {!isCollapsed && label}
                 </button>
               );
             }
 
             const GroupIcon = entry.icon;
-            const isOpen = openGroups.has(entry.label);
+            const isOpen = openGroup === entry.label;
             const hasActiveChild = entry.children.some((c) => c.id === section);
+
+            if (isCollapsed) {
+              return (
+                <button
+                  key={entry.label}
+                  type="button"
+                  onClick={() => goToGroup(entry.label, entry.children[0].id)}
+                  title={entry.label}
+                  className={`w-full flex items-center justify-center px-2 py-3 transition-colors ${
+                    hasActiveChild ? "text-sky-300" : "text-white/70 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <GroupIcon size={16} className="shrink-0" />
+                </button>
+              );
+            }
 
             return (
               <div key={entry.label}>
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(entry.label)}
-                  className={`w-full flex items-center justify-between gap-3 px-5 py-3 text-sm text-left transition-colors ${
-                    hasActiveChild ? "text-white font-bold" : "text-white/70 hover:bg-white/5 hover:text-white"
+                <div
+                  className={`flex items-center transition-colors ${
+                    hasActiveChild ? "text-sky-300" : "text-white/70"
                   }`}
                 >
-                  <span className="flex items-center gap-3">
-                    <GroupIcon size={16} />
-                    {entry.label}
-                  </span>
-                  {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => goToGroup(entry.label, entry.children[0].id)}
+                    className="flex-1 min-w-0 flex items-center gap-3 pl-5 pr-2 py-3 text-sm font-bold text-left hover:text-white transition-colors"
+                  >
+                    <GroupIcon size={16} className="shrink-0" />
+                    <span className="truncate">{entry.label}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroupOnly(entry.label)}
+                    title={isOpen ? "Colapsar" : "Expandir"}
+                    className="pl-2 pr-5 py-3 text-white/50 hover:text-white transition-colors"
+                  >
+                    <ChevronRight size={14} className={`transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                  </button>
+                </div>
                 {isOpen && (
-                  <div className="pb-1">
+                  <div className="relative pb-1">
+                    <div className="absolute left-[26px] top-1 bottom-2 w-px bg-white/10" />
                     {entry.children.map((child) => {
                       const ChildIcon = child.icon;
+                      const active = section === child.id;
                       return (
                         <button
                           key={child.id}
                           type="button"
-                          onClick={() => setSection(child.id)}
-                          className={`w-full flex items-center gap-3 pl-11 pr-5 py-2.5 text-[13px] text-left transition-colors ${
-                            section === child.id
-                              ? "bg-white/10 text-white font-bold border-l-2 border-leaf"
-                              : "text-white/60 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
+                          onClick={() => goToLeaf(child.id)}
+                          className={`relative w-full flex items-center gap-3 pl-11 pr-5 py-2.5 text-[13px] text-left transition-colors ${
+                            active
+                              ? "text-sky-300 font-bold"
+                              : "text-white/60 hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          <ChildIcon size={14} />
+                          {active && (
+                            <div className="absolute left-[26px] top-1/2 -translate-y-1/2 h-4 w-[2px] bg-sky-300" />
+                          )}
+                          <ChildIcon size={14} className="shrink-0" />
                           {child.label}
                         </button>
                       );
@@ -267,15 +372,24 @@ export default function GestaoDashboard() {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 bg-black/20 flex items-center gap-3">
+
+        <div
+          className={`border-t border-white/10 bg-black/20 flex items-center gap-3 ${
+            isCollapsed ? "justify-center px-2 py-4" : "px-5 py-4"
+          }`}
+        >
           <div className="h-9 w-9 shrink-0 rounded-full bg-sky flex items-center justify-center text-sm font-bold text-navy-900">
             {userEmail ? userEmail[0].toUpperCase() : "?"}
           </div>
-          <p className="text-xs text-white/70 truncate">{userEmail || "Utilizador"}</p>
+          {!isCollapsed && <p className="text-xs text-white/70 truncate">{userEmail || "Utilizador"}</p>}
         </div>
       </aside>
 
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div
+        className={`flex flex-col min-h-screen transition-all duration-300 mt-16 lg:mt-0 ${
+          isCollapsed ? "lg:ml-20" : "lg:ml-[240px]"
+        }`}
+      >
         <header className="bg-white border-b border-navy-100 px-8 py-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-bold tracking-widest text-sky">
@@ -300,7 +414,7 @@ export default function GestaoDashboard() {
             <p className="mb-5 bg-navy-800 text-white text-sm px-4 py-3">{note}</p>
           )}
           {needsSchema && <SchemaInstall />}
-          {section === "painel" && <Painel onGo={setSection} />}
+          {section === "painel" && <Painel onGo={setSection} userEmail={userEmail} />}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "livros" && <Publicacoes onAction={showNote} defaultCategoria="livro" />}
           {section === "eventos" && <Publicacoes onAction={showNote} defaultCategoria="evento" />}
@@ -309,6 +423,7 @@ export default function GestaoDashboard() {
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
+          {section === "documentos" && <Documentos />}
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && <Anuncios onAction={showNote} />}
           {section === "subscritores" && <Subscritores />}
@@ -318,91 +433,179 @@ export default function GestaoDashboard() {
   );
 }
 
-function Painel({ onGo }: { onGo: (s: Section) => void }) {
-  const cards = [
-    {
-      id: "edital" as Section,
-      title: "Edital",
-      text: "Substituir o PDF de admissão publicado no sítio.",
-      meta: "Visível em /edital",
-    },
-    {
-      id: "livros" as Section,
-      title: "Livros",
-      text: "Trocar o cartaz de lançamento do livro na secção de ensino.",
-      meta: "Visível em /#ensino",
-    },
-    {
-      id: "eventos" as Section,
-      title: "Eventos",
-      text: "Trocar o cartaz de eventos da secção de ensino.",
-      meta: "Visível em /#ensino",
-    },
-    {
-      id: "galeria" as Section,
-      title: "Galeria",
-      text: "Carregar, editar e eliminar as fotos que alimentam o sítio.",
-      meta: "Biblioteca de imagens",
-    },
-    {
-      id: "calendario" as Section,
-      title: "Calendário Académico",
-      text: "Editar as datas de inscrições, exames, resultados e início do ano lectivo.",
-      meta: "Visível em /#ensino",
-    },
-    {
-      id: "resultados" as Section,
-      title: "Resultados",
-      text: "Lançar notas de Português e História e publicar a pauta por curso e regime.",
-      meta: "Visível em /resultados",
-    },
-    {
-      id: "noticias" as Section,
-      title: "Notícias",
-      text: "Publicar comunicados, eventos e vida académica.",
-      meta: "Visível em /noticias",
-    },
-    {
-      id: "videos" as Section,
-      title: "Vídeos",
-      text: "Guardar reportagens e peças da ESJ TV.",
-      meta: "Ligações YouTube ou Vimeo",
-    },
-    {
-      id: "candidaturas" as Section,
-      title: "Candidaturas",
-      text: "Pré-inscrições submetidas no sítio.",
-      meta: "Formulário em /inscricoes",
-    },
-    {
-      id: "anuncios" as Section,
-      title: "Anúncios",
-      text: "Guardar avisos da secretaria (o envio ao eDondzo fica para mais tarde).",
-      meta: "Tabela anuncios",
-    },
-    {
-      id: "subscritores" as Section,
-      title: "Subscritores",
-      text: "Lista de correios inscritos na newsletter do sítio.",
-      meta: "Formulário em /#contacto",
-    },
-  ];
+const CARD_COLORS = [
+  { bg: "bg-sky/10", text: "text-sky" },
+  { bg: "bg-leaf/10", text: "text-leaf" },
+  { bg: "bg-crimson/10", text: "text-crimson" },
+  { bg: "bg-navy-100", text: "text-navy-800" },
+];
+
+function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: string }) {
+  const [stats, setStats] = useState<{ total: number; porCurso: { curso: string; total: number }[] }>({
+    total: 0,
+    porCurso: [],
+  });
+  const [recentes, setRecentes] = useState<{ slug: string; title: string; date_label: string }[]>([]);
+
+  useEffect(() => {
+    statsAnoLectivo()
+      .then(setStats)
+      .catch(() => setStats({ total: 0, porCurso: [] }));
+    listNoticiasGestao()
+      .then((rows) => setRecentes(rows.slice(0, 5)))
+      .catch(() => setRecentes([]));
+  }, []);
 
   return (
-    <div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {cards.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onGo(c.id)}
-            className="text-left bg-white border border-navy-100 p-6 hover:border-sky transition-colors"
-          >
-            <h2 className="font-serif text-lg font-bold text-navy-900">{c.title}</h2>
-            <p className="mt-2 text-sm text-navy-900/70 leading-relaxed">{c.text}</p>
-            <p className="mt-4 text-[11px] font-semibold tracking-wide text-sky">{c.meta}</p>
-          </button>
-        ))}
+    <div className="space-y-6">
+      <div className="bg-white border border-navy-100 p-8">
+        <h2 className="font-serif text-2xl font-bold text-navy-900">Bem-vindo ao painel de administração</h2>
+        <p className="mt-1.5 text-sm text-navy-900/65">
+          Olá, {userEmail || "utilizador"}. Este é o seu painel de gestão.
+        </p>
+
+        <div className="mt-6 pt-6 border-t border-navy-100 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-sky">INTRODUÇÃO</p>
+            <p className="mt-2 text-sm text-navy-900/65">Veja todas as notícias ou</p>
+            <button
+              type="button"
+              onClick={() => onGo("noticias")}
+              className="mt-3 bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-4 py-2.5 transition-colors"
+            >
+              ADICIONAR NOVA NOTÍCIA
+            </button>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-sky">PRÓXIMOS PASSOS</p>
+            <ul className="mt-2 space-y-2 text-sm">
+              <li>
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-navy-900 hover:text-crimson"
+                >
+                  <ExternalLink size={13} /> Ver o seu sítio
+                </a>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onGo("candidaturas")}
+                  className="inline-flex items-center gap-1.5 text-navy-900 hover:text-crimson"
+                >
+                  <Users size={13} /> Gerir candidaturas
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-sky">MAIS ACÇÕES</p>
+            <ul className="mt-2 space-y-2 text-sm">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onGo("galeria")}
+                  className="inline-flex items-center gap-1.5 text-navy-900 hover:text-crimson"
+                >
+                  <Images size={13} /> Adicionar multimédia
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onGo("videos")}
+                  className="inline-flex items-center gap-1.5 text-navy-900 hover:text-crimson"
+                >
+                  <Video size={13} /> Gerir vídeos
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold tracking-widest text-sky flex items-center gap-1.5">
+              <GraduationCap size={13} /> RESUMO DO ANO LECTIVO
+            </p>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              <li className="flex items-center justify-between gap-4">
+                <span className="text-navy-900/70">Inscritos</span>
+                <strong className="text-navy-900">{stats.total}</strong>
+              </li>
+              <li className="flex items-center justify-between gap-4">
+                <span className="text-navy-900/70">Cursos</span>
+                <strong className="text-navy-900">{stats.porCurso.length}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 items-start">
+        <div className="bg-white border border-navy-100 p-6">
+          <h3 className="font-serif font-bold text-navy-900 flex items-center gap-2">
+            <TrendingUp size={16} className="text-leaf" /> Actividades recentes
+          </h3>
+          <ul className="mt-4 divide-y divide-navy-100">
+            {recentes.length === 0 && (
+              <li className="py-3 text-sm text-navy-900/50">Ainda sem notícias na base.</li>
+            )}
+            {recentes.map((n) => (
+              <li key={n.slug} className="py-3">
+                <span className="block text-[11px] text-navy-900/45">{n.date_label}</span>
+                <Link
+                  href={`/noticias/${n.slug}`}
+                  className="text-sm font-semibold text-sky hover:text-crimson"
+                >
+                  {n.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="text-sm font-bold text-navy-900 mb-3">Alunos inscritos por curso</p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => onGo("candidaturas")}
+              className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
+            >
+              <span className="h-11 w-11 rounded-full bg-navy-800 text-white flex items-center justify-center mb-3">
+                <Users size={18} />
+              </span>
+              <span className="text-2xl font-bold text-navy-900">{stats.total}</span>
+              <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
+                TOTAL DE ALUNOS INSCRITOS
+              </span>
+            </button>
+            {stats.porCurso.map((c, i) => {
+              const color = CARD_COLORS[i % CARD_COLORS.length];
+              return (
+                <button
+                  key={c.curso}
+                  type="button"
+                  onClick={() => onGo("candidaturas")}
+                  className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
+                >
+                  <span className={`h-11 w-11 rounded-full ${color.bg} ${color.text} flex items-center justify-center mb-3`}>
+                    <GraduationCap size={18} />
+                  </span>
+                  <span className="text-2xl font-bold text-navy-900">{c.total}</span>
+                  <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
+                    {c.curso.toUpperCase()}
+                  </span>
+                </button>
+              );
+            })}
+            {stats.porCurso.length === 0 && (
+              <div className="sm:col-span-2 bg-white border border-dashed border-navy-100 p-6 text-center text-sm text-navy-900/50">
+                Ainda sem candidaturas na base para repartir por curso.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

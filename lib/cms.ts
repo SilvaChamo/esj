@@ -165,6 +165,25 @@ export async function listInscricoesGestao() {
   return data ?? [];
 }
 
+export async function statsAnoLectivo(): Promise<{
+  total: number;
+  porCurso: { curso: string; total: number }[];
+}> {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase.from("inscricoes").select("curso");
+  if (error) throw error;
+  const rows = data ?? [];
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const curso = row.curso || "Sem curso indicado";
+    counts.set(curso, (counts.get(curso) || 0) + 1);
+  }
+  const porCurso = Array.from(counts.entries())
+    .map(([curso, total]) => ({ curso, total }))
+    .sort((a, b) => b.total - a.total);
+  return { total: rows.length, porCurso };
+}
+
 export async function publishAnuncio(input: {
   destinatarios: string;
   assunto: string;
@@ -346,6 +365,46 @@ export async function deleteMediaGaleria(names: string[]) {
   const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
   if (error) throw error;
   await supabase.from("media_details").delete().in("file_name", names);
+}
+
+const DOCUMENTOS_FOLDER = "documentos";
+
+export async function listMediaDocumentos(): Promise<MediaFile[]> {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(DOCUMENTOS_FOLDER, {
+    limit: 1000,
+    sortBy: { column: "created_at", order: "desc" },
+  });
+  if (error) throw error;
+  return (data ?? [])
+    .filter((f) => f.id)
+    .map((f) => {
+      const name = `${DOCUMENTOS_FOLDER}/${f.name}`;
+      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(name);
+      return {
+        name,
+        url: pub.publicUrl,
+        size: f.metadata?.size ?? null,
+        mimeType: f.metadata?.mimetype ?? null,
+        createdAt: f.created_at ?? null,
+      };
+    });
+}
+
+export async function uploadMediaDocumento(file: File) {
+  const supabase = createBrowserSupabase();
+  const path = `${DOCUMENTOS_FOLDER}/${limparNomeFicheiro(file.name)}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false,
+  });
+  if (error) throw error;
+}
+
+export async function deleteMediaDocumentos(names: string[]) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
+  if (error) throw error;
 }
 
 export type MediaDetails = {
