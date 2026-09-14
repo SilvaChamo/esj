@@ -137,6 +137,7 @@ export default function Academics() {
       numero: 1,
       link: { href: "/inscricao", label: "Inscrever-se" },
     },
+    { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine, numero: 2 },
     {
       titulo: "Publicação de resultados",
       texto: cal.resultados,
@@ -144,7 +145,6 @@ export default function Academics() {
       numero: 3,
       link: { href: "/resultados", label: "Ver resultados" },
     },
-    { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine, numero: 2 },
     { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays, numero: 4 },
   ];
 
@@ -267,12 +267,12 @@ export default function Academics() {
 
         {tab === "calendario" && (
           <div>
-            <div className="text-center">
+            <div>
               <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
                 Datas do ano lectivo
               </h2>
-              <p className="mt-5 max-w-2xl mx-auto text-navy-900 leading-relaxed">
+              <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
                 Início do ano lectivo, inscrições, exames de admissão e publicação de
                 resultados — as datas oficiais e definitivas são as do{" "}
                 <Link href="/edital" className="text-sky hover:underline">
@@ -300,9 +300,7 @@ export default function Academics() {
                       </span>
                       <div
                         className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
-                          isRight
-                            ? "sm:col-start-2 border-r-4 border-navy-800"
-                            : "sm:col-start-1 border-l-4 border-navy-800"
+                          isRight ? "sm:col-start-2" : "sm:col-start-1"
                         }`}
                       >
                         <span
