@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import InscricaoForm from "@/components/InscricaoForm";
 import InscricaoSidebar from "@/components/InscricaoSidebar";
+import AdmissaoSidebar from "@/components/AdmissaoSidebar";
 
 export const metadata = {
   title: "Pré-inscrição 2026 | ESJ",
@@ -12,7 +14,7 @@ export default function InscricaoPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
       <section className="bg-navy-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
+        <div className="w-full px-4 lg:px-8 py-10 md:py-12">
           <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
             ANO LECTIVO 2026
           </p>
@@ -32,12 +34,19 @@ export default function InscricaoPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14 overflow-x-hidden">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-8 items-start">
+      <section className="w-full px-4 lg:px-8 py-10 md:py-14 overflow-x-hidden">
+        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
+          <Suspense fallback={null}>
+            <div className="space-y-5">
+              <AdmissaoSidebar />
+              <InscricaoSidebar />
+            </div>
+          </Suspense>
           <div className="min-w-0 max-w-full">
-            <InscricaoForm />
+            <Suspense fallback={<p className="text-sm text-navy-900/50">A carregar o boletim…</p>}>
+              <InscricaoForm />
+            </Suspense>
           </div>
-          <InscricaoSidebar />
         </div>
       </section>
     </main>

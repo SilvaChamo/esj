@@ -31,6 +31,14 @@ import {
   type LivroThumb,
   type Publicacao,
 } from "@/lib/publicacao";
+import {
+  NIVEIS,
+  REGIME_LABEL,
+  REGIMES,
+  filtroQuery,
+  type Nivel,
+  type Regime,
+} from "@/lib/admissao";
 
 type SectionTab = "ensino" | "calendario" | "cursos";
 
@@ -77,6 +85,8 @@ export default function Academics() {
   const [livros, setLivros] = useState<LivroThumb[]>(LIVROS_ANTERIORES);
   const [viewer, setViewer] = useState<LivroThumb | null>(null);
   const [cal, setCal] = useState<Calendario>(DEFAULT_CALENDARIO);
+  const [calNivel, setCalNivel] = useState<Nivel>("Licenciatura");
+  const [calRegime, setCalRegime] = useState<Regime>("Diurno");
 
   useEffect(() => {
     const load = () => {
@@ -117,14 +127,23 @@ export default function Academics() {
   const book = active === "livro" ? livroBook : eventoBook;
   const isLivro = active === "livro" && book.tipo === "livro";
 
-  const DATAS: { titulo: string; texto: string; icon: LucideIcon; link?: { href: string; label: string } }[] = [
-    { titulo: "Inscrições", texto: cal.inscricoes, icon: ClipboardList },
+  const inscricoesHref = `/inscricao?${filtroQuery({ nivel: calNivel, regime: calRegime })}`;
+  const resultadosHref = `/resultados?${filtroQuery({ nivel: calNivel, regime: calRegime })}`;
+
+  const DATAS: {
+    titulo: string;
+    texto: string;
+    icon: LucideIcon;
+    link?: { href: string; label: string };
+    extra?: "inscrever";
+  }[] = [
+    { titulo: "Inscrições", texto: cal.inscricoes, icon: ClipboardList, extra: "inscrever" },
     { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine },
     {
       titulo: "Publicação de resultados",
       texto: cal.resultados,
       icon: Award,
-      link: { href: "/resultados", label: "Ver resultados" },
+      link: { href: resultadosHref, label: "Ver resultados" },
     },
     { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays },
   ];
@@ -260,17 +279,59 @@ export default function Academics() {
               </Link>
               .
             </p>
-            <div className="mt-10 grid sm:grid-cols-2 gap-x-10 gap-y-8">
+            <div className="mt-10 grid sm:grid-cols-2 gap-5">
               {DATAS.map((d) => (
-                <div key={d.titulo} className="flex gap-4">
+                <div key={d.titulo} className="bg-cream border border-navy-100 p-6 flex gap-4">
                   <d.icon size={22} className="shrink-0 mt-0.5 text-sky" />
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
                     <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
+                    {d.extra === "inscrever" && (
+                      <div className="mt-4 space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {NIVEIS.map((nivel) => (
+                            <button
+                              key={nivel}
+                              type="button"
+                              onClick={() => setCalNivel(nivel)}
+                              className={`px-3 py-1.5 text-[11px] font-bold tracking-wide ${
+                                calNivel === nivel
+                                  ? "bg-navy-800 text-white"
+                                  : "bg-white border border-navy-100 text-navy-800"
+                              }`}
+                            >
+                              {nivel}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {REGIMES.map((regime) => (
+                            <button
+                              key={regime}
+                              type="button"
+                              onClick={() => setCalRegime(regime)}
+                              className={`px-3 py-1.5 text-[11px] font-bold tracking-wide ${
+                                calRegime === regime
+                                  ? "bg-navy-800 text-white"
+                                  : "bg-white border border-navy-100 text-navy-800"
+                              }`}
+                            >
+                              {REGIME_LABEL[regime]}
+                            </button>
+                          ))}
+                        </div>
+                        <Link
+                          href={inscricoesHref}
+                          className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-5 py-2.5 transition-colors"
+                        >
+                          INSCREVER-SE →
+                        </Link>
+                      </div>
+                    )}
                     {d.link && (
                       <Link
                         href={d.link.href}
-                        className="mt-1.5 inline-block text-sm text-sky hover:underline"
+                        className="mt-3 inline-block text-sm text-sky hover:underline"
                       >
                         {d.link.label} →
                       </Link>
@@ -319,7 +380,7 @@ export default function Academics() {
             </div>
             <div className="mt-10">
               <Link
-                href="/inscricoes"
+                href="/inscricao"
                 className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
               >
                 CANDIDATAR-SE

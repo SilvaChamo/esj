@@ -1,7 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
-import { CURSOS_RESULTADOS } from "@/lib/resultados";
 
 export function slugify(text: string) {
   const slug = text
@@ -205,24 +204,64 @@ export async function publishCalendario(data: Calendario) {
   if (error) throw error;
 }
 
-export async function listResultadosGestao() {
+export async function listPautaGestao(input: {
+  anoLectivo: string;
+  nivel: string;
+  curso: string;
+  regime: string;
+}) {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
-    .from("resultados_admissao")
-    .select("curso, file_url, updated_at");
+    .from("pauta_admissao")
+    .select(
+      "id, ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado, updated_at"
+    )
+    .eq("ano_lectivo", input.anoLectivo)
+    .eq("nivel", input.nivel)
+    .eq("curso", input.curso)
+    .eq("regime", input.regime)
+    .order("apelido", { ascending: true });
   if (error) throw error;
-  return CURSOS_RESULTADOS.map((curso) => {
-    const row = data?.find((d) => d.curso === curso);
-    return { curso, fileUrl: row?.file_url ?? "", updatedAt: row?.updated_at ?? null };
-  });
+  return data ?? [];
 }
 
-export async function publishResultado(curso: string, file: File) {
+export async function savePautaLinha(input: {
+  id?: string;
+  anoLectivo: string;
+  nivel: string;
+  curso: string;
+  regime: string;
+  apelido: string;
+  nome: string;
+  notaPortugues: number;
+  notaHistoria: number;
+  publicado: boolean;
+}) {
   const supabase = createBrowserSupabase();
-  const file_url = await uploadMedia(file, "resultados");
-  const { error } = await supabase
-    .from("resultados_admissao")
-    .upsert({ curso, file_url, updated_at: new Date().toISOString() }, { onConflict: "curso" });
+  const row = {
+    ano_lectivo: input.anoLectivo,
+    nivel: input.nivel,
+    curso: input.curso,
+    regime: input.regime,
+    apelido: input.apelido.trim(),
+    nome: input.nome.trim(),
+    nota_portugues: input.notaPortugues,
+    nota_historia: input.notaHistoria,
+    publicado: input.publicado,
+    updated_at: new Date().toISOString(),
+  };
+  if (input.id) {
+    const { error } = await supabase.from("pauta_admissao").update(row).eq("id", input.id);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.from("pauta_admissao").insert(row);
+  if (error) throw error;
+}
+
+export async function deletePautaLinha(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("pauta_admissao").delete().eq("id", id);
   if (error) throw error;
 }
 

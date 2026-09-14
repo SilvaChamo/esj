@@ -96,13 +96,6 @@ create table if not exists calendario_academico (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists resultados_admissao (
-  id uuid primary key default gen_random_uuid(),
-  curso text not null unique,
-  file_url text not null default '',
-  updated_at timestamptz not null default now()
-);
-
 alter table noticias enable row level security;
 alter table publicacoes enable row level security;
 alter table livros enable row level security;
@@ -113,7 +106,6 @@ alter table anuncios enable row level security;
 alter table newsletter enable row level security;
 alter table contactos enable row level security;
 alter table calendario_academico enable row level security;
-alter table resultados_admissao enable row level security;
 
 drop policy if exists "noticias_public_read" on noticias;
 drop policy if exists "noticias_auth_write" on noticias;
@@ -134,8 +126,6 @@ drop policy if exists "contactos_public_insert" on contactos;
 drop policy if exists "contactos_auth_read" on contactos;
 drop policy if exists "calendario_public_read" on calendario_academico;
 drop policy if exists "calendario_auth_write" on calendario_academico;
-drop policy if exists "resultados_public_read" on resultados_admissao;
-drop policy if exists "resultados_auth_write" on resultados_admissao;
 
 create policy "noticias_public_read" on noticias for select using (true);
 create policy "noticias_auth_write" on noticias for all to authenticated using (true) with check (true);
@@ -156,8 +146,6 @@ create policy "contactos_public_insert" on contactos for insert with check (true
 create policy "contactos_auth_read" on contactos for select to authenticated using (true);
 create policy "calendario_public_read" on calendario_academico for select using (true);
 create policy "calendario_auth_write" on calendario_academico for all to authenticated using (true) with check (true);
-create policy "resultados_public_read" on resultados_admissao for select using (true);
-create policy "resultados_auth_write" on resultados_admissao for all to authenticated using (true) with check (true);
 
 insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
@@ -317,15 +305,6 @@ select
   'Datas e calendário de matrículas publicados no edital de admissão, disponível em /edital.'
 where not exists (select 1 from calendario_academico where id = 1);
 
-insert into resultados_admissao (curso, file_url)
-select * from (values
-  ('Jornalismo', ''),
-  ('Publicidade e Marketing', ''),
-  ('Relações Públicas', ''),
-  ('Biblioteconomia e Documentação', '')
-) as v(curso, file_url)
-where not exists (select 1 from resultados_admissao);
-
 insert into livros (title, image, sort_order)
 select * from (values
   ('Infovula', '/livro-infovula.jpg', 1),
@@ -333,3 +312,52 @@ select * from (values
   ('Conhecimento que conecta', '/livro-experiencias.jpg', 3)
 ) as v(title, image, sort_order)
 where not exists (select 1 from livros);
+
+alter table inscricoes add column if not exists nivel text not null default 'Licenciatura';
+
+create table if not exists pauta_admissao (
+  id uuid primary key default gen_random_uuid(),
+  ano_lectivo text not null default '2026',
+  nivel text not null default 'Licenciatura',
+  curso text not null,
+  regime text not null,
+  apelido text not null,
+  nome text not null,
+  nota_portugues numeric(5,2) not null,
+  nota_historia numeric(5,2) not null,
+  publicado boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists pauta_admissao_filtro_idx
+  on pauta_admissao (ano_lectivo, nivel, curso, regime, publicado);
+
+alter table pauta_admissao enable row level security;
+
+drop policy if exists "pauta_public_read" on pauta_admissao;
+drop policy if exists "pauta_auth_write" on pauta_admissao;
+
+create policy "pauta_public_read" on pauta_admissao
+  for select using (publicado = true);
+
+create policy "pauta_auth_write" on pauta_admissao
+  for all to authenticated using (true) with check (true);
+
+insert into pauta_admissao
+  (ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado)
+select * from (values
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Bila', 'Ana Maria', 16.00, 14.50, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Chissano', 'Carlos Eduardo', 11.00, 9.50, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Dava', 'Esperança', 8.00, 9.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Francisco', 'João Pedro', 13.50, 15.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Gove', 'Lurdes', 17.00, 16.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Mabunda', 'Pedro António', 12.00, 12.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Nhaca', 'Fátima', 14.00, 13.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Diurno', 'Sitoe', 'Miguel', 9.50, 10.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Pós-laboral', 'Alberto', 'Helena', 15.00, 14.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Pós-laboral', 'Cossa', 'Daniel', 10.00, 11.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Pós-laboral', 'Machel', 'Inês', 7.50, 8.00, true),
+  ('2026', 'Licenciatura', 'Jornalismo', 'Pós-laboral', 'Tembe', 'Rui', 13.00, 12.50, true)
+) as v(ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado)
+where not exists (select 1 from pauta_admissao);

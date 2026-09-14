@@ -38,6 +38,7 @@ export async function submitInscricao(
     telefone: String(form.get("telefone") || "").trim(),
     curso: String(form.get("curso1") || form.get("curso") || "").trim(),
     turno: String(form.get("turno") || "").trim(),
+    nivel: String(form.get("nivel") || "Licenciatura").trim(),
     delegacao: String(form.get("delegacao") || "").trim(),
     documentos,
     dados,

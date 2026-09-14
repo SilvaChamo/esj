@@ -1,18 +1,24 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { submitInscricao } from "@/lib/inscricoes";
 import { cmsError } from "@/lib/cms";
 import Link from "next/link";
 import {
-  COURSES,
   DELEGACOES,
   DOCUMENT_FIELDS,
   ESTADOS_CIVIS,
   PROVINCIAS,
   SEXOS,
-  SHIFTS,
 } from "@/lib/inscricao";
+import {
+  NIVEIS,
+  REGIME_LABEL,
+  REGIMES,
+  cursoPorSlug,
+  cursosDoNivel,
+} from "@/lib/admissao";
+import { useFiltroAdmissao } from "@/components/AdmissaoSidebar";
 
 type FileMap = Record<string, File | null>;
 
@@ -34,13 +40,35 @@ const STEPS = [
 ];
 
 export default function InscricaoForm() {
+  const { filtro, lock } = useFiltroAdmissao();
   const [step, setStep] = useState(0);
   const [files, setFiles] = useState<FileMap>(emptyFiles);
   const [course1, setCourse1] = useState("");
+  const [nivelLocal, setNivelLocal] = useState(filtro.nivel);
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const last = step === STEPS.length - 1;
+  const nivelActivo = lock.nivel ? filtro.nivel : nivelLocal;
+  const courses = useMemo(
+    () => cursosDoNivel(nivelActivo).map((c) => c.titulo),
+    [nivelActivo]
+  );
+  const lockedCourse = lock.curso
+    ? cursoPorSlug(filtro.curso || "", filtro.nivel)?.titulo || filtro.curso || ""
+    : "";
+
+  useEffect(() => {
+    setNivelLocal(filtro.nivel);
+  }, [filtro.nivel]);
+
+  useEffect(() => {
+    if (lockedCourse) {
+      setCourse1(lockedCourse);
+      return;
+    }
+    setCourse1((current) => (courses.includes(current) ? current : ""));
+  }, [lockedCourse, courses]);
 
   const onFile = (id: string, file: File | null) => {
     if (file && file.size > 5 * 1024 * 1024) {
@@ -148,43 +176,87 @@ export default function InscricaoForm() {
         <h2 className="font-serif text-2xl font-bold text-navy-900 mb-6">{STEPS[step].title}</h2>
 
         <div data-step="0" className={step === 0 ? "space-y-6" : "hidden"}>
+          {(lock.nivel || lock.regime || lock.curso) && (
+            <p className="text-sm text-navy-900/65 bg-cream border border-navy-100 px-4 py-3">
+              Nível e regime já vêm do filtro da barra lateral. Esses campos ficam
+              bloqueados neste boletim.
+            </p>
+          )}
           <div className="grid md:grid-cols-2 gap-5 min-w-0">
-            <Field label="Primeira opção" required>
-              <select
-                name="curso1"
-                required={step === 0}
-                value={course1}
-                onChange={(e) => setCourse1(e.target.value)}
-                className="esj-field"
-              >
-                <option value="">Seleccione o curso</option>
-                {COURSES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Segunda opção">
-              <select name="curso2" className="esj-field">
-                <option value="">Nenhuma</option>
-                {COURSES.filter((c) => c !== course1).map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Turno" required>
-              <select name="turno" required={step === 0} className="esj-field">
-                <option value="">Seleccione</option>
-                {SHIFTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {lock.nivel ? (
+              <Field label="Nível">
+                <input name="nivel" value={filtro.nivel} readOnly className="esj-field bg-cream" />
+              </Field>
+            ) : (
+              <Field label="Nível" required>
+                <select
+                  name="nivel"
+                  required={step === 0}
+                  value={nivelLocal}
+                  onChange={(e) => setNivelLocal(e.target.value as (typeof NIVEIS)[number])}
+                  className="esj-field"
+                >
+                  {NIVEIS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            {lock.curso ? (
+              <Field label="Primeira opção">
+                <input name="curso1" value={course1} readOnly className="esj-field bg-cream" />
+              </Field>
+            ) : (
+              <Field label="Primeira opção" required>
+                <select
+                  name="curso1"
+                  required={step === 0}
+                  value={course1}
+                  onChange={(e) => setCourse1(e.target.value)}
+                  className="esj-field"
+                >
+                  <option value="">Seleccione o curso</option>
+                  {courses.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            {!lock.curso && (
+              <Field label="Segunda opção">
+                <select name="curso2" className="esj-field">
+                  <option value="">Nenhuma</option>
+                  {courses.filter((c) => c !== course1).map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            {lock.regime ? (
+              <Field label="Regime">
+                <input name="turno" value={filtro.regime} readOnly className="esj-field bg-cream" />
+                <span className="mt-1 block text-xs text-navy-900/50">
+                  {REGIME_LABEL[filtro.regime]}
+                </span>
+              </Field>
+            ) : (
+              <Field label="Regime" required>
+                <select name="turno" required={step === 0} defaultValue={filtro.regime} className="esj-field">
+                  <option value="">Seleccione</option>
+                  {REGIMES.map((s) => (
+                    <option key={s} value={s}>
+                      {REGIME_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Field label="Ano lectivo">
               <input className="esj-field bg-cream" value="2026" readOnly />
             </Field>

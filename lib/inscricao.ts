@@ -1,11 +1,8 @@
-export const COURSES = [
-  "Licenciatura em Jornalismo",
-  "Licenciatura em Publicidade e Marketing",
-  "Licenciatura em Relações Públicas",
-  "Licenciatura em Biblioteconomia e Documentação",
-] as const;
+import { cursosDoNivel, REGIMES } from "@/lib/admissao";
 
-export const SHIFTS = ["Diurno", "Pós-laboral"] as const;
+export const COURSES = cursosDoNivel("Licenciatura").map((c) => c.titulo);
+
+export const SHIFTS = REGIMES;
 
 export const DELEGACOES = [
   "Maputo (Sede)",

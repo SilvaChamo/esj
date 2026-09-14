@@ -18,3 +18,12 @@ body {
   @apply box-border block w-full max-w-full min-w-0 border border-dashed border-navy-100 bg-white px-3 py-3 text-sm text-navy-900 hover:border-sky;
   @apply file:mr-0 file:mb-2 file:block file:max-w-full file:border-0 file:bg-navy-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:tracking-wide file:text-white sm:file:mb-0 sm:file:mr-3 sm:file:inline-block;
 }
+
+@media print {
+  header, footer, .print\:hidden {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

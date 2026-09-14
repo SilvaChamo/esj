@@ -29,7 +29,6 @@ import {
   type Categoria,
   type Publicacao,
 } from "@/lib/publicacao";
-import { CURSOS_RESULTADOS } from "@/lib/resultados";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
   cmsError,
@@ -38,7 +37,6 @@ import {
   listInscricoesGestao,
   listNewsletterGestao,
   listNoticiasGestao,
-  listResultadosGestao,
   listVideosGestao,
   loadEditalVigente,
   publishAnuncio,
@@ -46,10 +44,10 @@ import {
   publishEdital,
   publishNoticia,
   publishPublicacao,
-  publishResultado,
   publishVideo,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
+import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 
 const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
@@ -168,7 +166,7 @@ export default function GestaoDashboard() {
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "publicacoes" && <Publicacoes onAction={showNote} />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
-          {section === "resultados" && <Resultados onAction={showNote} />}
+          {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "candidaturas" && <Candidaturas />}
@@ -203,7 +201,7 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
     {
       id: "resultados" as Section,
       title: "Resultados",
-      text: "Carregar os PDFs com os resultados de admissão, por curso.",
+      text: "Lançar notas de Português e História e publicar a pauta por curso e regime.",
       meta: "Visível em /resultados",
     },
     {
@@ -543,14 +541,14 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
   ];
 
   return (
-    <div className="max-w-4xl bg-white border border-navy-100 p-8 space-y-4">
+    <div className="w-full bg-white border border-navy-100 p-8 space-y-4">
       <h2 className="font-serif text-2xl font-bold text-navy-900">Calendário Académico</h2>
       <p className="text-sm text-navy-900/65 leading-relaxed">
         Estes textos aparecem na secção Ensino e História, separador &ldquo;Calendário
         Académico&rdquo;, em /#ensino.
       </p>
       {missing && <SchemaInstall />}
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {fields.map((f) => (
           <label key={f.key} className="block">
             <span className="block text-sm font-bold text-navy-900 mb-1.5">{f.label}</span>
@@ -570,77 +568,6 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
       >
         {busy ? "A GRAVAR…" : "GUARDAR CALENDÁRIO"}
       </button>
-    </div>
-  );
-}
-
-function Resultados({ onAction }: { onAction: (m: string) => void }) {
-  const [items, setItems] = useState<{ curso: string; fileUrl: string; updatedAt: string | null }[]>(
-    CURSOS_RESULTADOS.map((curso) => ({ curso, fileUrl: "", updatedAt: null }))
-  );
-  const [busyCurso, setBusyCurso] = useState<string | null>(null);
-  const [missing, setMissing] = useState(false);
-
-  const refresh = () => {
-    listResultadosGestao()
-      .then((rows) => {
-        setItems(rows);
-        setMissing(false);
-      })
-      .catch((err) => {
-        if (isMissingTable(err)) setMissing(true);
-      });
-  };
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  const onFile = async (curso: string, file: File | null) => {
-    if (!file) return;
-    setBusyCurso(curso);
-    try {
-      await publishResultado(curso, file);
-      refresh();
-      onAction(`Resultados de ${curso} publicados em /resultados.`);
-    } catch (error) {
-      if (isMissingTable(error)) setMissing(true);
-      onAction(cmsError(error));
-    } finally {
-      setBusyCurso(null);
-    }
-  };
-
-  return (
-    <div className="max-w-2xl bg-white border border-navy-100 p-8">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Resultados de admissão</h2>
-      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-        Um PDF por curso. Aparecem em{" "}
-        <Link href="/resultados" className="text-sky hover:underline">
-          /resultados
-        </Link>
-        , ligados a partir do calendário académico em /#ensino.
-      </p>
-      {missing && <SchemaInstall />}
-      <div className="mt-6 space-y-4">
-        {items.map((r) => (
-          <div key={r.curso} className="border border-navy-100 px-5 py-4">
-            <p className="font-semibold text-navy-900 text-sm">{r.curso}</p>
-            <p className="mt-1 text-xs text-navy-900/50">
-              {r.fileUrl ? "PDF publicado." : "Ainda sem PDF."}
-            </p>
-            <label className="mt-3 block">
-              <input
-                type="file"
-                accept=".pdf"
-                disabled={busyCurso === r.curso}
-                className="esj-field-file"
-                onChange={(e) => onFile(r.curso, e.target.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
