@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   ANO_LECTIVO,
   NIVEIS,
@@ -39,8 +40,13 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
   const [items, setItems] = useState<Linha[]>([]);
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 40;
 
   const cursos = cursosDoNivel(nivel);
+  const totalPaginas = Math.max(1, Math.ceil(items.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const itemsPagina = items.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
 
   const refresh = () => {
     listPautaGestao({
@@ -66,6 +72,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
 
   useEffect(() => {
     refresh();
+    setPagina(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nivel, curso, regime]);
 
@@ -232,7 +239,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                 </td>
               </tr>
             )}
-            {items.map((row) => {
+            {itemsPagina.map((row) => {
               const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
               const resultado = classificacao(media);
               return (
@@ -266,6 +273,50 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             })}
           </tbody>
         </table>
+        {items.length > 0 && (
+          <div className="px-4 py-3 border-t border-navy-100 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-navy-900/50">
+              {items.length} candidato{items.length === 1 ? "" : "s"} nesta pauta
+            </p>
+            {totalPaginas > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={paginaAtual === 1}
+                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                  className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPagina(n)}
+                    aria-current={n === paginaAtual ? "page" : undefined}
+                    className={`flex h-8 w-8 items-center justify-center text-xs font-bold ${
+                      n === paginaAtual
+                        ? "bg-navy-800 text-white"
+                        : "border border-navy-100 text-navy-900 hover:border-sky"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={paginaAtual === totalPaginas}
+                  onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                  className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+                  aria-label="Página seguinte"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
