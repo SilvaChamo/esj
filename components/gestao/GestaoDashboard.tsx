@@ -50,6 +50,7 @@ import {
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
+import ImageSelector from "@/components/gestao/ImageSelector";
 
 const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
@@ -583,9 +584,17 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
   );
 }
 
+const noticiaInputClass =
+  "w-full bg-white text-[#2c3338] border border-[#8c8f94] rounded-[4px] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)]";
+
 function Noticias({ onAction }: { onAction: (m: string) => void }) {
   const [items, setItems] = useState<{ slug: string; title: string; date_label: string }[]>([]);
   const [busy, setBusy] = useState(false);
+  const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [excerpt, setExcerpt] = useState("");
+  const [body, setBody] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   const refresh = () => {
     listNoticiasGestao()
@@ -599,17 +608,13 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
     setBusy(true);
     try {
-      await publishNoticia({
-        title: String(fd.get("title") || "").trim(),
-        excerpt: String(fd.get("excerpt") || "").trim(),
-        body: String(fd.get("body") || "").trim(),
-        image: (fd.get("image") as File | null)?.size ? (fd.get("image") as File) : null,
-      });
-      form.reset();
+      await publishNoticia({ title: title.trim(), excerpt: excerpt.trim(), body: body.trim(), image: imageUrl || null });
+      setTitle("");
+      setExcerpt("");
+      setBody("");
+      setImageUrl("");
       refresh();
       onAction("A notícia foi publicada em /noticias.");
     } catch (error) {
@@ -620,49 +625,119 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
   };
 
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-6 items-start">
-      <form className="bg-white border border-navy-100 p-8 space-y-4" onSubmit={onSubmit}>
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Nova notícia</h2>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-          <input name="title" required className="esj-field" placeholder="Título do comunicado" />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Resumo</span>
-          <input name="excerpt" required className="esj-field" placeholder="Duas linhas para a página inicial" />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Texto</span>
-          <textarea name="body" required className="esj-field h-32 py-3" placeholder="Corpo da notícia" />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Imagem (opcional)</span>
-          <input name="image" type="file" accept=".jpg,.jpeg,.png" className="esj-field-file" />
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-        >
-          {busy ? "A PUBLICAR…" : "PUBLICAR NOTÍCIA"}
-        </button>
+    <div className="text-[#2c3338]">
+      <h1 className="font-serif text-2xl font-bold text-navy-900 mb-4">Adicionar notícia</h1>
+
+      <form onSubmit={onSubmit} className="flex flex-col lg:flex-row gap-5 items-start">
+        <div className="flex-1 w-full space-y-5 min-w-0">
+          <input
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Adicionar título"
+            className={`${noticiaInputClass} h-[50px] px-3 text-[1.4rem]`}
+          />
+
+          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
+            <div className="p-3 border-b border-[#ccd0d4] bg-white">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Resumo</h2>
+            </div>
+            <div className="p-4 bg-white">
+              <textarea
+                rows={2}
+                required
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Duas linhas para a página inicial"
+                className={`${noticiaInputClass} p-3 text-[14px]`}
+              />
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
+            <div className="p-3 border-b border-[#ccd0d4] bg-white">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Texto</h2>
+            </div>
+            <div className="p-4 bg-white">
+              <textarea
+                rows={12}
+                required
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Corpo da notícia"
+                className={`${noticiaInputClass} p-3 text-[14px]`}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full lg:w-[280px] space-y-5 shrink-0">
+          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
+            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Imagem de destaque</h2>
+            </div>
+            <div className="p-3">
+              {imageUrl ? (
+                <div className="space-y-3">
+                  <img src={imageUrl} className="w-full h-auto border border-[#ccd0d4]" alt="" />
+                  <button type="button" onClick={() => setIsImageSelectorOpen(true)} className="text-[#2271b1] text-[13px] hover:underline underline-offset-2">
+                    Substituir imagem
+                  </button>
+                  <br />
+                  <button type="button" onClick={() => setImageUrl("")} className="text-[#d63638] text-[13px] hover:underline underline-offset-2">
+                    Remover imagem
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setIsImageSelectorOpen(true)} className="text-[#2271b1] text-[13px] hover:text-[#135e96] underline underline-offset-2 text-left">
+                  Definir imagem de destaque
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
+            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Publicar</h2>
+            </div>
+            <div className="p-3 bg-[#f6f7f7] flex items-center justify-end border-t border-[#ccd0d4]">
+              <button
+                type="submit"
+                disabled={busy}
+                className="px-6 py-2 bg-[#2271b1] text-white text-[14px] font-medium rounded-[4px] hover:bg-[#135e96] disabled:opacity-50"
+              >
+                {busy ? "A publicar…" : "Publicar"}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
+            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Publicadas</h2>
+            </div>
+            <div className="p-3 bg-white max-h-64 overflow-y-auto">
+              <ul className="space-y-3">
+                {items.length === 0 && <li className="text-sm text-[#787c82]">Ainda sem notícias na base.</li>}
+                {items.map((n) => (
+                  <li key={n.slug} className="text-sm">
+                    <Link href={`/noticias/${n.slug}`} className="block font-semibold text-[#2271b1] hover:text-[#135e96]">
+                      {n.title}
+                    </Link>
+                    <span className="text-[11px] text-[#787c82]">{n.date_label}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
       </form>
-      <aside className="bg-white border border-navy-100 p-6">
-        <h3 className="font-serif font-bold text-navy-900">Publicadas</h3>
-        <ul className="mt-4 space-y-3">
-          {items.length === 0 && (
-            <li className="text-sm text-navy-900/50">Ainda sem notícias na base.</li>
-          )}
-          {items.map((n) => (
-            <li key={n.slug} className="text-sm">
-              <Link href={`/noticias/${n.slug}`} className="block font-semibold text-navy-900 hover:text-crimson">
-                {n.title}
-              </Link>
-              <span className="text-[11px] text-navy-900/50">{n.date_label}</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
+
+      {isImageSelectorOpen && (
+        <ImageSelector
+          onClose={() => setIsImageSelectorOpen(false)}
+          onSelect={(url) => setImageUrl(url)}
+        />
+      )}
     </div>
   );
 }

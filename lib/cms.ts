@@ -75,12 +75,10 @@ export async function publishNoticia(input: {
   title: string;
   excerpt: string;
   body: string;
-  image?: File | null;
+  image?: string | null;
 }) {
   const supabase = createBrowserSupabase();
-  const image = input.image
-    ? await uploadMedia(input.image, "noticias")
-    : "/studentes.jpg";
+  const image = input.image || "/studentes.jpg";
   const base = slugify(input.title);
   let slug = base;
   for (let i = 2; i < 20; i += 1) {
@@ -276,26 +274,44 @@ export type MediaFile = {
   createdAt: string | null;
 };
 
-export async function listMediaGaleria(): Promise<MediaFile[]> {
-  const supabase = createBrowserSupabase();
-  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(GALERIA_FOLDER, {
+// O bucket "media" é partilhado por todo o sítio (notícias, publicações,
+// edital, galeria). A galeria mostra tudo o que já lá está, não só o que
+// foi carregado a partir dela — por isso percorre as subpastas todas em
+// vez de assumir que está tudo em "galeria/".
+async function listarPastaRecursiva(
+  supabase: ReturnType<typeof createBrowserSupabase>,
+  prefix: string
+): Promise<MediaFile[]> {
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(prefix, {
     limit: 1000,
     sortBy: { column: "created_at", order: "desc" },
   });
   if (error) throw error;
-  return (data ?? [])
-    .filter((f) => f.id)
-    .map((f) => {
-      const name = `${GALERIA_FOLDER}/${f.name}`;
-      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(name);
-      return {
-        name,
+
+  const resultados: MediaFile[] = [];
+  for (const entry of data ?? []) {
+    const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.id === null) {
+      const filhos = await listarPastaRecursiva(supabase, path);
+      resultados.push(...filhos);
+    } else {
+      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(path);
+      resultados.push({
+        name: path,
         url: pub.publicUrl,
-        size: f.metadata?.size ?? null,
-        mimeType: f.metadata?.mimetype ?? null,
-        createdAt: f.created_at ?? null,
-      };
-    });
+        size: entry.metadata?.size ?? null,
+        mimeType: entry.metadata?.mimetype ?? null,
+        createdAt: entry.created_at ?? null,
+      });
+    }
+  }
+  return resultados;
+}
+
+export async function listMediaGaleria(): Promise<MediaFile[]> {
+  const supabase = createBrowserSupabase();
+  const ficheiros = await listarPastaRecursiva(supabase, "");
+  return ficheiros.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 function limparNomeFicheiro(nome: string) {
@@ -330,6 +346,54 @@ export async function deleteMediaGaleria(names: string[]) {
   const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
   if (error) throw error;
   await supabase.from("media_details").delete().in("file_name", names);
+}
+
+// Traz para o Storage as imagens das notícias/publicações que ainda são
+// ficheiros locais (em /public, ex. "/studentes.jpg") e por isso não
+// aparecem na galeria — descarrega-as e volta a carregá-las no bucket
+// "media", ficando disponíveis (e editáveis) como qualquer outra foto.
+export async function importarImagensDoSite(
+  jaNaGaleria: string[]
+): Promise<{ importadas: number; ignoradas: number }> {
+  const supabase = createBrowserSupabase();
+  const [noticiasRes, publicacoesRes] = await Promise.all([
+    supabase.from("noticias").select("image"),
+    supabase.from("publicacoes").select("image"),
+  ]);
+  if (noticiasRes.error) throw noticiasRes.error;
+  if (publicacoesRes.error) throw publicacoesRes.error;
+
+  const urls = new Set<string>();
+  for (const row of noticiasRes.data ?? []) if (row.image) urls.add(row.image);
+  for (const row of publicacoesRes.data ?? []) if (row.image) urls.add(row.image);
+
+  const conhecidos = new Set(jaNaGaleria.map((n) => n.split("/").pop()));
+
+  let importadas = 0;
+  let ignoradas = 0;
+  for (const url of urls) {
+    if (url.includes(`/${GALERIA_BUCKET}/`)) continue; // já está no Storage
+    const nomeLimpo = `site-${url.replace(/^\//, "").replace(/[^\w.-]/g, "_")}`;
+    if (conhecidos.has(nomeLimpo)) continue;
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        ignoradas += 1;
+        continue;
+      }
+      const blob = await res.blob();
+      const path = `${GALERIA_FOLDER}/${nomeLimpo}`;
+      const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, blob, {
+        contentType: blob.type || undefined,
+        upsert: false,
+      });
+      if (error) ignoradas += 1;
+      else importadas += 1;
+    } catch {
+      ignoradas += 1;
+    }
+  }
+  return { importadas, ignoradas };
 }
 
 export type MediaDetails = {
