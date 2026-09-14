@@ -814,14 +814,14 @@ create policy "perfis_self_read" on perfis
   for select to authenticated using (auth.uid() = id);
 create policy "perfis_aprovados_read_all" on perfis
   for select to authenticated using (
-    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+    exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = true)
   );
 create policy "perfis_aprovados_update" on perfis
   for update to authenticated using (
-    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+    exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = true)
   )
   with check (
-    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+    exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = true)
   );
 
 create or replace function public.handle_new_user()

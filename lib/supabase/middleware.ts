@@ -2,6 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
 
+function isMissingTableError(error: unknown) {
+  const msg =
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message: string }).message)
+      : String(error);
+  return /Could not find the table|PGRST205|schema cache/i.test(msg);
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const url = supabaseUrl();
@@ -33,11 +41,13 @@ export async function updateSession(request: NextRequest) {
 
   // Todas as contas têm uma linha em "perfis" (criada por trigger no
   // auth.users; as contas antigas foram migradas com aprovado = true).
-  // Falha fechado: sem linha aprovada, fica pendente — exceto se a tabela
-  // ainda nem existir (SQL do painel por correr), para não trancar toda a
-  // gente fora do painel nesse estado transitório de instalação.
+  // Falha fechado: qualquer erro ou linha não aprovada deixa pendente —
+  // exceto se a tabela "perfis" ainda nem existir (SQL do painel por
+  // correr), para não trancar toda a gente fora do painel nesse estado
+  // transitório de instalação.
   let pendente = false;
   if (user) {
+    pendente = true;
     try {
       const { data: perfil, error } = await supabase
         .from("perfis")
@@ -45,10 +55,12 @@ export async function updateSession(request: NextRequest) {
         .eq("id", user.id)
         .maybeSingle();
       if (!error) {
-        pendente = !perfil || !perfil.aprovado;
+        pendente = !perfil?.aprovado;
+      } else if (isMissingTableError(error)) {
+        pendente = false;
       }
-    } catch {
-      pendente = false;
+    } catch (error) {
+      pendente = !isMissingTableError(error);
     }
   }
 
