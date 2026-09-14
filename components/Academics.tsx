@@ -267,52 +267,71 @@ export default function Academics() {
 
         {tab === "calendario" && (
           <div>
-            <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-              Datas do ano lectivo
-            </h2>
-            <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
-              Início do ano lectivo, inscrições, exames de admissão e publicação de
-              resultados — as datas oficiais e definitivas são as do{" "}
-              <Link href="/edital" className="text-sky hover:underline">
-                edital de admissão
-              </Link>
-              .
-            </p>
-            <div className="mt-10 grid sm:grid-cols-2 gap-5">
-              {DATAS.map((d) => (
-                <div
-                  key={d.titulo}
-                  className="relative overflow-hidden bg-cream border border-navy-100 p-6 flex gap-4"
-                >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
-                  >
-                    {d.numero}
-                  </span>
-                  <d.icon size={22} className="relative shrink-0 mt-0.5 text-sky" />
-                  <div className="relative min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-navy-800 text-white text-[10px] font-bold">
+            <div className="text-center">
+              <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
+                Datas do ano lectivo
+              </h2>
+              <p className="mt-5 max-w-2xl mx-auto text-navy-900 leading-relaxed">
+                Início do ano lectivo, inscrições, exames de admissão e publicação de
+                resultados — as datas oficiais e definitivas são as do{" "}
+                <Link href="/edital" className="text-sky hover:underline">
+                  edital de admissão
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="mt-14 relative">
+              <div
+                aria-hidden
+                className="absolute left-4 sm:left-1/2 top-2 bottom-2 w-px bg-navy-100 sm:-translate-x-1/2"
+              />
+              <div className="space-y-10">
+                {DATAS.map((d, i) => {
+                  const isRight = i % 2 === 1;
+                  return (
+                    <div
+                      key={d.titulo}
+                      className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10"
+                    >
+                      <span className="absolute left-4 sm:left-1/2 top-6 z-10 -translate-x-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-white text-[11px] font-bold ring-4 ring-white">
                         {d.numero}
                       </span>
-                      <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
-                    </div>
-                    <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
-                    {d.link && (
-                      <Link
-                        href={d.link.href}
-                        className="mt-3 inline-block text-sm text-sky hover:underline"
+                      <div
+                        className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
+                          isRight
+                            ? "sm:col-start-2 border-r-4 border-navy-800"
+                            : "sm:col-start-1 border-l-4 border-navy-800"
+                        }`}
                       >
-                        {d.link.label} →
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
+                        >
+                          {d.numero}
+                        </span>
+                        <d.icon size={22} className="relative shrink-0 mt-0.5 text-sky" />
+                        <div className="relative min-w-0">
+                          <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
+                          <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
+                          {d.link && (
+                            <Link
+                              href={d.link.href}
+                              className="mt-3 inline-block text-sm text-sky hover:underline"
+                            >
+                              {d.link.label} →
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="mt-10 flex flex-wrap gap-3">
+
+            <div className="mt-10 flex flex-wrap gap-3 justify-center">
               <Link
                 href="/edital"
                 className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
