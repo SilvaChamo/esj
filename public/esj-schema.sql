@@ -300,9 +300,9 @@ insert into calendario_academico (id, inscricoes, exames, resultados, inicio_ano
 select
   1,
   'O prazo de pré-inscrição para o ano lectivo 2026 encontra-se encerrado. O próximo período, para o ano lectivo 2027, deverá abrir em Novembro.',
-  'Provas de Português e História, para todas as licenciaturas, em data a anunciar no edital do próximo ciclo.',
+  'Provas de Português e História, para todas as licenciaturas, nos regimes diurno e pós-laboral, em data e local a anunciar no edital do próximo ciclo de admissão.',
   'Divulgados pela Secretaria Académica através deste portal, após a correcção dos exames de admissão.',
-  'Datas e calendário de matrículas publicados no edital de admissão, disponível em /edital.'
+  'Datas de matrículas, acolhimento aos novos estudantes e início das aulas publicadas no edital de admissão do próximo ciclo, disponível nesta página e em /edital.'
 where not exists (select 1 from calendario_academico where id = 1);
 
 insert into livros (title, image, sort_order)

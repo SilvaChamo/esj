@@ -285,7 +285,7 @@ export default function Academics() {
             <div className="mt-14 relative">
               <div
                 aria-hidden
-                className="absolute left-4 sm:left-1/2 top-2 bottom-2 w-px bg-navy-100 sm:-translate-x-1/2"
+                className="absolute left-4 sm:left-1/2 top-2 bottom-2 w-px bg-sky-300 sm:-translate-x-1/2"
               />
               <div className="space-y-10">
                 {DATAS.map((d, i) => {
@@ -295,8 +295,10 @@ export default function Academics() {
                       key={d.titulo}
                       className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10"
                     >
-                      <span className="absolute left-4 sm:left-1/2 top-6 z-10 -translate-x-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-navy-800 text-white text-[11px] font-bold ring-4 ring-white">
-                        {d.numero}
+                      <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">
+                          {d.numero}
+                        </span>
                       </span>
                       <div
                         className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
@@ -329,7 +331,7 @@ export default function Academics() {
               </div>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-3 justify-center">
+            <div className="mt-16 flex flex-wrap gap-3 justify-center">
               <Link
                 href="/edital"
                 className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"

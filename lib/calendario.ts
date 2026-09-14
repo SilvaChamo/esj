@@ -14,11 +14,11 @@ export const DEFAULT_CALENDARIO: Calendario = {
   inscricoes:
     "O prazo de pré-inscrição para o ano lectivo 2026 encontra-se encerrado. O próximo período, para o ano lectivo 2027, deverá abrir em Novembro.",
   exames:
-    "Provas de Português e História, para todas as licenciaturas, em data a anunciar no edital do próximo ciclo.",
+    "Provas de Português e História, para todas as licenciaturas, nos regimes diurno e pós-laboral, em data e local a anunciar no edital do próximo ciclo de admissão.",
   resultados:
     "Divulgados pela Secretaria Académica através deste portal, após a correcção dos exames de admissão.",
   inicioAno:
-    "Datas e calendário de matrículas publicados no edital de admissão, disponível em /edital.",
+    "Datas de matrículas, acolhimento aos novos estudantes e início das aulas publicadas no edital de admissão do próximo ciclo, disponível nesta página e em /edital.",
 };
 
 export function readCalendario(): Calendario {
