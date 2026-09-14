@@ -44,14 +44,14 @@ export default function PautaAdmissao({
         <img
           src="/esj-logo-mark.png"
           alt="Escola Superior de Jornalismo"
-          className="h-16 w-16 object-contain"
+          className="h-20 w-20 object-contain"
         />
         <div className="min-w-0">
           <p className="text-[11px] font-bold tracking-widest text-sky">
             ESCOLA SUPERIOR DE JORNALISMO
           </p>
           <h1 className="font-serif text-lg sm:text-xl font-bold text-navy-900 mt-1 leading-tight">
-            {tituloPauta(curso, regime)}
+            {tituloPauta()}
           </h1>
           <p className="mt-1 text-sm text-navy-900/65">
             Ano lectivo {anoLectivo} · Lista única · {REGIME_LABEL[regime]}
@@ -72,7 +72,7 @@ export default function PautaAdmissao({
         </label>
         <Link
           href={voltarHref}
-          className="inline-flex items-center gap-1.5 text-sm text-sky hover:underline"
+          className="ml-auto inline-flex items-center gap-1.5 text-sm text-sky hover:underline"
         >
           <ArrowLeft size={14} />
           Voltar aos cursos
@@ -111,7 +111,9 @@ export default function PautaAdmissao({
                 <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
                   {ordem}
                 </td>
-                <td className="px-3 py-1.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
+                <td className="px-3 py-1.5 text-[11px] font-semibold text-navy-900 uppercase">
+                  {linha.apelido}
+                </td>
                 <td className="px-3 py-1.5 text-navy-900">{linha.nome}</td>
                 <td className="px-3 py-1.5 text-center tabular-nums">
                   {formatNota(linha.notaPortugues)}

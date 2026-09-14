@@ -141,6 +141,6 @@ export function formatNota(n: number) {
   return n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function tituloPauta(curso: CursoAdmissao, regime: Regime) {
-  return `Pauta de resultados de admissão — ${curso.titulo} — Regime ${REGIME_LABEL[regime]}`;
+export function tituloPauta() {
+  return "Pauta de resultados de admissão";
 }
