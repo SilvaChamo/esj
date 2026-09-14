@@ -3,6 +3,7 @@ import Link from "next/link";
 import InscricaoForm from "@/components/InscricaoForm";
 import InscricaoSidebar from "@/components/InscricaoSidebar";
 import AdmissaoSidebar from "@/components/AdmissaoSidebar";
+import VoltarBanner from "@/components/VoltarBanner";
 
 export const metadata = {
   title: "Pré-inscrição 2026 | ESJ",
@@ -24,13 +25,10 @@ export default function InscricaoPage() {
             Consulte o{" "}
             <Link href="/edital" className="text-sky hover:underline">
               edital
-            </Link>{" "}
-            ou volte à{" "}
-            <Link href="/inscricoes" className="text-sky hover:underline">
-              informação de admissões
             </Link>
             .
           </p>
+          <VoltarBanner href="/inscricoes" label="Voltar às admissões" />
         </div>
       </section>
 

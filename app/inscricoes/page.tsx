@@ -1,4 +1,5 @@
 import Link from "next/link";
+import VoltarBanner from "@/components/VoltarBanner";
 
 export const metadata = {
   title: "Inscrições encerradas | ESJ",
@@ -20,6 +21,7 @@ export default function InscricoesEncerradasPage() {
           <p className="mt-3 text-white/70 max-w-2xl text-sm leading-relaxed">
             O período de pré-inscrição para o ano lectivo 2026 já terminou.
           </p>
+          <VoltarBanner href="/" label="Voltar à página inicial" />
         </div>
       </section>
 

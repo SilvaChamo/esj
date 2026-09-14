@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import ResultadosLista from "@/components/ResultadosLista";
+import VoltarBanner from "@/components/VoltarBanner";
 
 export const metadata = {
   title: "Resultados de Admissão | ESJ",
@@ -24,6 +25,7 @@ export default function ResultadosPage() {
             Filtre o nível e o regime na barra lateral e abra a pauta do curso.
             A média final é (Português × 50%) + (História × 50%).
           </p>
+          <VoltarBanner href="/#ensino" label="Voltar ao calendário académico" />
         </div>
       </section>
       <Suspense fallback={<p className="px-8 py-10 text-sm text-navy-900/50">A carregar…</p>}>

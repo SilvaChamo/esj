@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
 import EditalPdfViewer from "@/components/EditalPdfViewer";
+import VoltarBanner from "@/components/VoltarBanner";
 import { loadEdital } from "@/lib/editais";
 
 export const metadata = {
@@ -29,6 +30,7 @@ export default async function EditalPage() {
               Leia o documento completo antes de se inscrever. Os exames de admissão
               cobrem Português e História para os cursos de licenciatura da ESJ.
             </p>
+            <VoltarBanner href="/inscricoes" label="Voltar às admissões" />
           </div>
           <div className="flex flex-wrap gap-3 shrink-0">
             <Link
