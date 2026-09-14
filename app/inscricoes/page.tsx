@@ -25,7 +25,7 @@ export default function InscricoesEncerradasPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-14 md:py-20">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <aside className="bg-white border border-navy-100 divide-y divide-navy-100 order-2 lg:order-1">
             <div className="p-5">

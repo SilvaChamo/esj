@@ -32,7 +32,7 @@ export default function InscricaoPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-14">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <Suspense fallback={null}>
             <div className="space-y-5">

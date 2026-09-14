@@ -25,7 +25,7 @@ export default async function NoticiasPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => (
             <Link

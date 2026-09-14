@@ -33,7 +33,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
         </div>
       </section>
 
-      <article className="mx-auto max-w-3xl px-4 lg:px-8 py-10 md:py-14">
+      <article className="mx-auto max-w-3xl px-4 lg:px-8 py-10">
         <div className="overflow-hidden bg-white border border-navy-100">
           <img src={item.image} alt={item.title} className="w-full h-auto object-contain max-h-[520px] mx-auto" />
         </div>

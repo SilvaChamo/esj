@@ -51,7 +51,7 @@ export default async function EditalPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-8">
+      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <EditalPdfViewer src={edital.file_url} />
       </section>
     </main>
