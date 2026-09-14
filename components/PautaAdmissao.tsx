@@ -1,8 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import { Search } from "lucide-react";
 import {
   ANO_LECTIVO,
-  MEDIA_MINIMA,
-  PESO_HISTORIA,
-  PESO_PORTUGUES,
   REGIME_LABEL,
   formatNota,
   tituloPauta,
@@ -24,8 +25,15 @@ export default function PautaAdmissao({
   anoLectivo = ANO_LECTIVO,
   linhas,
 }: Props) {
+  const [query, setQuery] = useState("");
   const merito = rankingMerito(linhas);
-  const total = linhas.length;
+  const comOrdem = linhas.map((linha, index) => ({ linha, ordem: index + 1 }));
+  const termo = query.trim().toLowerCase();
+  const visiveis = termo
+    ? comOrdem.filter(({ linha }) =>
+        `${linha.apelido} ${linha.nome}`.toLowerCase().includes(termo)
+      )
+    : comOrdem;
 
   return (
     <article className="bg-white border border-navy-100 print:border-0">
@@ -48,14 +56,21 @@ export default function PautaAdmissao({
         </div>
       </header>
 
-      <div className="px-5 sm:px-8 py-4 text-sm text-navy-900/70 leading-relaxed border-b border-navy-100">
-        Média final = (Português × {PESO_PORTUGUES * 100}%) + (História × {PESO_HISTORIA * 100}%).
-        Admitido se a média for igual ou superior a {formatNota(MEDIA_MINIMA)} valores.
-        Lista por ordem alfabética do apelido, numerada de 1 a {total || 0}.
+      <div className="px-5 sm:px-8 py-3 border-b border-navy-100 print:hidden">
+        <label className="relative flex items-center w-full max-w-[220px] h-9 border border-navy-100 bg-white focus-within:border-sky">
+          <Search size={14} className="pointer-events-none ml-3 shrink-0 text-navy-900/40" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Procurar por nome…"
+            className="w-full min-w-0 h-full bg-transparent px-2 text-xs text-navy-900 outline-none placeholder:text-navy-900/40"
+          />
+        </label>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
               <th className="px-3 py-3 w-12">Ord.</th>
@@ -69,17 +84,19 @@ export default function PautaAdmissao({
             </tr>
           </thead>
           <tbody>
-            {linhas.length === 0 && (
+            {visiveis.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-5 py-10 text-center text-navy-900/50">
-                  Ainda não há resultados publicados para este curso e regime.
+                  {linhas.length === 0
+                    ? "Ainda não há resultados publicados para este curso e regime."
+                    : "Nenhum nome corresponde à procura."}
                 </td>
               </tr>
             )}
-            {linhas.map((linha, index) => (
+            {visiveis.map(({ linha, ordem }) => (
               <tr key={linha.id} className="border-t border-navy-100">
-                <td className="px-3 py-2.5 text-xs text-navy-900/50">{index + 1}</td>
-                <td className="px-3 py-2.5 font-semibold text-navy-900">{linha.apelido}</td>
+                <td className="px-3 py-2.5 text-xs text-navy-900/50">{ordem}</td>
+                <td className="px-3 py-2.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
                 <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
                 <td className="px-3 py-2.5 text-right tabular-nums">
                   {formatNota(linha.notaPortugues)}
