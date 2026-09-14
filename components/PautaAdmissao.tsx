@@ -57,13 +57,13 @@ export default function PautaAdmissao({
       </header>
 
       <div className="px-5 sm:px-8 py-3 border-b border-navy-100 print:hidden">
-        <label className="relative flex items-center w-full max-w-[220px] h-9 border border-navy-100 bg-white focus-within:border-sky">
+        <label className="relative flex items-center w-1/2 h-9 border border-navy-100 bg-white focus-within:border-sky">
           <Search size={14} className="pointer-events-none ml-3 shrink-0 text-navy-900/40" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Procurar por nome…"
+            placeholder="Procurar pelo nome e apelido…"
             className="w-full min-w-0 h-full bg-transparent px-2 text-xs text-navy-900 outline-none placeholder:text-navy-900/40"
           />
         </label>
@@ -73,7 +73,7 @@ export default function PautaAdmissao({
         <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3 w-12">Ord.</th>
+              <th className="px-3 py-3 w-12 border-r border-navy-100">Ord.</th>
               <th className="px-3 py-3">Apelido</th>
               <th className="px-3 py-3">Nome</th>
               <th className="px-3 py-3 text-right">Português (50%)</th>
@@ -93,9 +93,14 @@ export default function PautaAdmissao({
                 </td>
               </tr>
             )}
-            {visiveis.map(({ linha, ordem }) => (
-              <tr key={linha.id} className="border-t border-navy-100">
-                <td className="px-3 py-2.5 text-xs text-navy-900/50">{ordem}</td>
+            {visiveis.map(({ linha, ordem }, i) => (
+              <tr
+                key={linha.id}
+                className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
+              >
+                <td className="px-3 py-2.5 text-xs text-navy-900/50 border-r border-navy-100">
+                  {ordem}
+                </td>
                 <td className="px-3 py-2.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
                 <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
                 <td className="px-3 py-2.5 text-right tabular-nums">
