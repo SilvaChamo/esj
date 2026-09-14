@@ -8,8 +8,11 @@ import {
   Bell,
   BookOpen,
   Calendar,
+  ChevronUp,
+  Eye,
   FileText,
   Images,
+  KeyRound,
   LayoutDashboard,
   Mail,
   Newspaper,
@@ -587,6 +590,8 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
 const noticiaInputClass =
   "w-full bg-white text-[#2c3338] border border-[#8c8f94] rounded-[4px] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)]";
 
+const RASCUNHO_NOTICIA_KEY = "esj-rascunho-noticia";
+
 function Noticias({ onAction }: { onAction: (m: string) => void }) {
   const [items, setItems] = useState<{ slug: string; title: string; date_label: string }[]>([]);
   const [busy, setBusy] = useState(false);
@@ -604,7 +609,31 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
 
   useEffect(() => {
     refresh();
+    try {
+      const raw = window.localStorage.getItem(RASCUNHO_NOTICIA_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        setTitle(draft.title || "");
+        setExcerpt(draft.excerpt || "");
+        setBody(draft.body || "");
+        setImageUrl(draft.imageUrl || "");
+      }
+    } catch {
+      /* rascunho inválido, ignora */
+    }
   }, []);
+
+  const guardarRascunho = () => {
+    try {
+      window.localStorage.setItem(
+        RASCUNHO_NOTICIA_KEY,
+        JSON.stringify({ title, excerpt, body, imageUrl })
+      );
+      onAction("Rascunho guardado neste dispositivo.");
+    } catch {
+      onAction("Não foi possível guardar o rascunho.");
+    }
+  };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -615,6 +644,7 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
       setExcerpt("");
       setBody("");
       setImageUrl("");
+      window.localStorage.removeItem(RASCUNHO_NOTICIA_KEY);
       refresh();
       onAction("A notícia foi publicada em /noticias.");
     } catch (error) {
@@ -623,6 +653,12 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
       setBusy(false);
     }
   };
+
+  const hoje = new Date().toLocaleDateString("pt-PT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
     <div className="text-[#2c3338]">
@@ -697,10 +733,36 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
           </div>
 
           <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
+            <div className="p-2.5 border-b border-[#ccd0d4] bg-white flex items-center justify-between">
               <h2 className="font-semibold text-[14px] text-[#1d2327]">Publicar</h2>
+              <ChevronUp className="w-4 h-4 text-[#787c82]" />
             </div>
-            <div className="p-3 bg-[#f6f7f7] flex items-center justify-end border-t border-[#ccd0d4]">
+            <div className="p-3 space-y-2.5 text-[13px] text-[#1d2327]">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-[#787c82] shrink-0" />
+                <span>
+                  Estado: <strong>Publicado</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#787c82] shrink-0" />
+                <span>
+                  Visibilidade: <strong>Público</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#787c82] shrink-0" />
+                <span className="border border-[#ccd0d4] rounded-[4px] px-2.5 py-1 text-[#1d2327]">{hoje}</span>
+              </div>
+            </div>
+            <div className="p-3 bg-[#f6f7f7] flex items-center justify-between gap-2 border-t border-[#ccd0d4]">
+              <button
+                type="button"
+                onClick={guardarRascunho}
+                className="px-4 py-2 bg-white border border-[#ccd0d4] text-[#50575e] text-[13px] font-semibold rounded-[4px] hover:bg-[#f0f0f1]"
+              >
+                Guardar rascunho
+              </button>
               <button
                 type="submit"
                 disabled={busy}

@@ -348,54 +348,6 @@ export async function deleteMediaGaleria(names: string[]) {
   await supabase.from("media_details").delete().in("file_name", names);
 }
 
-// Traz para o Storage as imagens das notícias/publicações que ainda são
-// ficheiros locais (em /public, ex. "/studentes.jpg") e por isso não
-// aparecem na galeria — descarrega-as e volta a carregá-las no bucket
-// "media", ficando disponíveis (e editáveis) como qualquer outra foto.
-export async function importarImagensDoSite(
-  jaNaGaleria: string[]
-): Promise<{ importadas: number; ignoradas: number }> {
-  const supabase = createBrowserSupabase();
-  const [noticiasRes, publicacoesRes] = await Promise.all([
-    supabase.from("noticias").select("image"),
-    supabase.from("publicacoes").select("image"),
-  ]);
-  if (noticiasRes.error) throw noticiasRes.error;
-  if (publicacoesRes.error) throw publicacoesRes.error;
-
-  const urls = new Set<string>();
-  for (const row of noticiasRes.data ?? []) if (row.image) urls.add(row.image);
-  for (const row of publicacoesRes.data ?? []) if (row.image) urls.add(row.image);
-
-  const conhecidos = new Set(jaNaGaleria.map((n) => n.split("/").pop()));
-
-  let importadas = 0;
-  let ignoradas = 0;
-  for (const url of urls) {
-    if (url.includes(`/${GALERIA_BUCKET}/`)) continue; // já está no Storage
-    const nomeLimpo = `site-${url.replace(/^\//, "").replace(/[^\w.-]/g, "_")}`;
-    if (conhecidos.has(nomeLimpo)) continue;
-    try {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) {
-        ignoradas += 1;
-        continue;
-      }
-      const blob = await res.blob();
-      const path = `${GALERIA_FOLDER}/${nomeLimpo}`;
-      const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, blob, {
-        contentType: blob.type || undefined,
-        upsert: false,
-      });
-      if (error) ignoradas += 1;
-      else importadas += 1;
-    } catch {
-      ignoradas += 1;
-    }
-  }
-  return { importadas, ignoradas };
-}
-
 export type MediaDetails = {
   alt_text: string;
   title: string;
