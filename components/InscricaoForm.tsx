@@ -142,13 +142,19 @@ export default function InscricaoForm() {
 
   return (
     <div className="min-w-0 max-w-full overflow-x-hidden">
-      <nav aria-label="Etapas da pré-inscrição" className="bg-white border border-navy-100 border-b-0">
-        <p className="px-4 pt-3 text-xs font-semibold text-navy-900/55 sm:hidden">
+      <nav aria-label="Etapas da pré-inscrição" className="mb-8">
+        <p className="text-xs font-semibold text-navy-900/55 sm:hidden mb-4">
           Etapa {step + 1} de {STEPS.length} — {STEPS[step].title}
         </p>
-        <ul className="grid grid-cols-5">
+        <ol className="relative flex justify-between">
+          <div className="absolute top-4 left-0 right-0 h-0.5 bg-navy-100" aria-hidden />
+          <div
+            className="absolute top-4 left-0 h-0.5 bg-leaf transition-all"
+            style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
+            aria-hidden
+          />
           {STEPS.map((item, i) => (
-            <li key={item.tab} className="min-w-0">
+            <li key={item.tab} className="relative z-10 flex flex-col items-center gap-2 min-w-0 px-1">
               <button
                 type="button"
                 onClick={() => {
@@ -157,18 +163,26 @@ export default function InscricaoForm() {
                 }}
                 aria-current={i === step ? "step" : undefined}
                 aria-label={item.tab}
-                className={`w-full min-w-0 px-1 py-3 text-[10px] sm:text-sm font-bold text-center leading-tight border-b-2 transition-colors ${
+                className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
                   i === step
-                    ? "text-leaf border-leaf"
-                    : "text-navy-900/60 border-transparent hover:text-navy-900/85"
+                    ? "bg-leaf border-leaf text-white"
+                    : i < step
+                      ? "bg-white border-leaf text-leaf"
+                      : "bg-white border-navy-100 text-navy-900/40"
                 }`}
               >
-                <span className="sm:hidden">{i + 1}</span>
-                <span className="hidden sm:inline">{item.tab}</span>
+                {i + 1}
               </button>
+              <span
+                className={`hidden sm:block text-[11px] font-bold text-center leading-tight ${
+                  i === step ? "text-leaf" : "text-navy-900/55"
+                }`}
+              >
+                {item.tab}
+              </span>
             </li>
           ))}
-        </ul>
+        </ol>
       </nav>
 
       <form noValidate onSubmit={onSubmit} className="border border-navy-100 bg-white min-w-0">
