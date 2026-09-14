@@ -38,8 +38,8 @@ export default function InscricaoPage() {
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <Suspense fallback={null}>
             <div className="space-y-5">
-              <AdmissaoSidebar mostrarMedia={false} />
               <InscricaoSidebar />
+              <AdmissaoSidebar mostrarMedia={false} />
             </div>
           </Suspense>
           <div className="min-w-0 max-w-full">
