@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import {
   ANO_LECTIVO,
+  CURSOS_POR_NIVEL,
   classificacao,
   mediaFinal,
   type Nivel,
@@ -1142,13 +1143,20 @@ const DEMO_JORNALISMO_POS: Omit<PautaRow, "id" | "publicado">[] = [
   },
 ];
 
+// A pauta de demonstração é a mesma lista de nomes/notas para todos os
+// cursos de Licenciatura — só o campo curso muda — para a página ficar
+// padronizada em todo o sítio enquanto a base de dados real não tem
+// candidatos próprios de cada curso.
 function demoPauta(curso: string, nivel: Nivel, regime: Regime): LinhaPauta[] {
-  if (curso !== "Jornalismo" || nivel !== "Licenciatura") return [];
+  if (nivel !== "Licenciatura") return [];
+  const existe = CURSOS_POR_NIVEL[nivel].some((c) => c.nome === curso);
+  if (!existe) return [];
   const source = regime === "Pós-laboral" ? DEMO_JORNALISMO_POS : DEMO_JORNALISMO_DIURNO;
   return source.map((row, i) =>
     mapLinha({
       ...row,
-      id: `demo-${regime}-${i}`,
+      curso,
+      id: `demo-${curso}-${regime}-${i}`,
       publicado: true,
     })
   );

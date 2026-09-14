@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
   ANO_LECTIVO,
   NIVEIS,
@@ -263,9 +263,10 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                     <button
                       type="button"
                       onClick={() => void remover(row.id)}
-                      className="text-xs font-semibold text-crimson hover:underline"
+                      title="Remover"
+                      className="text-crimson hover:text-navy-900 transition-colors"
                     >
-                      Remover
+                      <Trash2 size={15} />
                     </button>
                   </td>
                 </tr>
