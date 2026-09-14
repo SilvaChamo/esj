@@ -9,6 +9,7 @@ import {
   BookOpen,
   Calendar,
   FileText,
+  Images,
   LayoutDashboard,
   Mail,
   Newspaper,
@@ -34,6 +35,7 @@ import {
   cmsError,
   isMissingTable,
   listAnunciosGestao,
+  listGaleria,
   listInscricoesGestao,
   listNewsletterGestao,
   listNoticiasGestao,
@@ -45,6 +47,7 @@ import {
   publishNoticia,
   publishPublicacao,
   publishVideo,
+  type ImagemGaleria,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
@@ -53,6 +56,7 @@ const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
   { id: "edital", label: "Edital", icon: FileText },
   { id: "publicacoes", label: "Publicações", icon: BookOpen },
+  { id: "galeria", label: "Galeria", icon: Images },
   { id: "calendario", label: "Calendário Académico", icon: Calendar },
   { id: "resultados", label: "Resultados", icon: Award },
   { id: "noticias", label: "Notícias", icon: Newspaper },
@@ -165,6 +169,7 @@ export default function GestaoDashboard() {
           {section === "painel" && <Painel onGo={setSection} />}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "publicacoes" && <Publicacoes onAction={showNote} />}
+          {section === "galeria" && <Galeria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
@@ -191,6 +196,12 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
       title: "Publicações",
       text: "Trocar os cartazes de lançamento de livro e de eventos na secção de ensino.",
       meta: "Visível em /#ensino",
+    },
+    {
+      id: "galeria" as Section,
+      title: "Galeria",
+      text: "Ver todas as fotos usadas nas notícias e nas publicações.",
+      meta: "Reúne noticias + publicacoes",
     },
     {
       id: "calendario" as Section,
@@ -238,11 +249,7 @@ function Painel({ onGo }: { onGo: (s: Section) => void }) {
 
   return (
     <div>
-      <p className="text-navy-900/70 max-w-3xl leading-relaxed">
-        Este painel gere o sítio da ESJ: edital, notícias, publicações,
-        candidaturas e anúncios. Tudo grava na mesma base Supabase.
-      </p>
-      <div className="mt-8 grid md:grid-cols-2 gap-5">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
         {cards.map((c) => (
           <button
             key={c.id}
@@ -505,6 +512,53 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
         >
           {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function Galeria() {
+  const [items, setItems] = useState<ImagemGaleria[]>([]);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    listGaleria()
+      .then(setItems)
+      .catch((err) => {
+        if (isMissingTable(err)) setMissing(true);
+        else setError(cmsError(err));
+      });
+  }, []);
+
+  return (
+    <div className="bg-white border border-navy-100 p-8">
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Galeria</h2>
+      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
+        Todas as fotos usadas nas notícias e nas publicações do sítio.
+      </p>
+      {missing && <SchemaInstall />}
+      {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
+      {items.length === 0 && !error && !missing && (
+        <p className="mt-6 text-sm text-navy-900/50">Ainda sem fotos.</p>
+      )}
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {items.map((img, i) => (
+          <div key={`${img.src}-${i}`} className="group">
+            <div className="relative aspect-square overflow-hidden bg-cream border border-navy-100">
+              <img
+                src={img.src}
+                alt={img.titulo}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] font-semibold text-navy-900 truncate">{img.titulo}</p>
+            <p className="text-[10px] text-navy-900/50">
+              {img.origem} · {img.data}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

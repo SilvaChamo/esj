@@ -265,6 +265,46 @@ export async function deletePautaLinha(id: string) {
   if (error) throw error;
 }
 
+export type ImagemGaleria = {
+  src: string;
+  titulo: string;
+  origem: "Notícia" | "Publicação";
+  data: string;
+};
+
+export async function listGaleria(): Promise<ImagemGaleria[]> {
+  const supabase = createBrowserSupabase();
+  const [noticiasRes, publicacoesRes] = await Promise.all([
+    supabase
+      .from("noticias")
+      .select("title, image, date_label, created_at")
+      .order("created_at", { ascending: false })
+      .limit(60),
+    supabase
+      .from("publicacoes")
+      .select("title, image, date_label, created_at")
+      .order("created_at", { ascending: false })
+      .limit(60),
+  ]);
+  if (noticiasRes.error) throw noticiasRes.error;
+  if (publicacoesRes.error) throw publicacoesRes.error;
+
+  const daNoticias: ImagemGaleria[] = (noticiasRes.data ?? []).map((n) => ({
+    src: n.image,
+    titulo: n.title,
+    origem: "Notícia",
+    data: n.date_label,
+  }));
+  const dasPublicacoes: ImagemGaleria[] = (publicacoesRes.data ?? []).map((p) => ({
+    src: p.image,
+    titulo: p.title,
+    origem: "Publicação",
+    data: p.date_label,
+  }));
+
+  return [...daNoticias, ...dasPublicacoes].filter((img) => img.src);
+}
+
 export async function listNewsletterGestao() {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
