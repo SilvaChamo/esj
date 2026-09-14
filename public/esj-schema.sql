@@ -786,3 +786,65 @@ drop policy if exists "media_details_auth_write" on media_details;
 
 create policy "media_details_public_read" on media_details for select using (true);
 create policy "media_details_auth_write" on media_details for all to authenticated using (true) with check (true);
+
+-- Contas do painel (Secretaria/Direcção): quem se regista fica com
+-- aprovado = false até alguém já aprovado o confirmar. A linha em "perfis"
+-- é criada por um trigger no auth.users (abaixo), nunca directamente pelo
+-- cliente — assim ninguém consegue aprovar-se a si próprio a inserir uma
+-- linha com aprovado = true, nem contornar o registo saltando a criação
+-- da linha (o que deixaria "pendente" a false por omissão).
+create table if not exists perfis (
+  id uuid primary key references auth.users(id) on delete cascade,
+  nome text not null default '',
+  email text not null default '',
+  aprovado boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table perfis enable row level security;
+
+drop policy if exists "perfis_self_read" on perfis;
+drop policy if exists "perfis_self_insert" on perfis;
+drop policy if exists "perfis_aprovados_read_all" on perfis;
+drop policy if exists "perfis_aprovados_update" on perfis;
+
+-- Sem política de insert para "authenticated": só o trigger (security
+-- definer, corre como dono da função, ignora RLS) pode criar linhas.
+create policy "perfis_self_read" on perfis
+  for select to authenticated using (auth.uid() = id);
+create policy "perfis_aprovados_read_all" on perfis
+  for select to authenticated using (
+    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+  );
+create policy "perfis_aprovados_update" on perfis
+  for update to authenticated using (
+    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+  )
+  with check (
+    not exists (select 1 from perfis p where p.id = auth.uid() and p.aprovado = false)
+  );
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.perfis (id, nome, email, aprovado)
+  values (new.id, coalesce(new.raw_user_meta_data->>'nome', ''), coalesce(new.email, ''), false)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Contas que já existiam antes desta tabela existir ficam automaticamente
+-- aprovadas (não passaram pelo registo novo, já tinham acesso ao painel).
+insert into perfis (id, nome, email, aprovado)
+select id, coalesce(raw_user_meta_data->>'nome', ''), coalesce(email, ''), true
+from auth.users
+on conflict (id) do nothing;
