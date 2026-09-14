@@ -362,20 +362,20 @@ select * from (values
 ) as v(ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado)
 where not exists (select 1 from pauta_admissao);
 
-create table if not exists media_galeria (
+create table if not exists media_details (
   id uuid primary key default gen_random_uuid(),
-  path text not null unique,
-  url text not null,
-  filename text not null,
-  titulo text not null default '',
-  legenda text not null default '',
-  created_at timestamptz not null default now()
+  file_name text not null unique,
+  alt_text text,
+  title text,
+  caption text,
+  description text,
+  updated_at timestamptz not null default now()
 );
 
-alter table media_galeria enable row level security;
+alter table media_details enable row level security;
 
-drop policy if exists "media_galeria_public_read" on media_galeria;
-drop policy if exists "media_galeria_auth_write" on media_galeria;
+drop policy if exists "media_details_public_read" on media_details;
+drop policy if exists "media_details_auth_write" on media_details;
 
-create policy "media_galeria_public_read" on media_galeria for select using (true);
-create policy "media_galeria_auth_write" on media_galeria for all to authenticated using (true) with check (true);
+create policy "media_details_public_read" on media_details for select using (true);
+create policy "media_details_auth_write" on media_details for all to authenticated using (true) with check (true);

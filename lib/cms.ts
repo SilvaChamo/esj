@@ -265,64 +265,98 @@ export async function deletePautaLinha(id: string) {
   if (error) throw error;
 }
 
-export type MediaGaleria = {
-  id: string;
-  path: string;
+const GALERIA_BUCKET = "media";
+const GALERIA_FOLDER = "galeria";
+
+export type MediaFile = {
+  name: string;
   url: string;
-  filename: string;
-  titulo: string;
-  legenda: string;
-  created_at: string;
+  size: number | null;
+  mimeType: string | null;
+  createdAt: string | null;
 };
 
-export async function listMediaGaleria(): Promise<MediaGaleria[]> {
+export async function listMediaGaleria(): Promise<MediaFile[]> {
   const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
-    .from("media_galeria")
-    .select("id, path, url, filename, titulo, legenda, created_at")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(GALERIA_FOLDER, {
+    limit: 1000,
+    sortBy: { column: "created_at", order: "desc" },
+  });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? [])
+    .filter((f) => f.id)
+    .map((f) => {
+      const name = `${GALERIA_FOLDER}/${f.name}`;
+      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(name);
+      return {
+        name,
+        url: pub.publicUrl,
+        size: f.metadata?.size ?? null,
+        mimeType: f.metadata?.mimetype ?? null,
+        createdAt: f.created_at ?? null,
+      };
+    });
 }
 
-export async function uploadMediaGaleria(file: File): Promise<MediaGaleria> {
+function limparNomeFicheiro(nome: string) {
+  return `${Date.now()}-${nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^\w.-]/g, "_")}`;
+}
+
+export async function uploadMediaGaleria(file: File) {
   const supabase = createBrowserSupabase();
-  const url = await uploadMedia(file, "galeria");
-  const path = url.split("/media/").pop() || file.name;
+  const path = `${GALERIA_FOLDER}/${limparNomeFicheiro(file.name)}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false,
+  });
+  if (error) throw error;
+}
+
+export async function uploadMediaGaleriaBlob(blob: Blob, filename: string) {
+  const supabase = createBrowserSupabase();
+  const path = `${GALERIA_FOLDER}/${filename}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, blob, {
+    contentType: blob.type || undefined,
+    upsert: false,
+  });
+  if (error) throw error;
+}
+
+export async function deleteMediaGaleria(names: string[]) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
+  if (error) throw error;
+  await supabase.from("media_details").delete().in("file_name", names);
+}
+
+export type MediaDetails = {
+  alt_text: string;
+  title: string;
+  caption: string;
+  description: string;
+};
+
+export async function loadMediaDetails(fileName: string): Promise<MediaDetails | null> {
+  const supabase = createBrowserSupabase();
   const { data, error } = await supabase
-    .from("media_galeria")
-    .insert({ path, url, filename: file.name, titulo: file.name })
-    .select("id, path, url, filename, titulo, legenda, created_at")
-    .single();
+    .from("media_details")
+    .select("alt_text, title, caption, description")
+    .eq("file_name", fileName)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export async function updateMediaGaleria(
-  id: string,
-  input: { titulo: string; legenda: string }
-) {
+export async function saveMediaDetails(fileName: string, details: MediaDetails) {
   const supabase = createBrowserSupabase();
   const { error } = await supabase
-    .from("media_galeria")
-    .update({ titulo: input.titulo, legenda: input.legenda })
-    .eq("id", id);
-  if (error) throw error;
-}
-
-export async function deleteMediaGaleria(items: { id: string; path: string }[]) {
-  const supabase = createBrowserSupabase();
-  const paths = items.map((i) => i.path).filter(Boolean);
-  if (paths.length) {
-    await supabase.storage.from("media").remove(paths);
-  }
-  const { error } = await supabase
-    .from("media_galeria")
-    .delete()
-    .in(
-      "id",
-      items.map((i) => i.id)
+    .from("media_details")
+    .upsert(
+      { file_name: fileName, ...details, updated_at: new Date().toISOString() },
+      { onConflict: "file_name" }
     );
   if (error) throw error;
 }

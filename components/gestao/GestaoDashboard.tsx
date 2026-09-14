@@ -8,22 +8,14 @@ import {
   Bell,
   BookOpen,
   Calendar,
-  Check,
-  Copy,
   FileText,
   Images,
   LayoutDashboard,
-  Loader2,
   Mail,
   Newspaper,
-  Pencil,
-  Search,
-  Trash2,
-  Upload,
   Users,
   Video,
   LogOut,
-  X,
 } from "lucide-react";
 import {
   DEFAULT_CALENDARIO,
@@ -41,11 +33,9 @@ import {
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
   cmsError,
-  deleteMediaGaleria,
   isMissingTable,
   listAnunciosGestao,
   listInscricoesGestao,
-  listMediaGaleria,
   listNewsletterGestao,
   listNoticiasGestao,
   listVideosGestao,
@@ -56,12 +46,10 @@ import {
   publishNoticia,
   publishPublicacao,
   publishVideo,
-  updateMediaGaleria,
-  uploadMediaGaleria,
-  type MediaGaleria,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
+import Galeria from "@/components/gestao/Galeria";
 
 const NAV = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
@@ -83,6 +71,7 @@ export default function GestaoDashboard() {
   const [section, setSection] = useState<Section>("painel");
   const [note, setNote] = useState("");
   const [needsSchema, setNeedsSchema] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     try {
@@ -94,6 +83,9 @@ export default function GestaoDashboard() {
         .then(({ error }) => {
           if (error && isMissingTable(error)) setNeedsSchema(true);
         });
+      void supabase.auth.getUser().then(({ data }) => {
+        if (data.user?.email) setUserEmail(data.user.email);
+      });
     } catch {
       /* env em falta */
     }
@@ -145,15 +137,11 @@ export default function GestaoDashboard() {
             </button>
           ))}
         </nav>
-        <div className="px-5 py-5 border-t border-white/10 space-y-3">
-          <button
-            type="button"
-            onClick={sair}
-            className="flex items-center gap-2 text-sm text-white/70 hover:text-sky-300"
-          >
-            <LogOut size={15} />
-            Sair
-          </button>
+        <div className="px-5 py-4 border-t border-white/10 bg-black/20 flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-sky flex items-center justify-center text-sm font-bold text-navy-900">
+            {userEmail ? userEmail[0].toUpperCase() : "?"}
+          </div>
+          <p className="text-xs text-white/70 truncate">{userEmail || "Utilizador"}</p>
         </div>
       </aside>
 
@@ -167,9 +155,14 @@ export default function GestaoDashboard() {
               {NAV.find((n) => n.id === section)?.label}
             </h1>
           </div>
-          <p className="text-xs text-navy-900/50 max-w-sm text-right leading-relaxed">
-            Notícias, publicações, edital e candidaturas gravam na base da ESJ.
-          </p>
+          <button
+            type="button"
+            onClick={sair}
+            className="flex items-center gap-2 text-sm font-bold text-navy-900/70 hover:text-sky transition-colors"
+          >
+            <LogOut size={15} />
+            Sair
+          </button>
         </header>
 
         <main className="flex-1 px-8 py-8">
@@ -180,7 +173,7 @@ export default function GestaoDashboard() {
           {section === "painel" && <Painel onGo={setSection} />}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "publicacoes" && <Publicacoes onAction={showNote} />}
-          {section === "galeria" && <Galeria onAction={showNote} />}
+          {section === "galeria" && <Galeria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
@@ -524,286 +517,6 @@ function Publicacoes({ onAction }: { onAction: (m: string) => void }) {
           {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
         </button>
       </div>
-    </div>
-  );
-}
-
-function Galeria({ onAction }: { onAction: (m: string) => void }) {
-  const [items, setItems] = useState<MediaGaleria[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [missing, setMissing] = useState(false);
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [editing, setEditing] = useState<MediaGaleria | null>(null);
-  const [editForm, setEditForm] = useState({ titulo: "", legenda: "" });
-  const [saving, setSaving] = useState(false);
-
-  const refresh = () => {
-    setLoading(true);
-    listMediaGaleria()
-      .then((data) => {
-        setItems(data);
-        setMissing(false);
-      })
-      .catch((err) => {
-        if (isMissingTable(err)) setMissing(true);
-        else onAction(cmsError(err));
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(refresh, []);
-
-  const filtered = items.filter((img) =>
-    img.filename.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const onFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        await uploadMediaGaleria(file);
-      }
-      refresh();
-      onAction(
-        files.length > 1 ? `${files.length} fotos carregadas na galeria.` : "Foto carregada na galeria."
-      );
-    } catch (error) {
-      if (isMissingTable(error)) setMissing(true);
-      onAction(cmsError(error));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const copyUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    onAction("Endereço da foto copiado.");
-  };
-
-  const openEdit = (img: MediaGaleria) => {
-    setEditing(img);
-    setEditForm({ titulo: img.titulo, legenda: img.legenda });
-  };
-
-  const saveEdit = async () => {
-    if (!editing) return;
-    setSaving(true);
-    try {
-      await updateMediaGaleria(editing.id, editForm);
-      setItems((prev) =>
-        prev.map((img) => (img.id === editing.id ? { ...img, ...editForm } : img))
-      );
-      setEditing(null);
-      onAction("Detalhes da foto actualizados.");
-    } catch (error) {
-      onAction(cmsError(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const removeSelected = async () => {
-    if (selected.size === 0) return;
-    if (!window.confirm(`Eliminar ${selected.size} foto(s) da galeria? Esta acção não pode ser revertida.`)) {
-      return;
-    }
-    const toRemove = items.filter((img) => selected.has(img.id));
-    try {
-      await deleteMediaGaleria(toRemove.map((img) => ({ id: img.id, path: img.path })));
-      setSelected(new Set());
-      refresh();
-      onAction(`${toRemove.length} foto(s) eliminada(s).`);
-    } catch (error) {
-      onAction(cmsError(error));
-    }
-  };
-
-  return (
-    <div className="bg-white border border-navy-100 p-8">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="font-serif text-2xl font-bold text-navy-900">Galeria</h2>
-          <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-            A biblioteca de imagens que alimenta o sítio. Carregue, edite e elimine fotos aqui.
-          </p>
-        </div>
-        <label className="shrink-0 inline-flex items-center gap-2 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-5 py-3 cursor-pointer transition-colors">
-          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-          {uploading ? "A CARREGAR…" : "CARREGAR FOTOS"}
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => {
-              onFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-        </label>
-      </div>
-
-      {missing && <SchemaInstall />}
-
-      <div className="mt-6 flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-900/40" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pesquisar fotos…"
-            className="esj-field"
-            style={{ paddingLeft: "2.25rem" }}
-          />
-        </div>
-        {selected.size > 0 && (
-          <button
-            type="button"
-            onClick={removeSelected}
-            className="inline-flex items-center gap-1.5 bg-crimson hover:bg-navy-900 text-white text-xs font-semibold px-4 py-2.5 transition-colors"
-          >
-            <Trash2 size={14} /> ELIMINAR ({selected.size})
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 size={22} className="animate-spin text-navy-900/40" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <p className="mt-10 text-sm text-navy-900/50 text-center">
-          {items.length === 0 ? "Ainda sem fotos. Carregue a primeira." : "Nenhuma foto encontrada."}
-        </p>
-      ) : (
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3">
-          {filtered.map((img) => (
-            <div
-              key={img.id}
-              className={`group relative aspect-square overflow-hidden bg-cream border cursor-pointer ${
-                selected.has(img.id) ? "border-sky ring-2 ring-sky" : "border-navy-100"
-              }`}
-              onClick={() => toggleSelect(img.id)}
-            >
-              <img
-                src={img.url}
-                alt={img.titulo}
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleSelect(img.id);
-                }}
-                className={`absolute top-1.5 left-1.5 w-5 h-5 rounded-full flex items-center justify-center border transition-opacity ${
-                  selected.has(img.id)
-                    ? "bg-sky border-sky opacity-100"
-                    : "bg-white/85 border-navy-100 opacity-0 group-hover:opacity-100"
-                }`}
-              >
-                {selected.has(img.id) && <Check size={12} className="text-white" />}
-              </button>
-              <div className="absolute inset-x-0 bottom-0 bg-navy-900/75 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 flex items-center justify-between gap-1">
-                <span className="text-white text-[9px] truncate">{img.titulo}</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEdit(img);
-                    }}
-                    className="text-white/85 hover:text-white"
-                    title="Editar"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyUrl(img.url);
-                    }}
-                    className="text-white/85 hover:text-white"
-                    title="Copiar endereço"
-                  >
-                    <Copy size={12} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {editing && (
-        <div
-          className="fixed inset-0 z-50 bg-navy-900/60 flex items-center justify-center p-4"
-          onClick={() => setEditing(null)}
-        >
-          <div
-            className="bg-white w-full max-w-md overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-navy-100">
-              <h3 className="font-serif font-bold text-navy-900">Detalhes da foto</h3>
-              <button type="button" onClick={() => setEditing(null)} className="text-navy-900/40 hover:text-navy-900">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <img src={editing.url} alt="" className="w-full h-40 object-cover border border-navy-100" />
-              <label className="block">
-                <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-                <input
-                  className="esj-field"
-                  value={editForm.titulo}
-                  onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })}
-                />
-              </label>
-              <label className="block">
-                <span className="block text-sm font-bold text-navy-900 mb-1.5">Legenda</span>
-                <textarea
-                  className="esj-field min-h-[72px]"
-                  value={editForm.legenda}
-                  onChange={(e) => setEditForm({ ...editForm, legenda: e.target.value })}
-                />
-              </label>
-            </div>
-            <div className="p-4 border-t border-navy-100 bg-cream flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                className="px-4 py-2.5 border border-navy-100 text-navy-900 text-xs font-semibold hover:border-sky transition-colors"
-              >
-                CANCELAR
-              </button>
-              <button
-                type="button"
-                onClick={saveEdit}
-                disabled={saving}
-                className="px-4 py-2.5 bg-leaf hover:bg-crimson disabled:opacity-60 text-white text-xs font-semibold transition-colors"
-              >
-                {saving ? "A GRAVAR…" : "GRAVAR"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
