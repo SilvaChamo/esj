@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import {
   ANO_LECTIVO,
   REGIME_LABEL,
@@ -18,7 +17,6 @@ type Props = {
   regime: Regime;
   anoLectivo?: string;
   linhas: LinhaPauta[];
-  voltarHref: string;
 };
 
 export default function PautaAdmissao({
@@ -26,7 +24,6 @@ export default function PautaAdmissao({
   regime,
   anoLectivo = ANO_LECTIVO,
   linhas,
-  voltarHref,
 }: Props) {
   const [query, setQuery] = useState("");
   const merito = rankingMerito(linhas);
@@ -70,13 +67,14 @@ export default function PautaAdmissao({
             className="w-full min-w-0 h-full bg-transparent px-2 text-xs text-navy-900 outline-none placeholder:text-navy-900/40"
           />
         </label>
-        <Link
-          href={voltarHref}
+        <button
+          type="button"
+          onClick={() => window.print()}
           className="ml-auto inline-flex items-center gap-1.5 text-sm text-sky hover:underline"
         >
-          <ArrowLeft size={14} />
-          Voltar aos cursos
-        </Link>
+          <Download size={14} />
+          Baixar PDF
+        </button>
       </div>
 
       <div className="overflow-x-auto">

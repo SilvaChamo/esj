@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import AdmissaoSidebar from "@/components/AdmissaoSidebar";
 import PautaAdmissao from "@/components/PautaAdmissao";
 import {
@@ -55,6 +57,13 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
             {PESO_HISTORIA * 100}%). Admitido se a média for igual ou superior a{" "}
             {formatNota(MEDIA_MINIMA)} valores.
           </p>
+          <Link
+            href={`/resultados?${query}`}
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-sky hover:underline"
+          >
+            <ArrowLeft size={14} />
+            Voltar aos cursos
+          </Link>
         </div>
       </section>
 
@@ -69,7 +78,6 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
               regime={filtro.regime}
               anoLectivo={pauta.anoLectivo}
               linhas={pauta.linhas}
-              voltarHref={`/resultados?${query}`}
             />
           </div>
         </div>
