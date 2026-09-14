@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -53,18 +53,9 @@ function Field({
 
 export default function EntrarPage() {
   const router = useRouter();
-  const [view, setView] = useState<"entrar" | "registar">("entrar");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pendente, setPendente] = useState(false);
-
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("pendente") === "1") {
-      setPendente(true);
-    }
-  }, []);
 
   const entrar = async (form: HTMLFormElement) => {
     const email = String(new FormData(form).get("email") || "").trim();
@@ -87,53 +78,9 @@ export default function EntrarPage() {
     }
   };
 
-  const registar = async (form: HTMLFormElement) => {
-    const fd = new FormData(form);
-    const nome = String(fd.get("nome") || "").trim();
-    const email = String(fd.get("email") || "").trim();
-    const password = String(fd.get("password") || "");
-    const confirmar = String(fd.get("confirmar") || "");
-    setError("");
-    if (password !== confirmar) {
-      setError("As palavras-passe não coincidem.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const supabase = createBrowserSupabase();
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { nome } },
-      });
-      if (signUpError) throw signUpError;
-      // A linha em "perfis" (aprovado = false) é criada automaticamente por
-      // um trigger no auth.users — nunca directamente pelo cliente.
-      await supabase.auth.signOut();
-      form.reset();
-      setView("entrar");
-      setPendente(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível registar.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const onSubmitEntrar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     void entrar(e.currentTarget);
-  };
-
-  const onSubmitRegistar = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    void registar(e.currentTarget);
-  };
-
-  const trocarView = (next: "entrar" | "registar") => {
-    setView(next);
-    setError("");
-    setPendente(false);
   };
 
   return (
@@ -163,138 +110,47 @@ export default function EntrarPage() {
             Escola Superior de Jornalismo
           </p>
 
-          {pendente && view === "entrar" && (
-            <p className="mt-6 text-sm text-navy-900/70 leading-relaxed bg-cream border border-navy-100 px-4 py-3">
-              A sua conta foi criada e está pendente de aprovação pela Secretaria ou
-              Direcção. Vai poder entrar assim que for aprovada.
-            </p>
-          )}
-
-          {view === "entrar" ? (
-            <form onSubmit={onSubmitEntrar} className="mt-8 space-y-4">
-              <Field
-                id="entrar-email"
-                label="Correio electrónico"
-                type="email"
-                name="email"
-                required
-                autoComplete="username"
-              />
-              <Field
-                id="entrar-password"
-                label="Palavra-passe"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                required
-                minLength={6}
-                autoComplete="current-password"
-                trailing={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
-              {error && (
-                <p className="text-sm text-crimson break-words" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
-              >
-                {busy ? "A ENTRAR…" : "ENTRAR"}
-              </button>
-              <p className="text-center text-xs text-navy-900/55">
-                Não tem conta?{" "}
+          <form onSubmit={onSubmitEntrar} className="mt-8 space-y-4">
+            <Field
+              id="entrar-email"
+              label="Correio electrónico"
+              type="email"
+              name="email"
+              required
+              autoComplete="username"
+            />
+            <Field
+              id="entrar-password"
+              label="Palavra-passe"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              required
+              minLength={6}
+              autoComplete="current-password"
+              trailing={
                 <button
                   type="button"
-                  onClick={() => trocarView("registar")}
-                  className="font-bold text-sky hover:underline"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
                 >
-                  Registar
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              }
+            />
+            {error && (
+              <p className="text-sm text-crimson break-words" role="alert">
+                {error}
               </p>
-            </form>
-          ) : (
-            <form onSubmit={onSubmitRegistar} className="mt-8 space-y-4">
-              <Field id="registar-nome" label="Nome" name="nome" required autoComplete="name" />
-              <Field
-                id="registar-email"
-                label="Correio electrónico"
-                type="email"
-                name="email"
-                required
-                autoComplete="username"
-              />
-              <Field
-                id="registar-password"
-                label="Palavra-passe"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-                trailing={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
-              <Field
-                id="registar-confirmar"
-                label="Confirmar palavra-passe"
-                type={showConfirm ? "text" : "password"}
-                name="confirmar"
-                required
-                minLength={6}
-                autoComplete="new-password"
-                trailing={
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    aria-label={showConfirm ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
-                  >
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                }
-              />
-              {error && (
-                <p className="text-sm text-crimson break-words" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
-              >
-                {busy ? "A REGISTAR…" : "REGISTAR"}
-              </button>
-              <p className="text-center text-xs text-navy-900/55">
-                Já tem conta?{" "}
-                <button
-                  type="button"
-                  onClick={() => trocarView("entrar")}
-                  className="font-bold text-sky hover:underline"
-                >
-                  Entrar
-                </button>
-              </p>
-            </form>
-          )}
+            )}
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
+            >
+              {busy ? "A ENTRAR…" : "ENTRAR"}
+            </button>
+          </form>
         </div>
       </div>
     </main>

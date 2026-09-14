@@ -456,38 +456,3 @@ export async function listNewsletterGestao() {
   if (error) throw error;
   return data ?? [];
 }
-
-export type Perfil = {
-  id: string;
-  nome: string;
-  email: string;
-  aprovado: boolean;
-  created_at: string;
-};
-
-export async function getPerfil(id: string): Promise<Perfil | null> {
-  const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
-    .from("perfis")
-    .select("id, nome, email, aprovado, created_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-export async function listPerfisGestao(): Promise<Perfil[]> {
-  const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
-    .from("perfis")
-    .select("id, nome, email, aprovado, created_at")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function aprovarPerfil(id: string) {
-  const supabase = createBrowserSupabase();
-  const { error } = await supabase.from("perfis").update({ aprovado: true }).eq("id", id);
-  if (error) throw error;
-}

@@ -26,7 +26,6 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
-  ShieldCheck,
   Users,
   Video,
   LogOut,
@@ -48,13 +47,11 @@ import {
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
 import {
-  aprovarPerfil,
   cmsError,
   isMissingTable,
   listAnunciosGestao,
   listInscricoesGestao,
   listNewsletterGestao,
-  listPerfisGestao,
   listVideosGestao,
   loadEditalVigente,
   publishAnuncio,
@@ -64,7 +61,6 @@ import {
   publishPublicacao,
   publishVideo,
   statsAnoLectivo,
-  type Perfil,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
@@ -85,8 +81,7 @@ type Section =
   | "galeria"
   | "videos"
   | "documentos"
-  | "subscritores"
-  | "contas";
+  | "subscritores";
 
 type NavIcon = typeof LayoutDashboard;
 type NavLeaf = { id: Section; label: string; icon: NavIcon };
@@ -130,7 +125,6 @@ const NAV: NavEntry[] = [
     ],
   },
   { id: "subscritores", label: "Subscritores", icon: Mail },
-  { id: "contas", label: "Contas", icon: ShieldCheck },
 ];
 
 function sectionLabel(section: Section): string {
@@ -434,7 +428,6 @@ export default function GestaoDashboard() {
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && <Anuncios onAction={showNote} />}
           {section === "subscritores" && <Subscritores />}
-          {section === "contas" && <Contas onAction={showNote} />}
         </main>
       </div>
     </div>
@@ -1259,98 +1252,6 @@ function Subscritores() {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function Contas({ onAction }: { onAction: (m: string) => void }) {
-  const [items, setItems] = useState<Perfil[]>([]);
-  const [missing, setMissing] = useState(false);
-  const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const refresh = () => {
-    listPerfisGestao()
-      .then((rows) => {
-        setItems(rows);
-        setMissing(false);
-        setError("");
-      })
-      .catch((err) => {
-        if (isMissingTable(err)) setMissing(true);
-        else setError(cmsError(err));
-      });
-  };
-
-  useEffect(refresh, []);
-
-  const aprovar = async (perfil: Perfil) => {
-    setBusyId(perfil.id);
-    try {
-      await aprovarPerfil(perfil.id);
-      setItems((prev) => prev.map((p) => (p.id === perfil.id ? { ...p, aprovado: true } : p)));
-      onAction(`A conta de ${perfil.nome || perfil.email} foi aprovada.`);
-    } catch (err) {
-      onAction(cmsError(err));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const pendentes = items.filter((p) => !p.aprovado);
-  const aprovados = items.filter((p) => p.aprovado);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white border border-navy-100 p-8">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Contas pendentes</h2>
-        <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-          Quem se regista em /entrar só pode entrar depois de ser aprovado aqui.
-        </p>
-        {missing && <SchemaInstall />}
-        {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
-        <ul className="mt-6 divide-y divide-navy-100">
-          {pendentes.length === 0 && !error && !missing && (
-            <li className="py-3 text-sm text-navy-900/50">Sem contas por aprovar.</li>
-          )}
-          {pendentes.map((p) => (
-            <li key={p.id} className="py-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="font-semibold text-navy-900">{p.nome || "(sem nome)"}</p>
-                <p className="text-xs text-navy-900/55">{p.email}</p>
-              </div>
-              <button
-                type="button"
-                disabled={busyId === p.id}
-                onClick={() => aprovar(p)}
-                className="shrink-0 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-4 py-2.5 transition-colors"
-              >
-                {busyId === p.id ? "A APROVAR…" : "APROVAR"}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="bg-white border border-navy-100 p-8">
-        <h3 className="font-serif font-bold text-navy-900">Contas aprovadas</h3>
-        <ul className="mt-4 divide-y divide-navy-100">
-          {aprovados.length === 0 && (
-            <li className="py-3 text-sm text-navy-900/50">Ainda sem contas aprovadas nesta lista.</li>
-          )}
-          {aprovados.map((p) => (
-            <li key={p.id} className="py-3 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-navy-900">{p.nome || "(sem nome)"}</p>
-                <p className="text-xs text-navy-900/55">{p.email}</p>
-              </div>
-              <span className="text-[11px] text-navy-900/50 shrink-0">
-                {new Date(p.created_at).toLocaleDateString("pt-PT")}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
