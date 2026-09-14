@@ -98,28 +98,28 @@ export default function PautaAdmissao({
                 key={linha.id}
                 className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
               >
-                <td className="px-3 py-2.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
+                <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
                   {ordem}
                 </td>
-                <td className="px-3 py-2.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
-                <td className="px-3 py-2.5 text-navy-900">{linha.nome}</td>
-                <td className="px-3 py-2.5 text-center tabular-nums">
+                <td className="px-3 py-1.5 font-semibold text-navy-900 uppercase">{linha.apelido}</td>
+                <td className="px-3 py-1.5 text-navy-900">{linha.nome}</td>
+                <td className="px-3 py-1.5 text-center tabular-nums">
                   {formatNota(linha.notaPortugues)}
                 </td>
-                <td className="px-3 py-2.5 text-center tabular-nums">
+                <td className="px-3 py-1.5 text-center tabular-nums">
                   {formatNota(linha.notaHistoria)}
                 </td>
-                <td className="px-3 py-2.5 text-center tabular-nums font-semibold text-navy-900">
+                <td className="px-3 py-1.5 text-center tabular-nums font-semibold text-navy-900">
                   {formatNota(linha.media)}
                 </td>
                 <td
-                  className={`px-3 py-2.5 text-center font-semibold ${
+                  className={`px-3 py-1.5 text-center font-semibold ${
                     linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
                   }`}
                 >
                   {linha.resultado}
                 </td>
-                <td className="px-3 py-2.5 text-center text-navy-900/60">
+                <td className="px-3 py-1.5 text-center text-navy-900/60">
                   {merito.get(linha.id)}
                 </td>
               </tr>
