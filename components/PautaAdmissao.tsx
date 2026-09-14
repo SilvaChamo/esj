@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 import {
   ANO_LECTIVO,
   REGIME_LABEL,
@@ -26,6 +26,8 @@ export default function PautaAdmissao({
   linhas,
 }: Props) {
   const [query, setQuery] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const porPagina = 20;
   const merito = rankingMerito(linhas);
   const comOrdem = linhas.map((linha, index) => ({ linha, ordem: index + 1 }));
   const termo = query.trim().toLowerCase();
@@ -34,24 +36,27 @@ export default function PautaAdmissao({
         `${linha.apelido} ${linha.nome}`.toLowerCase().includes(termo)
       )
     : comOrdem;
+  const totalPaginas = Math.max(1, Math.ceil(visiveis.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+
+  useEffect(() => {
+    setPagina(1);
+  }, [termo]);
 
   return (
     <article className="bg-white border border-navy-100 print:border-0">
-      <header className="border-b border-navy-100 px-5 sm:px-8 py-6 flex flex-col sm:flex-row sm:items-center gap-5">
+      <header className="border-b border-navy-100 px-5 sm:px-8 py-5 flex items-center gap-4">
         <img
           src="/esj-logo-mark.png"
           alt="Escola Superior de Jornalismo"
-          className="h-20 w-20 object-contain"
+          className="h-16 w-16 object-contain rounded-sm shrink-0"
         />
         <div className="min-w-0">
-          <p className="text-[11px] font-bold tracking-widest text-sky">
-            ESCOLA SUPERIOR DE JORNALISMO
-          </p>
-          <h1 className="font-serif text-lg sm:text-xl font-bold text-navy-900 mt-1 leading-tight">
+          <h1 className="font-serif text-lg sm:text-xl font-bold text-navy-900 leading-tight">
             {tituloPauta()}
           </h1>
-          <p className="mt-1 text-sm text-navy-900/65">
-            Ano lectivo {anoLectivo} · Lista única · {REGIME_LABEL[regime]}
+          <p className="mt-0.5 text-[11px] text-navy-900/50">
+            {anoLectivo} · {REGIME_LABEL[regime]}
           </p>
         </div>
       </header>
@@ -101,10 +106,14 @@ export default function PautaAdmissao({
                 </td>
               </tr>
             )}
-            {visiveis.map(({ linha, ordem }, i) => (
+            {visiveis.map(({ linha, ordem }, i) => {
+              const naPagina = Math.floor(i / porPagina) + 1 === paginaAtual;
+              return (
               <tr
                 key={linha.id}
-                className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
+                className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""} ${
+                  naPagina ? "" : "hidden print:table-row"
+                }`}
               >
                 <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
                   {ordem}
@@ -133,10 +142,49 @@ export default function PautaAdmissao({
                   {merito.get(linha.id)}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {totalPaginas > 1 && (
+        <div className="px-5 sm:px-8 py-4 border-t border-navy-100 flex items-center justify-center gap-1.5 print:hidden">
+          <button
+            type="button"
+            disabled={paginaAtual === 1}
+            onClick={() => setPagina((p) => Math.max(1, p - 1))}
+            className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+            aria-label="Página anterior"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setPagina(n)}
+              aria-current={n === paginaAtual ? "page" : undefined}
+              className={`flex h-8 w-8 items-center justify-center text-xs font-bold ${
+                n === paginaAtual
+                  ? "bg-navy-800 text-white"
+                  : "border border-navy-100 text-navy-900 hover:border-sky"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={paginaAtual === totalPaginas}
+            onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+            className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+            aria-label="Página seguinte"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
     </article>
   );
 }
