@@ -80,10 +80,10 @@ export default function ContactBand() {
           <div className="relative flex flex-col md:flex-row md:items-stretch">
             <form
               onSubmit={sendMessage}
-              className="relative z-10 border border-white bg-[#1a5a78]/35 px-5 py-8 sm:px-10 sm:py-10 w-full md:flex-1 md:-mr-14 md:pr-20"
+              className="relative z-10 border border-white bg-[#1a5a78]/35 px-5 py-8 sm:px-10 sm:py-10 w-full md:flex-1"
             >
               <h2 className="font-serif text-3xl md:text-[2.05rem] font-bold text-white mb-7">
-                Fale <span className="text-sky-300">connosco</span>
+                Fale <span className="text-navy-900">connosco</span>
               </h2>
               <div className="grid sm:grid-cols-2 gap-3">
                 <input
@@ -127,8 +127,8 @@ export default function ContactBand() {
               )}
             </form>
 
-            <aside className="relative z-0 bg-navy-800 text-white px-8 py-9 w-full md:w-[280px] md:shrink-0 md:-my-10 md:pl-20">
-              <dl className="divide-y divide-white/20 text-[13px] leading-snug">
+            <aside className="relative z-0 bg-navy-800 text-white px-8 py-9 w-full md:w-[360px] md:shrink-0 md:-my-10 md:pl-16">
+              <dl className="divide-y divide-white/20 text-[15px] leading-relaxed">
                 <div className="pb-5">
                   <dt className="font-semibold mb-1.5">Morada</dt>
                   <dd className="text-white/95">
@@ -177,7 +177,7 @@ export default function ContactBand() {
             className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6"
           >
             <h2 className="font-serif text-3xl md:text-[2.15rem] font-bold shrink-0 text-white">
-              A nossa <span className="text-sky-300">newsletter</span>
+              A nossa <span className="text-navy-900">newsletter</span>
             </h2>
             <input
               type="email"
