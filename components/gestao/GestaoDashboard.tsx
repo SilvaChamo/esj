@@ -46,6 +46,7 @@ import {
   type Publicacao,
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { COURSES } from "@/lib/inscricao";
 import {
   cmsError,
   isMissingTable,
@@ -246,31 +247,23 @@ export default function GestaoDashboard() {
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div
-          className={`flex items-center border-b border-white/10 transition-all ${
-            isCollapsed ? "justify-center py-5" : "justify-between px-5 py-6"
+          className={`flex items-center gap-3 border-b border-white/10 transition-all ${
+            isCollapsed ? "justify-center py-5 px-2" : "px-5 py-5"
           }`}
         >
+          <Image
+            src="/esj-logo-mark.png"
+            alt="ESJ"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain rounded-sm shrink-0"
+          />
           {!isCollapsed && (
-            <div className="overflow-hidden">
-              <Image
-                src="/esj-logo-mark.png"
-                alt="ESJ"
-                width={52}
-                height={52}
-                className="h-12 w-12 object-contain rounded-sm"
-              />
-              <p className="mt-4 font-serif font-bold leading-tight truncate">Área de gestão</p>
-              <p className="mt-1 text-[11px] text-white/50 truncate">Secretaria académica</p>
+            <div className="overflow-hidden min-w-0">
+              <p className="font-serif font-bold leading-tight truncate">Área de gestão</p>
+              <p className="text-[11px] text-white/50 truncate">Secretaria académica</p>
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setIsCollapsed((v) => !v)}
-            className="hidden lg:block text-white/50 hover:text-white transition-colors p-1.5"
-            title={isCollapsed ? "Expandir" : "Colapsar"}
-          >
-            {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-          </button>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -374,14 +367,24 @@ export default function GestaoDashboard() {
         </nav>
 
         <div
-          className={`border-t border-white/10 bg-black/20 flex items-center gap-3 ${
+          className={`border-t border-white/10 bg-black/20 flex items-center gap-2 ${
             isCollapsed ? "justify-center px-2 py-4" : "px-5 py-4"
           }`}
         >
           <div className="h-9 w-9 shrink-0 rounded-full bg-sky flex items-center justify-center text-sm font-bold text-navy-900">
             {userEmail ? userEmail[0].toUpperCase() : "?"}
           </div>
-          {!isCollapsed && <p className="text-xs text-white/70 truncate">{userEmail || "Utilizador"}</p>}
+          {!isCollapsed && (
+            <p className="flex-1 min-w-0 text-xs text-white/70 truncate">{userEmail || "Utilizador"}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((v) => !v)}
+            className="hidden lg:block shrink-0 text-white/50 hover:text-white transition-colors p-1.5"
+            title={isCollapsed ? "Expandir" : "Colapsar"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
         </div>
       </aside>
 
@@ -456,11 +459,17 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
       .catch(() => setRecentes([]));
   }, []);
 
+  const cursosComTotais = COURSES.map((curso) => ({
+    curso,
+    nome: curso.replace(/^Licenciatura em\s+/i, ""),
+    total: stats.porCurso.find((c) => c.curso === curso)?.total ?? 0,
+  }));
+
   return (
     <div className="space-y-6">
       <div className="bg-white border border-navy-100 p-8">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Bem-vindo ao painel de administração</h2>
-        <p className="mt-1.5 text-sm text-navy-900/65">
+        <h2 className="font-serif text-base font-bold text-navy-900">Bem-vindo ao painel de administração</h2>
+        <p className="mt-1 text-xs text-navy-900/65">
           Olá, {userEmail || "utilizador"}. Este é o seu painel de gestão.
         </p>
 
@@ -564,47 +573,39 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
           </ul>
         </div>
 
-        <div>
-          <p className="text-sm font-bold text-navy-900 mb-3">Alunos inscritos por curso</p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => onGo("candidaturas")}
-              className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
-            >
-              <span className="h-11 w-11 rounded-full bg-navy-800 text-white flex items-center justify-center mb-3">
-                <Users size={18} />
-              </span>
-              <span className="text-2xl font-bold text-navy-900">{stats.total}</span>
-              <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
-                TOTAL DE ALUNOS INSCRITOS
-              </span>
-            </button>
-            {stats.porCurso.map((c, i) => {
-              const color = CARD_COLORS[i % CARD_COLORS.length];
-              return (
-                <button
-                  key={c.curso}
-                  type="button"
-                  onClick={() => onGo("candidaturas")}
-                  className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
-                >
-                  <span className={`h-11 w-11 rounded-full ${color.bg} ${color.text} flex items-center justify-center mb-3`}>
-                    <GraduationCap size={18} />
-                  </span>
-                  <span className="text-2xl font-bold text-navy-900">{c.total}</span>
-                  <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
-                    {c.curso.toUpperCase()}
-                  </span>
-                </button>
-              );
-            })}
-            {stats.porCurso.length === 0 && (
-              <div className="sm:col-span-2 bg-white border border-dashed border-navy-100 p-6 text-center text-sm text-navy-900/50">
-                Ainda sem candidaturas na base para repartir por curso.
-              </div>
-            )}
-          </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {cursosComTotais.map((c, i) => {
+            const color = CARD_COLORS[i % CARD_COLORS.length];
+            return (
+              <button
+                key={c.curso}
+                type="button"
+                onClick={() => onGo("candidaturas")}
+                className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
+              >
+                <span className={`h-11 w-11 rounded-full ${color.bg} ${color.text} flex items-center justify-center mb-3`}>
+                  <GraduationCap size={18} />
+                </span>
+                <span className="text-2xl font-bold text-navy-900">{c.total}</span>
+                <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
+                  {c.nome.toUpperCase()}
+                </span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => onGo("candidaturas")}
+            className="bg-white border border-navy-100 p-6 flex flex-col items-center text-center hover:border-sky transition-colors"
+          >
+            <span className="h-11 w-11 rounded-full bg-navy-800 text-white flex items-center justify-center mb-3">
+              <Users size={18} />
+            </span>
+            <span className="text-2xl font-bold text-navy-900">{stats.total}</span>
+            <span className="mt-1 text-[11px] font-semibold tracking-wide text-navy-900/55">
+              TOTAL DE ALUNOS INSCRITOS EM 2026
+            </span>
+          </button>
         </div>
       </div>
     </div>

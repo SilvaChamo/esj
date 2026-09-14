@@ -362,8 +362,13 @@ export async function uploadMediaGaleriaBlob(blob: Blob, filename: string) {
 
 export async function deleteMediaGaleria(names: string[]) {
   const supabase = createBrowserSupabase();
-  const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
   if (error) throw error;
+  if (!data || data.length < names.length) {
+    throw new Error(
+      "O Storage não removeu o(s) ficheiro(s) — falta a política de eliminação no Supabase. Corra o SQL do painel outra vez."
+    );
+  }
   await supabase.from("media_details").delete().in("file_name", names);
 }
 
@@ -403,8 +408,13 @@ export async function uploadMediaDocumento(file: File) {
 
 export async function deleteMediaDocumentos(names: string[]) {
   const supabase = createBrowserSupabase();
-  const { error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
   if (error) throw error;
+  if (!data || data.length < names.length) {
+    throw new Error(
+      "O Storage não removeu o(s) ficheiro(s) — falta a política de eliminação no Supabase. Corra o SQL do painel outra vez."
+    );
+  }
 }
 
 export type MediaDetails = {
