@@ -9,6 +9,7 @@ import {
   MapPin,
   Search,
   ChevronDown,
+  LogIn,
   Menu,
   X,
 } from "lucide-react";
@@ -231,10 +232,11 @@ export default function Header() {
 
           <div className="flex items-center justify-end gap-4">
             <Link
-              href="/inscricoes"
-              className="hidden lg:inline-flex bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+              href="/entrar"
+              className="hidden lg:inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
             >
-              INSCREVA-SE
+              <LogIn size={14} />
+              ENTRAR
             </Link>
             <button
               aria-label="Abrir menu"
@@ -300,11 +302,12 @@ export default function Header() {
             ))}
             <div className="px-5 py-4">
               <Link
-                href="/inscricoes"
-                className="inline-flex bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
+                href="/entrar"
+                className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white font-bold text-xs px-5 py-2.5 tracking-wide transition-colors"
                 onClick={() => setMobileOpen(false)}
               >
-                INSCREVA-SE
+                <LogIn size={14} />
+                ENTRAR
               </Link>
             </div>
           </div>
