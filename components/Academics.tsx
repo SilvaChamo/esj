@@ -7,13 +7,16 @@ import {
   BookOpen,
   CalendarDays,
   ClipboardList,
+  FileText,
+  Globe,
   GraduationCap,
   HeartHandshake,
   Megaphone,
   Newspaper,
   PenLine,
+  Plane,
+  Scale,
   Users,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { filtroQuery } from "@/lib/admissao";
@@ -23,21 +26,15 @@ import {
   loadCalendario,
   type Calendario,
 } from "@/lib/calendario";
-import {
-  loadPublicacao,
-  readPublicacao,
-  type Categoria,
-  type Publicacao,
-} from "@/lib/publicacao";
-import { ImgACarregar } from "@/components/Carregando";
 import EntradaHome from "@/components/EntradaHome";
 
-type SectionTab = "ensino" | "calendario" | "cursos";
+type SectionTab = "calendario" | "cursos" | "internacional" | "minutas";
 
 const SECTION_TABS: { id: SectionTab; label: string }[] = [
   { id: "cursos", label: "Áreas de Formação" },
   { id: "calendario", label: "Calendário Académico" },
-  { id: "ensino", label: "Ensino e História" },
+  { id: "internacional", label: "Estudantes Internacionais" },
+  { id: "minutas", label: "Minutas" },
 ];
 
 type NivelCurso = "licenciatura" | "pos-graduacao";
@@ -112,47 +109,20 @@ const CURSOS: { titulo: string; texto: string; icon: LucideIcon; nivel: NivelCur
 export default function Academics() {
   const [tab, setTab] = useState<SectionTab>("cursos");
   const [nivelCurso, setNivelCurso] = useState<NivelCurso>("licenciatura");
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState<Categoria>("livro");
-  const [livroBook, setLivroBook] = useState<Publicacao>(() => readPublicacao("livro"));
-  const [eventoBook, setEventoBook] = useState<Publicacao>(() => readPublicacao("evento"));
-  const [viewer, setViewer] = useState<Publicacao | null>(null);
   const [cal, setCal] = useState<Calendario>(DEFAULT_CALENDARIO);
 
   useEffect(() => {
     const load = () => {
-      loadPublicacao("livro").then(setLivroBook);
-      loadPublicacao("evento").then(setEventoBook);
       loadCalendario().then(setCal);
     };
     load();
-    window.addEventListener("esj-publicacao", load);
     window.addEventListener(CALENDARIO_EVENT, load);
     window.addEventListener("storage", load);
     return () => {
-      window.removeEventListener("esj-publicacao", load);
       window.removeEventListener(CALENDARIO_EVENT, load);
       window.removeEventListener("storage", load);
     };
   }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const show = (item: Publicacao) => {
-    setViewer(item);
-    setOpen(true);
-  };
 
   const DATAS: {
     titulo: string;
@@ -220,95 +190,86 @@ export default function Academics() {
 
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="py-16 md:py-20">
-        {tab === "ensino" && (
+        {tab === "internacional" && (
           <EntradaHome>
-          <div className="grid lg:grid-cols-[1fr_1.08fr] gap-12 lg:gap-16 items-start">
             <div>
-              <p className="text-sky font-bold tracking-widest text-sm mb-3">ENSINO E HISTÓRIA</p>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-                Formamos, comunicamos e
-                <br />
-                Investigamos
+              <p className="text-sky font-bold tracking-widest text-sm mb-3">ESTUDANTES INTERNACIONAIS</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-3">
+                Estuda na ESJ
               </h2>
-              <p className="mt-3 font-serif italic text-lg text-navy-800">
-                O palco da ESJ não se apaga
-              </p>
-              <p className="mt-5 text-navy-900 leading-relaxed">
-                A Escola Superior de Jornalismo forma profissionais críticos, investiga a
-                comunicação contemporânea e devolve conhecimento à sociedade. O ensino
-                liga a sala de aula à redação, à pesquisa e à vida pública.
-              </p>
-              <p className="mt-4 text-sm text-navy-900/70 leading-relaxed">
-                Conferências, a Semana da Comunicação, colóquios e a cerimónia de graduação
-                trazem a cidade para o campus — e levam a escola para o país. A agenda do
-                ano lectivo é palco aberto: venha, ouça e participe!
+              <p className="mt-2 max-w-2xl text-navy-900/70 leading-relaxed">
+                A ESJ acolhe estudantes de todo o mundo. Descobre os programas de intercâmbio
+                e as oportunidades de mobilidade académica disponíveis.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActive("livro")}
-                  className={`px-6 py-3.5 text-xs font-bold tracking-wide transition-colors ${
-                    active === "livro"
-                      ? "bg-navy-800 text-white"
-                      : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
-                  }`}
-                >
-                  LANÇAMENTO DO LIVRO
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActive("evento")}
-                  className={`px-6 py-3.5 text-xs font-bold tracking-wide transition-colors ${
-                    active === "evento"
-                      ? "bg-navy-800 text-white"
-                      : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
-                  }`}
-                >
-                  EVENTOS
-                </button>
-              </div>
-            </div>
+              <div className="mt-10 grid sm:grid-cols-2 gap-6">
+                {/* Card 1 — Estudar Internacionalmente */}
+                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5">
+                  <span className="inline-flex items-center justify-center w-12 h-12 bg-sky/10 text-sky">
+                    <Globe size={24} />
+                  </span>
+                  <div>
+                    <h3 className="font-serif text-xl font-bold text-navy-900">Estudar na ESJ</h3>
+                    <p className="mt-3 text-sm text-navy-900/70 leading-relaxed">
+                      Estudantes de países lusófonos e de todo o mundo podem candidatar-se às
+                      licenciaturas e pós-graduações da ESJ. A escola oferece um ambiente
+                      multicultural com apoio à integração académica e social.
+                    </p>
+                    <ul className="mt-4 space-y-2">
+                      {[
+                        "Licenciaturas em regime diurno e pós-laboral",
+                        "Apoio na obtenção de visto de estudante",
+                        "Alojamento e serviços sociais disponíveis",
+                        "Reconhecimento de graus académicos estrangeiros",
+                      ].map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-navy-900/75">
+                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-sky shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
-            <div>
-              <div className={active === "livro" ? "relative" : "hidden"}>
-                <div className="relative w-full overflow-hidden bg-cream border border-navy-100 aspect-square">
-                  <button
-                    type="button"
-                    onClick={() => show(livroBook)}
-                    className="absolute inset-0"
-                    aria-label="Ver lançamento do livro"
-                  >
-                    <ImgACarregar
-                      key={`livro-${livroBook.image}`}
-                      src={livroBook.image}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-contain p-2"
-                      texto="A carregar a imagem do livro…"
-                    />
-                  </button>
+                {/* Card 2 — Intercâmbio / Mobilidade */}
+                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5">
+                  <span className="inline-flex items-center justify-center w-12 h-12 bg-crimson/10 text-crimson">
+                    <Plane size={24} />
+                  </span>
+                  <div>
+                    <h3 className="font-serif text-xl font-bold text-navy-900">Programas de Intercâmbio</h3>
+                    <p className="mt-3 text-sm text-navy-900/70 leading-relaxed">
+                      A ESJ mantém protocolos de cooperação com universidades e escolas de
+                      comunicação parceiras. Os programas de mobilidade permitem estudar um
+                      semestre ou um ano numa instituição estrangeira.
+                    </p>
+                    <ul className="mt-4 space-y-2">
+                      {[
+                        "Mobilidade em universidades parceiras na África e Europa",
+                        "Bolsas e financiamento disponíveis",
+                        "Reconhecimento de créditos ECTS",
+                        "Apoio da equipa de Relações Internacionais da ESJ",
+                      ].map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-navy-900/75">
+                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-crimson shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-              <div className={active === "evento" ? "relative w-full lg:w-[calc(100%+50px)]" : "hidden"}>
-                <div className="relative w-full overflow-hidden bg-cream border border-navy-100 aspect-[210/297]">
-                  <button
-                    type="button"
-                    onClick={() => show(eventoBook)}
-                    className="absolute inset-0"
-                    aria-label="Ver cartaz de eventos"
-                  >
-                    <ImgACarregar
-                      key={`evento-${eventoBook.image}`}
-                      src={eventoBook.image}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover"
-                      texto="A carregar o cartaz…"
-                    />
-                  </button>
-                </div>
+
+              <div className="mt-10">
+                <Link
+                  href="/estudantes-internacionais"
+                  className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+                >
+                  <Globe size={15} />
+                  CANDIDATURA INTERNACIONAL
+                </Link>
               </div>
             </div>
-          </div>
           </EntradaHome>
         )}
 
@@ -455,35 +416,78 @@ export default function Academics() {
             </EntradaHome>
           </div>
         )}
+
+        {tab === "minutas" && (
+          <EntradaHome>
+            <div>
+              <p className="text-sky font-bold tracking-widest text-sm mb-3">DOCUMENTAÇÃO INSTITUCIONAL</p>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-3">
+                Minutas e Legislação
+              </h2>
+              <p className="mt-2 max-w-2xl text-navy-900/70 leading-relaxed">
+                Acede aos documentos oficiais da ESJ — minutas das reuniões dos órgãos
+                colegiais e legislação aplicável ao ensino superior em Moçambique.
+              </p>
+
+              <div className="mt-10 grid sm:grid-cols-2 gap-6">
+                {/* Card Minutas */}
+                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5 h-full">
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex items-center justify-center w-12 h-12 bg-sky/10 text-sky shrink-0">
+                      <FileText size={24} />
+                    </span>
+                    <h3 className="font-serif text-xl font-bold text-navy-900">Minutas</h3>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-navy-900/70 leading-relaxed">
+                      Consulta as minutas das reuniões do Conselho Científico, Conselho
+                      Pedagógico e demais órgãos colegiais da Escola Superior de Jornalismo.
+                      Documentos disponíveis para todos os membros da comunidade académica.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link
+                      href="/minutas"
+                      className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                    >
+                      <FileText size={14} />
+                      VER MINUTAS
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Card Legislação */}
+                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5 h-full">
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex items-center justify-center w-12 h-12 bg-crimson/10 text-crimson shrink-0">
+                      <Scale size={24} />
+                    </span>
+                    <h3 className="font-serif text-xl font-bold text-navy-900">Legislação</h3>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-navy-900/70 leading-relaxed">
+                      Enquadramento legal que rege o funcionamento da ESJ e do ensino
+                      superior em Moçambique — diplomas, decretos, regulamentos e estatutos
+                      em vigor.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link
+                      href="/regulamentos"
+                      className="esj-btn-move inline-flex items-center gap-2 bg-crimson hover:bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                    >
+                      <Scale size={14} />
+                      VER LEGISLAÇÃO
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </EntradaHome>
+        )}
         </div>
       </div>
 
-      {open && viewer && (
-        <div
-          className="fixed inset-0 z-[80] bg-navy-900/85 flex items-center justify-center p-4 md:p-10"
-          onClick={() => setOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Imagem"
-        >
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Fechar"
-            className="absolute top-4 right-4 text-white/80 hover:text-white"
-          >
-            <X size={28} />
-          </button>
-          <div className="relative min-h-[200px] min-w-[200px] max-h-[90vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
-            <ImgACarregar
-              src={viewer.image}
-              alt=""
-              className="max-h-[90vh] max-w-[92vw] w-auto h-auto object-contain shadow-2xl"
-              texto="A carregar a imagem…"
-            />
-          </div>
-        </div>
-      )}
     </section>
   );
 }
