@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import BannerInterior from "@/components/BannerInterior";
+import { FotoACarregar } from "@/components/Carregando";
 import { listNoticias } from "@/lib/noticias";
 
 export const metadata = {
@@ -31,13 +31,14 @@ export default async function NoticiasPage() {
               className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col"
             >
               <div className="relative h-48 overflow-hidden">
-                <Image
+                <FotoACarregar
                   src={item.image}
                   alt={item.title}
                   fill
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="eager"
+                  texto="A carregar a imagem da notícia…"
                 />
               </div>
               <div className="p-5 flex-1 flex flex-col">

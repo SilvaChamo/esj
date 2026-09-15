@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import AdmissaoSidebar from "@/components/AdmissaoSidebar";
 import BannerInterior from "@/components/BannerInterior";
 import PautaAdmissao from "@/components/PautaAdmissao";
+import { CarregandoTexto } from "@/components/Carregando";
 import {
   MEDIA_MINIMA,
   PESO_HISTORIA,
@@ -59,7 +60,7 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 print:py-0 print:px-0 print:max-w-full">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start print:block">
-          <Suspense fallback={null}>
+          <Suspense fallback={<CarregandoTexto texto="A carregar o menu de admissão…" />}>
             <div className="lg:sticky lg:top-24 print:hidden">
               <AdmissaoSidebar inscricoesHref />
             </div>

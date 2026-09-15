@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Video } from "lucide-react";
+import { IframeACarregar } from "@/components/Carregando";
 import { videoEmbedSrc, videoThumb, type VideoItem } from "@/lib/videos";
 
 export default function VideoPlaylist({ videos }: { videos: VideoItem[] }) {
@@ -52,7 +53,7 @@ export default function VideoPlaylist({ videos }: { videos: VideoItem[] }) {
       </aside>
       <div className="relative aspect-video bg-black order-1 md:order-2">
         {embed ? (
-          <iframe
+          <IframeACarregar
             key={`${actual.id}-${activo}`}
             src={embed}
             title={actual.title}
@@ -60,6 +61,7 @@ export default function VideoPlaylist({ videos }: { videos: VideoItem[] }) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
             className="absolute inset-0 w-full h-full"
+            texto="A carregar o vídeo…"
           />
         ) : (
           <a

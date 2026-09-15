@@ -54,8 +54,30 @@ function Field({
 export default function EntrarPage() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [recuperar, setRecuperar] = useState(false);
+
+  const recuperarPalavra = async (form: HTMLFormElement) => {
+    const email = String(new FormData(form).get("email") || "").trim();
+    setBusy(true);
+    setError("");
+    setInfo("");
+    try {
+      const supabase = createBrowserSupabase();
+      const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/entrar`,
+      });
+      if (authError) throw authError;
+      setInfo("Se o correio existir na base, enviámos as instruções.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Não foi possível enviar o correio.";
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const entrar = async (form: HTMLFormElement) => {
     const email = String(new FormData(form).get("email") || "").trim();
@@ -83,17 +105,13 @@ export default function EntrarPage() {
     void entrar(e.currentTarget);
   };
 
+  const onSubmitRecuperar = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    void recuperarPalavra(e.currentTarget);
+  };
+
   return (
     <main className="min-h-screen bg-cream flex flex-col overflow-x-hidden">
-      <div className="bg-navy-800 text-white text-[11px] font-medium">
-        <div className="mx-auto max-w-lg px-4 h-10 flex items-center justify-between gap-3">
-          <span className="truncate">Área de gestão</span>
-          <Link href="/" className="hover:text-sky-300 transition-colors shrink-0">
-            Voltar ao sítio
-          </Link>
-        </div>
-      </div>
-
       <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-16">
         <div className="w-full max-w-sm min-w-0 bg-white border border-navy-100 p-5 sm:p-8 md:p-10">
           <Link href="/" className="block mx-auto w-fit">
@@ -110,47 +128,108 @@ export default function EntrarPage() {
             Escola Superior de Jornalismo
           </p>
 
-          <form onSubmit={onSubmitEntrar} className="mt-8 space-y-4">
-            <Field
-              id="entrar-email"
-              label="Correio electrónico"
-              type="email"
-              name="email"
-              required
-              autoComplete="username"
-            />
-            <Field
-              id="entrar-password"
-              label="Palavra-passe"
-              type={showPassword ? "text" : "password"}
-              name="password"
-              required
-              minLength={6}
-              autoComplete="current-password"
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
-            />
-            {error && (
-              <p className="text-sm text-crimson break-words" role="alert">
-                {error}
-              </p>
+          {recuperar ? (
+            <form onSubmit={onSubmitRecuperar} className="mt-8 space-y-4">
+              <Field
+                id="recuperar-email"
+                label="Correio electrónico"
+                type="email"
+                name="email"
+                required
+                autoComplete="username"
+              />
+              {error && (
+                <p className="text-sm text-crimson break-words" role="alert">
+                  {error}
+                </p>
+              )}
+              {info && (
+                <p className="text-sm text-leaf break-words" role="status">
+                  {info}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
+              >
+                {busy ? "A ENVIAR…" : "ENVIAR INSTRUÇÕES"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onSubmitEntrar} className="mt-8 space-y-4">
+              <Field
+                id="entrar-email"
+                label="Correio electrónico"
+                type="email"
+                name="email"
+                required
+                autoComplete="username"
+              />
+              <Field
+                id="entrar-password"
+                label="Palavra-passe"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                required
+                minLength={6}
+                autoComplete="current-password"
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+              {error && (
+                <p className="text-sm text-crimson break-words" role="alert">
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
+              >
+                {busy ? "A ENTRAR…" : "ENTRAR"}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-5 space-y-2 text-center text-sm">
+            {recuperar ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setRecuperar(false);
+                  setError("");
+                  setInfo("");
+                }}
+                className="block w-full text-sky hover:underline"
+              >
+                Voltar ao início de sessão
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setRecuperar(true);
+                  setError("");
+                  setInfo("");
+                }}
+                className="block w-full text-sky hover:underline"
+              >
+                Recuperar senha
+              </button>
             )}
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
-            >
-              {busy ? "A ENTRAR…" : "ENTRAR"}
-            </button>
-          </form>
+            <Link href="/" className="block w-full text-navy-900/70 hover:text-sky hover:underline">
+              Voltar à Home
+            </Link>
+          </div>
         </div>
       </div>
     </main>

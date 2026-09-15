@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import EditalPdfViewer from "@/components/EditalPdfViewer";
 import BannerInterior from "@/components/BannerInterior";
-import { loadEdital } from "@/lib/editais";
+import { loadEdital, nomeDescargaEdital, rotuloDescargaEdital } from "@/lib/editais";
 
 export const metadata = {
   title: "Edital de Admissão 2026 | ESJ",
@@ -31,18 +31,18 @@ export default async function EditalPage() {
             </Link>
             <a
               href={edital.file_url}
-              download
+              download={nomeDescargaEdital(edital.file_url, edital.title)}
               className="bg-white text-navy-900 hover:bg-cream font-semibold text-xs tracking-wide px-5 py-3 inline-flex items-center gap-2 transition-colors"
             >
               <Download size={15} />
-              DESCARREGAR PDF
+              {rotuloDescargaEdital(edital.file_url)}
             </a>
           </>
         }
       />
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
-        <EditalPdfViewer src={edital.file_url} />
+        <EditalPdfViewer src={edital.file_url} title={edital.title} />
       </section>
     </main>
   );

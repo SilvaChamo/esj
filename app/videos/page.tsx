@@ -1,4 +1,5 @@
 import BannerInterior from "@/components/BannerInterior";
+import { IframeACarregar } from "@/components/Carregando";
 import { listVideos, videoEmbedSrc } from "@/lib/videos";
 
 export const metadata = {
@@ -31,13 +32,14 @@ export default async function VideosPage() {
                 <div key={v.id} className="bg-white border border-navy-100">
                   <div className="relative aspect-video bg-black">
                     {src ? (
-                      <iframe
+                      <IframeACarregar
                         src={src}
                         title={v.title}
                         referrerPolicy="origin"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                         className="absolute inset-0 w-full h-full"
+                        texto="A carregar o vídeo…"
                       />
                     ) : (
                       <span className="absolute inset-0 flex items-center justify-center text-white text-sm p-4 text-center">

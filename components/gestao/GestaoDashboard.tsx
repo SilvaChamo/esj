@@ -49,9 +49,12 @@ import {
   listNewsletterGestao,
   listTelefonesInscricoes,
   listVideosGestao,
-  loadEditalVigente,
+  listEditaisGestao,
+  addEdital,
+  updateEdital,
+  deleteEdital,
+  setEditalVigente,
   publishCalendario,
-  publishEdital,
   guardarNoticia,
   addPublicacaoImagem,
   listPublicacoesGestao,
@@ -67,6 +70,7 @@ import {
 } from "@/lib/cms";
 import { segmentosSms, telemoveisUnicos } from "@/lib/sms";
 import { videoEmbedSrc } from "@/lib/videos";
+import { tipoFicheiroEdital } from "@/lib/editais";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
@@ -409,6 +413,15 @@ export default function GestaoDashboard() {
             )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {section === "edital" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("edital-adicionar")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar edital
+              </button>
+            )}
             {section === "galeria" && (
               <label
                 htmlFor="galeria-upload"
@@ -443,6 +456,15 @@ export default function GestaoDashboard() {
               >
                 Adicionar vídeos
               </button>
+            )}
+            {section === "documentos" && (
+              <label
+                id="documentos-upload-label"
+                htmlFor="documentos-upload"
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] cursor-pointer whitespace-nowrap"
+              >
+                Adicionar ficheiro
+              </label>
             )}
             <button
               type="button"
@@ -626,28 +648,98 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
 }
 
 function Edital({ onAction }: { onAction: (m: string) => void }) {
+  const [items, setItems] = useState<
+    { id: string; title: string; file_url: string; vigente?: boolean }[]
+  >([]);
   const [busy, setBusy] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [current, setCurrent] = useState<{ title: string; file_url: string } | null>(null);
+  const [abrir, setAbrir] = useState(false);
+  const [editar, setEditar] = useState<{ id: string; title: string; file_url: string } | null>(null);
+  const [titulo, setTitulo] = useState("");
+  const [ficheiroUrl, setFicheiroUrl] = useState("");
+  const [selectorAberto, setSelectorAberto] = useState(false);
+  const [selectorTab, setSelectorTab] = useState<"upload" | "galeria">("upload");
+
+  const refresh = () => {
+    listEditaisGestao()
+      .then(setItems)
+      .catch(() => setItems([]));
+  };
 
   useEffect(() => {
-    loadEditalVigente()
-      .then(setCurrent)
-      .catch(() => setCurrent(null));
+    refresh();
   }, []);
 
-  const publish = async () => {
-    if (!file) {
-      onAction("Escolha o PDF do novo edital.");
+  const abrirNovo = () => {
+    setEditar(null);
+    setTitulo("");
+    setFicheiroUrl("");
+    setAbrir(true);
+  };
+
+  const abrirEditar = (item: { id: string; title: string; file_url: string }) => {
+    setEditar(item);
+    setTitulo(item.title);
+    setFicheiroUrl(item.file_url);
+    setAbrir(true);
+  };
+
+  const fechar = () => {
+    setAbrir(false);
+    setEditar(null);
+    setFicheiroUrl("");
+    setSelectorAberto(false);
+  };
+
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const title = titulo.trim();
+    if (!title) {
+      onAction("Indique o título do edital.");
+      return;
+    }
+    if (!editar && !ficheiroUrl) {
+      onAction("Escolha o ficheiro do edital.");
       return;
     }
     setBusy(true);
     try {
-      await publishEdital(file, "Edital de Admissão 2026");
-      const next = await loadEditalVigente();
-      setCurrent(next);
-      setFile(null);
-      onAction("O edital foi publicado e já aparece em /edital.");
+      if (editar) {
+        const novo = ficheiroUrl && ficheiroUrl !== editar.file_url ? ficheiroUrl : undefined;
+        await updateEdital(editar.id, title, novo);
+        onAction("O edital foi actualizado.");
+      } else {
+        await addEdital(title, ficheiroUrl);
+        onAction("O edital foi gravado.");
+      }
+      fechar();
+      refresh();
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tornarVigente = async (item: { id: string; title: string }) => {
+    setBusy(true);
+    try {
+      await setEditalVigente(item.id);
+      refresh();
+      onAction("Este edital é o visível no sítio.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const eliminar = async (item: { id: string; title: string }) => {
+    if (!window.confirm(`Eliminar «${item.title}»?`)) return;
+    setBusy(true);
+    try {
+      await deleteEdital(item.id);
+      refresh();
+      onAction("O edital foi eliminado.");
     } catch (error) {
       onAction(cmsError(error));
     } finally {
@@ -656,40 +748,167 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
   };
 
   return (
-    <div className="max-w-2xl bg-white border border-navy-100 p-8">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Edital em vigor</h2>
-      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-        O documento publicado no sítio é o que os candidatos lêem em{" "}
-        <Link href="/edital" className="text-sky hover:underline">
-          /edital
-        </Link>
-        .
-      </p>
-      <div className="mt-6 border border-dashed border-navy-100 px-4 py-5 text-sm">
-        <p className="font-bold text-navy-900">Ficheiro actual</p>
-        <p className="mt-1 text-navy-900/65">
-          {current ? current.title : "Ainda o PDF local (Edital 2020.pdf), até publicar um novo."}
-        </p>
-      </div>
-      <label className="mt-5 block">
-        <span className="block text-sm font-bold text-navy-900 mb-1.5">
-          Novo PDF do edital
-        </span>
-        <input
-          type="file"
-          accept=".pdf"
-          className="esj-field-file"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+    <div>
+      <button id="edital-adicionar" type="button" className="hidden" onClick={abrirNovo} />
+
+      {items.length === 0 ? (
+        <p className="text-sm text-navy-900/50">Ainda sem editais na base.</p>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          {items.map((item) => {
+            const tipo = tipoFicheiroEdital(item.file_url);
+            return (
+            <div key={item.id} className="bg-white border border-navy-100">
+              <div className="relative aspect-[210/297] bg-cream overflow-hidden">
+                {tipo === "imagem" ? (
+                  <img
+                    src={item.file_url}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-contain p-2"
+                  />
+                ) : tipo === "pdf" ? (
+                  <iframe
+                    src={item.file_url}
+                    title={item.title}
+                    className="absolute inset-0 w-full h-full"
+                  />
+                ) : (
+                  <a
+                    href={item.file_url}
+                    download
+                    className="absolute inset-0 flex items-center justify-center text-navy-900/70 text-sm p-4 text-center underline"
+                  >
+                    Descarregar
+                  </a>
+                )}
+              </div>
+              <div className="p-2.5">
+                <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">
+                  {item.title}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <button
+                    type="button"
+                    onClick={() => abrirEditar(item)}
+                    className="text-[12px] text-sky hover:underline"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void eliminar(item)}
+                    className="text-[12px] text-crimson hover:underline disabled:opacity-50"
+                  >
+                    Eliminar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || item.vigente}
+                    onClick={() => void tornarVigente(item)}
+                    className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                  >
+                    {item.vigente ? "Fixado" : "Fixar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+            );
+          })}
+        </div>
+      )}
+
+      {abrir && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white border border-navy-100 p-8">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <h2 className="font-serif text-xl font-bold text-navy-900">
+                {editar ? "Editar edital" : "Adicionar edital"}
+              </h2>
+              <button type="button" onClick={fechar} className="text-navy-900/50 hover:text-navy-900">
+                <X size={18} />
+              </button>
+            </div>
+            <form className="space-y-5" onSubmit={onSubmit}>
+              <label className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
+                <input
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  required
+                  className="esj-field"
+                />
+              </label>
+              <div className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">
+                  {editar ? "Ficheiro" : "Ficheiro (PDF, imagem ou documento)"}
+                </span>
+                {ficheiroUrl ? (
+                  <div className="space-y-2">
+                    {tipoFicheiroEdital(ficheiroUrl) === "imagem" ? (
+                      <img src={ficheiroUrl} alt="" className="max-h-40 w-auto border border-navy-100" />
+                    ) : (
+                      <p className="text-sm text-navy-900/70 break-all">
+                        {decodeURIComponent(ficheiroUrl.split("/").pop()?.split("?")[0] || "Ficheiro escolhido")}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectorTab("upload");
+                        setSelectorAberto(true);
+                      }}
+                      className="text-[#2271b1] text-[13px] hover:underline underline-offset-2"
+                    >
+                      {editar ? "Substituir ficheiro" : "Trocar ficheiro"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectorTab("upload");
+                      setSelectorAberto(true);
+                    }}
+                    className="w-full min-h-[120px] p-6 border-2 border-dashed border-[#ccd0d4] bg-white/50 flex flex-col items-center justify-center gap-2"
+                  >
+                    <Upload className="w-10 h-10 text-[#ccd0d4]" />
+                    <span className="text-[14px] text-[#3c434a]">Escolher ficheiro</span>
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectorTab("galeria");
+                  setSelectorAberto(true);
+                }}
+                className="bg-sky hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+              >
+                BUSCAR DA GALERIA
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+              >
+                {busy ? "A GRAVAR…" : editar ? "GUARDAR" : "ADICIONAR"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {selectorAberto && (
+        <ImageSelector
+          key={selectorTab}
+          initialTab={selectorTab}
+          titulo="Ficheiro do edital"
+          accept=".pdf,image/*,.doc,.docx,.odt,.zip"
+          pasta="editais"
+          onClose={() => setSelectorAberto(false)}
+          onSelect={setFicheiroUrl}
         />
-      </label>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={publish}
-        className="mt-6 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-      >
-        {busy ? "A PUBLICAR…" : "PUBLICAR EDITAL"}
-      </button>
+      )}
     </div>
   );
 }
@@ -1393,7 +1612,6 @@ function Subscritores() {
   const [items, setItems] = useState<{ id: string; email: string; created_at: string }[]>([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     listNewsletterGestao()
@@ -1404,47 +1622,11 @@ function Subscritores() {
       });
   }, []);
 
-  const copiarLista = async () => {
-    try {
-      await navigator.clipboard.writeText(items.map((i) => i.email).join(", "));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2500);
-    } catch {
-      /* clipboard indisponível */
-    }
-  };
-
   return (
     <div className="bg-white border border-navy-100 p-8">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Subscritores da newsletter</h2>
-      <p className="mt-2 text-sm text-navy-900/65 leading-relaxed max-w-2xl">
-        Esta é a lista de correios inscritos no formulário de newsletter (secção de
-        contacto da página inicial). É a esta lista que, no futuro, serão enviadas
-        as novas publicações do sítio — o envio automático ainda não está ligado,
-        por agora a lista fica disponível aqui para copiar.
-      </p>
       {missing && <SchemaInstall />}
-      {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
-      {!missing && (
-        <div className="mt-6 flex items-center gap-4">
-          <p className="text-sm font-semibold text-navy-900">
-            {items.length} subscritor{items.length === 1 ? "" : "es"}
-          </p>
-          {items.length > 0 && (
-            <button
-              type="button"
-              onClick={copiarLista}
-              className="text-xs font-semibold tracking-wide text-sky hover:text-crimson"
-            >
-              {copied ? "LISTA COPIADA" : "COPIAR LISTA DE CORREIOS"}
-            </button>
-          )}
-        </div>
-      )}
-      <ul className="mt-4 divide-y divide-navy-100">
-        {items.length === 0 && !error && !missing && (
-          <li className="py-3 text-sm text-navy-900/50">Ainda sem subscritores.</li>
-        )}
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <ul className="divide-y divide-navy-100">
         {items.map((s) => (
           <li key={s.id} className="py-3 flex items-center justify-between gap-4">
             <span className="text-sm text-navy-900">{s.email}</span>

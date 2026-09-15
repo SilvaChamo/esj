@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import BannerInterior from "@/components/BannerInterior";
+import { ImgACarregar } from "@/components/Carregando";
 import { findNoticia, noticias } from "@/lib/noticias";
 import { sanitizarHtmlNoticia } from "@/lib/html-noticia";
 
@@ -27,8 +28,13 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
       <BannerInterior kicker={item.date} title={item.title} compact />
 
       <article className="mx-auto max-w-3xl px-4 lg:px-8 py-10">
-        <div className="overflow-hidden bg-white border border-navy-100">
-          <img src={item.image} alt={item.title} className="w-full h-auto object-contain max-h-[520px] mx-auto" />
+        <div className="relative overflow-hidden bg-white border border-navy-100 min-h-[240px]">
+          <ImgACarregar
+            src={item.image}
+            alt={item.title}
+            className="w-full h-auto object-contain max-h-[520px] mx-auto"
+            texto="A carregar a imagem da notícia…"
+          />
         </div>
         <div className="mt-8 space-y-4 text-navy-900/80 leading-relaxed noticia-corpo">
           {item.body.map((p, i) =>

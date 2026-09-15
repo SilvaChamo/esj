@@ -4,6 +4,7 @@ import InscricaoForm from "@/components/InscricaoForm";
 import InscricaoSidebar from "@/components/InscricaoSidebar";
 import AdmissaoSidebar from "@/components/AdmissaoSidebar";
 import BannerInterior from "@/components/BannerInterior";
+import { CarregandoTexto } from "@/components/Carregando";
 
 export const metadata = {
   title: "Pré-inscrição 2026 | ESJ",
@@ -38,7 +39,13 @@ export default function InscricaoPage() {
             </div>
           </Suspense>
           <div className="min-w-0 max-w-full">
-            <Suspense fallback={<p className="text-sm text-navy-900/50">A carregar o boletim…</p>}>
+            <Suspense
+              fallback={
+                <div className="bg-white border border-navy-100">
+                  <CarregandoTexto texto="A carregar o boletim de inscrição…" />
+                </div>
+              }
+            >
               <InscricaoForm />
             </Suspense>
           </div>

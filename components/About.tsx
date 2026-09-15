@@ -1,17 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
+import { FotoACarregar } from "@/components/Carregando";
 
 export default function About() {
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8 py-20 grid md:grid-cols-2 gap-14 items-center">
       <div className="relative">
         <div className="relative h-[420px] rounded-sm overflow-hidden">
-          <Image
+          <FotoACarregar
             src="/Graduacao-ESJ.jpg"
             alt="Estudantes finalistas da ESJ na cerimónia de graduação"
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover object-[50%_35%]"
+            texto="A carregar a fotografia…"
           />
         </div>
       </div>

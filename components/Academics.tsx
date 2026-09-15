@@ -29,6 +29,7 @@ import {
   type Categoria,
   type Publicacao,
 } from "@/lib/publicacao";
+import { ImgACarregar } from "@/components/Carregando";
 
 type SectionTab = "ensino" | "calendario" | "cursos";
 
@@ -276,11 +277,12 @@ export default function Academics() {
                     className="absolute inset-0"
                     aria-label="Ver lançamento do livro"
                   >
-                    <img
+                    <ImgACarregar
                       key={`livro-${livroBook.image}`}
                       src={livroBook.image}
                       alt=""
                       className="absolute inset-0 w-full h-full object-contain p-2"
+                      texto="A carregar a imagem do livro…"
                     />
                   </button>
                 </div>
@@ -293,11 +295,12 @@ export default function Academics() {
                     className="absolute inset-0"
                     aria-label="Ver cartaz de eventos"
                   >
-                    <img
+                    <ImgACarregar
                       key={`evento-${eventoBook.image}`}
                       src={eventoBook.image}
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover"
+                      texto="A carregar o cartaz…"
                     />
                   </button>
                 </div>
@@ -459,11 +462,12 @@ export default function Academics() {
           >
             <X size={28} />
           </button>
-          <div className="relative max-h-[90vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
-            <img
+          <div className="relative min-h-[200px] min-w-[200px] max-h-[90vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
+            <ImgACarregar
               src={viewer.image}
               alt=""
               className="max-h-[90vh] max-w-[92vw] w-auto h-auto object-contain shadow-2xl"
+              texto="A carregar a imagem…"
             />
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
+import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import { htmlParaParagrafos, sanitizarHtmlNoticia } from "@/lib/html-noticia";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
@@ -300,17 +301,55 @@ export async function listVideosGestao() {
   return (data ?? []).map((row) => ({ ...row, principal: videoFixado(row) }));
 }
 
-export async function publishEdital(file: File, title: string) {
+export async function listEditaisGestao() {
   const supabase = createBrowserSupabase();
-  const file_url = await uploadMedia(file, "editais");
-  const unset = await supabase.from("editais").update({ vigente: false }).eq("vigente", true);
-  if (unset.error) throw unset.error;
+  const { data, error } = await supabase
+    .from("editais")
+    .select("id, title, file_url, vigente, created_at")
+    .order("vigente", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addEdital(title: string, file_url: string) {
+  const supabase = createBrowserSupabase();
+  const existentes = await supabase.from("editais").select("id").limit(1);
+  if (existentes.error) throw existentes.error;
   const { error } = await supabase.from("editais").insert({
-    title: title.trim() || file.name,
+    title: title.trim() || "Edital",
     file_url,
-    vigente: true,
+    vigente: !existentes.data?.length,
   });
   if (error) throw error;
+}
+
+export async function updateEdital(id: string, title: string, file_url?: string) {
+  const supabase = createBrowserSupabase();
+  const row: { title: string; file_url?: string } = { title: title.trim() };
+  if (file_url) row.file_url = file_url;
+  const { error } = await supabase.from("editais").update(row).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteEdital(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("editais").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function setEditalVigente(id: string) {
+  const supabase = createBrowserSupabase();
+  const unset = await supabase.from("editais").update({ vigente: false }).neq("id", id);
+  if (unset.error) throw unset.error;
+  const set = await supabase.from("editais").update({ vigente: true }).eq("id", id);
+  if (set.error) throw set.error;
+}
+
+export async function publishEdital(file: File, title: string) {
+  const file_url = await uploadMedia(file, "editais");
+  await addEdital(title, file_url);
 }
 
 export async function loadEditalVigente() {

@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import VideoPlaylist from "@/components/VideoPlaylist";
+import { FotoACarregar } from "@/components/Carregando";
 import type { Noticia } from "@/lib/noticias";
 import type { VideoItem } from "@/lib/videos";
 
@@ -66,13 +66,14 @@ export default function NewsSeccao({
                   className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col"
                 >
                   <div className="relative overflow-hidden h-44">
-                    <Image
+                    <FotoACarregar
                       src={item.image}
                       alt={item.title}
                       fill
                       sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="eager"
+                      texto="A carregar a imagem da notícia…"
                     />
                   </div>
                   <div className="p-5 flex-1 flex flex-col">

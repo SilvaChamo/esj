@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Download } from "lucide-react";
+import { CarregandoTexto, ImgACarregar } from "@/components/Carregando";
+import { nomeDescargaEdital, tipoFicheiroEdital } from "@/lib/editais";
 
-export default function EditalPdfViewer({ src }: { src: string }) {
+export default function EditalPdfViewer({ src, title }: { src: string; title?: string }) {
+  const tipo = tipoFicheiroEdital(src);
   const hostRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState("A carregar o edital…");
+  const [status, setStatus] = useState(tipo === "pdf" ? "A carregar o edital…" : "");
 
   useEffect(() => {
+    if (tipo !== "pdf") return;
     const host = hostRef.current;
     if (!host) return;
     let cancelled = false;
@@ -62,13 +67,40 @@ export default function EditalPdfViewer({ src }: { src: string }) {
       cancelled = true;
       ro.disconnect();
     };
-  }, [src]);
+  }, [src, tipo]);
+
+  if (tipo === "imagem") {
+    return (
+      <div className="relative bg-white border border-navy-100 min-h-[240px]">
+        <ImgACarregar
+          src={src}
+          alt={title || "Edital"}
+          texto="A carregar a imagem do edital…"
+          className="w-full h-auto object-contain mx-auto"
+        />
+      </div>
+    );
+  }
+
+  if (tipo === "ficheiro") {
+    return (
+      <div className="bg-white border border-navy-100 px-6 py-16 text-center">
+        <p className="text-navy-900/70 text-sm">Este edital está disponível para descarregar.</p>
+        <a
+          href={src}
+          download={nomeDescargaEdital(src, title || "edital")}
+          className="mt-6 inline-flex items-center gap-2 bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+        >
+          <Download size={15} />
+          DESCARREGAR
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-navy-100">
-      {status && (
-        <p className="px-6 py-10 text-center text-sm text-navy-900/60">{status}</p>
-      )}
+      {status && <CarregandoTexto texto={status} />}
       <div ref={hostRef} />
     </div>
   );
