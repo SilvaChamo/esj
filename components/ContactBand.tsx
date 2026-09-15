@@ -65,23 +65,22 @@ export default function ContactBand() {
   return (
     <section id="contacto" className="bg-white">
       <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-16 pb-6 md:pt-24 md:pb-8">
-        <div className="relative mb-[72px]">
-          <div className="absolute inset-0 overflow-hidden" aria-hidden>
-            <Image
-              src="/JornalistaII.jpg"
-              alt=""
-              fill
-              sizes="(max-width: 1280px) 100vw, 1280px"
-              className="object-cover object-[50%_30%]"
-            />
-            <div className="absolute inset-0 bg-[#1a5a78]/90" />
-          </div>
-
-          <div className="relative flex flex-col md:flex-row md:items-stretch">
+        <div className="mb-[72px]">
+          <div className="flex flex-col md:flex-row md:items-stretch">
             <form
               onSubmit={sendMessage}
-              className="relative z-10 flex flex-col justify-center border border-white bg-[#1a5a78]/35 p-8 sm:p-10 w-full md:flex-1"
+              className="relative z-0 overflow-hidden flex flex-col justify-center border border-white p-8 sm:p-10 w-full md:flex-1 md:self-center md:translate-y-5"
             >
+              <Image
+                src="/JornalistaII.jpg"
+                alt=""
+                fill
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                aria-hidden
+                className="-z-10 object-cover object-[50%_30%]"
+              />
+              <div className="absolute inset-0 -z-10 bg-[#1a5a78]/90" aria-hidden />
+              <div className="absolute inset-0 -z-10 bg-[#1a5a78]/35" aria-hidden />
               <p className="text-sky-300 font-bold tracking-widest text-sm mb-3">CONTACTO</p>
               <h2 className="font-serif text-3xl md:text-[2.05rem] font-bold text-white">
                 Fale <span className="text-sky-300">connosco</span>
