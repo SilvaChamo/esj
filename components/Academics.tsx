@@ -285,7 +285,7 @@ export default function Academics() {
                   </button>
                 </div>
               </div>
-              <div className={active === "evento" ? "relative" : "hidden"}>
+              <div className={active === "evento" ? "relative w-full lg:w-[calc(100%+50px)]" : "hidden"}>
                 <div className="relative w-full overflow-hidden bg-cream border border-navy-100 aspect-[210/297]">
                   <button
                     type="button"

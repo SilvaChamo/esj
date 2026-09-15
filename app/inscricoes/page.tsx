@@ -1,5 +1,5 @@
 import Link from "next/link";
-import VoltarBanner from "@/components/VoltarBanner";
+import BannerInterior from "@/components/BannerInterior";
 
 export const metadata = {
   title: "Inscrições encerradas | ESJ",
@@ -10,20 +10,11 @@ export const metadata = {
 export default function InscricoesEncerradasPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
-      <section className="bg-navy-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
-          <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
-            ADMISSÕES
-          </p>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold">
-            Inscrições encerradas
-          </h1>
-          <p className="mt-3 text-white/70 max-w-2xl text-sm leading-relaxed">
-            O período de pré-inscrição para o ano lectivo 2026 já terminou.
-          </p>
-          <VoltarBanner href="/" label="Voltar à página inicial" />
-        </div>
-      </section>
+      <BannerInterior
+        kicker="ADMISSÕES"
+        title="Inscrições encerradas"
+        description="O período de pré-inscrição para o ano lectivo 2026 já terminou."
+      />
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">

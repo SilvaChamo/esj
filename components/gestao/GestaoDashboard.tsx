@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   Bell,
   Book,
@@ -25,6 +25,7 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
+  Upload,
   Users,
   Video,
   LogOut,
@@ -36,11 +37,7 @@ import {
   type Calendario,
 } from "@/lib/calendario";
 import {
-  loadPublicacao,
-  readPublicacao,
-  writePublicacao,
   type Categoria,
-  type Publicacao,
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
@@ -50,21 +47,33 @@ import {
   listAnunciosGestao,
   listInscricoesGestao,
   listNewsletterGestao,
+  listTelefonesInscricoes,
   listVideosGestao,
   loadEditalVigente,
-  publishAnuncio,
   publishCalendario,
   publishEdital,
-  publishNoticia,
-  publishPublicacao,
+  guardarNoticia,
+  addPublicacaoImagem,
+  listPublicacoesGestao,
+  updatePublicacaoImagem,
+  deletePublicacao,
+  setPublicacaoDestaque,
   publishVideo,
+  updateVideo,
+  deleteVideo,
+  setVideoPrincipal,
   statsAnoLectivo,
+  type EstadoNoticia,
 } from "@/lib/cms";
+import { segmentosSms, telemoveisUnicos } from "@/lib/sms";
+import { videoEmbedSrc } from "@/lib/videos";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
 import ImageSelector from "@/components/gestao/ImageSelector";
+import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
+import { textoDeHtml } from "@/lib/html-noticia";
 
 type Section =
   | "painel"
@@ -107,9 +116,10 @@ const NAV: NavEntry[] = [
     icon: BookOpen,
     children: [
       { id: "noticias", label: "Notícias", icon: Newspaper },
-      { id: "anuncios", label: "Anúncios", icon: Bell },
+      { id: "anuncios", label: "SMS", icon: Bell },
       { id: "eventos", label: "Eventos", icon: CalendarDays },
       { id: "livros", label: "Livros", icon: Book },
+      { id: "videos", label: "Vídeos", icon: Video },
     ],
   },
   {
@@ -117,7 +127,6 @@ const NAV: NavEntry[] = [
     icon: Images,
     children: [
       { id: "galeria", label: "Imagens", icon: ImageIcon },
-      { id: "videos", label: "Vídeos", icon: Video },
       { id: "documentos", label: "Documentos", icon: FileText },
     ],
   },
@@ -393,18 +402,57 @@ export default function GestaoDashboard() {
             <h1 className="font-serif text-xl font-bold text-navy-900">
               {sectionLabel(section)}
             </h1>
-            <p className="mt-0.5 text-[11px] font-bold tracking-widest text-sky">
-              SECRETARIA ACADÉMICA
-            </p>
+            {section === "noticias" ? (
+              <p className="mt-0.5 text-[15px] font-bold text-sky">Adicionar notícia</p>
+            ) : (
+              <p className="mt-0.5 text-[11px] font-bold tracking-widest text-sky">SECRETARIA ACADÉMICA</p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={sair}
-            className="flex items-center gap-2 text-sm font-bold text-navy-900/70 hover:text-sky transition-colors"
-          >
-            <LogOut size={15} />
-            Sair
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {section === "galeria" && (
+              <label
+                htmlFor="galeria-upload"
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] cursor-pointer whitespace-nowrap"
+              >
+                Adicionar ficheiros multimédia
+              </label>
+            )}
+            {section === "livros" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("livros-adicionar")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar livro
+              </button>
+            )}
+            {section === "eventos" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("eventos-adicionar")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar cartaz
+              </button>
+            )}
+            {section === "videos" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("videos-adicionar")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar vídeos
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={sair}
+              className="flex items-center gap-2 text-sm font-bold text-navy-900/70 hover:text-sky transition-colors"
+            >
+              <LogOut size={15} />
+              Sair
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 px-4 sm:px-8 py-8">
@@ -653,114 +701,153 @@ function Publicacoes({
   onAction: (m: string) => void;
   categoria: Categoria;
 }) {
-  const [data, setData] = useState<Publicacao>(() => readPublicacao(categoria));
+  const [items, setItems] = useState<{ id: string; title: string; image: string; destaque?: boolean }[]>([]);
   const [selectorAberto, setSelectorAberto] = useState(false);
+  const [editarId, setEditarId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState(false);
-  const [geracao, setGeracao] = useState(0);
-  const editado = useRef(false);
-  const carga = useRef(0);
-  const dataRef = useRef(data);
-  dataRef.current = data;
+  const livro = categoria === "livro";
+  const botaoId = livro ? "livros-adicionar" : "eventos-adicionar";
 
-  useEffect(() => {
-    const id = ++carga.current;
-    loadPublicacao(categoria).then((next) => {
-      if (id !== carga.current || editado.current) return;
-      setData({ ...next, tipo: categoria === "evento" ? "cartaz" : "livro" });
-    });
-  }, [categoria]);
-
-  const aplicarFoto = (image: string) => {
-    editado.current = true;
-    carga.current += 1;
-    setGeracao((n) => n + 1);
-    setData((prev) => {
-      const next = {
-        ...prev,
-        image,
-        tipo: categoria === "evento" ? ("cartaz" as const) : ("livro" as const),
-      };
-      writePublicacao(next, categoria);
-      dataRef.current = next;
-      return next;
-    });
+  const refresh = () => {
+    listPublicacoesGestao(categoria)
+      .then(setItems)
+      .catch((error) => {
+        if (isMissingTable(error)) setMissing(true);
+        setItems([]);
+      });
   };
 
-  const publish = async () => {
+  useEffect(() => {
+    refresh();
+  }, [categoria]);
+
+  const abrirNovo = () => {
+    setEditarId(null);
+    setSelectorAberto(true);
+  };
+
+  const aplicarFoto = async (image: string) => {
+    setSelectorAberto(false);
     setBusy(true);
     try {
-      const publicado = {
-        ...dataRef.current,
-        tipo: categoria === "evento" ? ("cartaz" as const) : ("livro" as const),
-      };
-      const image = await publishPublicacao(publicado, null, categoria);
-      const gravado = { ...publicado, image };
-      dataRef.current = gravado;
-      setData(gravado);
-      writePublicacao(gravado, categoria);
-      setGeracao((n) => n + 1);
+      if (editarId) {
+        await updatePublicacaoImagem(editarId, image);
+        onAction(livro ? "A imagem do livro foi actualizada." : "A imagem do cartaz foi actualizada.");
+      } else {
+        await addPublicacaoImagem(image, categoria);
+        onAction(livro ? "O livro foi publicado." : "O cartaz foi publicado.");
+      }
       setMissing(false);
-      onAction(
-        categoria === "livro"
-          ? "A imagem do livro foi publicada."
-          : "A imagem do evento foi publicada."
-      );
+      refresh();
     } catch (error) {
       if (isMissingTable(error)) setMissing(true);
+      onAction(cmsError(error));
+    } finally {
+      setEditarId(null);
+      setBusy(false);
+    }
+  };
+
+  const tornarFixado = async (item: { id: string; title: string }) => {
+    setBusy(true);
+    try {
+      await setPublicacaoDestaque(item.id, categoria);
+      refresh();
+      onAction(livro ? "Este livro está fixado na página inicial." : "Este cartaz está fixado na página inicial.");
+    } catch (error) {
       onAction(cmsError(error));
     } finally {
       setBusy(false);
     }
   };
 
-  const srcFoto =
-    geracao > 0
-      ? `${data.image}${data.image.includes("?") ? "&" : "?"}cb=${geracao}`
-      : data.image;
+  const eliminar = async (item: { id: string; title: string }) => {
+    if (!window.confirm(`Eliminar «${item.title}»?`)) return;
+    setBusy(true);
+    try {
+      await deletePublicacao(item.id);
+      refresh();
+      onAction(livro ? "O livro foi eliminado." : "O cartaz foi eliminado.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <>
+      <button id={botaoId} type="button" className="hidden" onClick={abrirNovo} />
       {missing && <SchemaInstall />}
-      <div className={categoria === "evento" ? "max-w-sm" : "max-w-lg"}>
-        <button
-          type="button"
-          onClick={() => setSelectorAberto(true)}
-          className={`relative w-full overflow-hidden bg-cream border border-navy-100 group ${
-            categoria === "evento" ? "aspect-[210/297]" : "aspect-square"
-          }`}
-          aria-label={categoria === "livro" ? "Substituir imagem do livro" : "Substituir imagem do evento"}
-        >
-          <img
-            key={srcFoto}
-            src={srcFoto}
-            alt=""
-            className={
-              categoria === "livro"
-                ? "absolute inset-0 w-full h-full object-contain p-2"
-                : "absolute inset-0 w-full h-full object-cover"
-            }
-          />
-          <span className="absolute inset-0 flex items-end justify-center bg-navy-900/0 group-hover:bg-navy-900/45 transition-colors">
-            <span className="mb-4 px-3 py-1.5 bg-white text-navy-900 text-[10px] font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
-              CLICAR PARA SUBSTITUIR
-            </span>
-          </span>
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void publish()}
-          className="mt-3 h-11 px-4 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide whitespace-nowrap transition-colors"
-        >
-          {busy ? "A PUBLICAR…" : "PUBLICAR"}
-        </button>
-      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-navy-900/50">
+          {livro ? "Ainda sem livros na base." : "Ainda sem cartazes na base."}
+        </p>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          {items.map((item) => (
+            <div key={item.id} className="bg-white border border-navy-100">
+              <div
+                className={`relative overflow-hidden bg-cream ${
+                  livro ? "aspect-square" : "aspect-[210/297]"
+                }`}
+              >
+                <img
+                  src={item.image}
+                  alt=""
+                  className={
+                    livro
+                      ? "absolute inset-0 w-full h-full object-contain p-2"
+                      : "absolute inset-0 w-full h-full object-cover"
+                  }
+                />
+              </div>
+              <div className="p-2.5">
+                <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">
+                  {item.title}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditarId(item.id);
+                      setSelectorAberto(true);
+                    }}
+                    className="text-[12px] text-sky hover:underline"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void eliminar(item)}
+                    className="text-[12px] text-crimson hover:underline disabled:opacity-50"
+                  >
+                    Eliminar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || item.destaque}
+                    onClick={() => void tornarFixado(item)}
+                    className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                  >
+                    {item.destaque ? "Fixado" : "Fixar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {selectorAberto && (
         <ImageSelector
-          initialTab="galeria"
-          onClose={() => setSelectorAberto(false)}
-          onSelect={aplicarFoto}
+          initialTab="upload"
+          onClose={() => {
+            setSelectorAberto(false);
+            setEditarId(null);
+          }}
+          onSelect={(url) => void aplicarFoto(url)}
         />
       )}
     </>
@@ -830,7 +917,7 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
 }
 
 const noticiaInputClass =
-  "w-full bg-white text-[#2c3338] border border-[#8c8f94] rounded-[4px] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)]";
+  "w-full bg-white text-[#2c3338] border border-[#ccd0d4] outline-none focus:border-[#2271b1] shadow-sm";
 
 const RASCUNHO_NOTICIA_KEY = "esj-rascunho-noticia";
 
@@ -841,6 +928,9 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [estado, setEstado] = useState<EstadoNoticia>("publicado");
+  const [slugAtual, setSlugAtual] = useState("");
+  const [filtro, setFiltro] = useState<EstadoNoticia>("publicado");
 
   useEffect(() => {
     try {
@@ -851,37 +941,69 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
         setExcerpt(draft.excerpt || "");
         setBody(draft.body || "");
         setImageUrl(draft.imageUrl || "");
+        setEstado(draft.estado || "publicado");
+        setFiltro(draft.estado || "publicado");
+        setSlugAtual(draft.slug || "");
       }
     } catch {
       /* rascunho inválido, ignora */
     }
   }, []);
 
-  const guardarRascunho = () => {
-    try {
-      window.localStorage.setItem(
-        RASCUNHO_NOTICIA_KEY,
-        JSON.stringify({ title, excerpt, body, imageUrl })
-      );
-      onAction("Rascunho guardado neste dispositivo.");
-    } catch {
-      onAction("Não foi possível guardar o rascunho.");
+  const gravar = async (proximo: EstadoNoticia) => {
+    const titulo = title.trim() || (proximo === "rascunho" ? "Sem título" : "");
+    if (!titulo) {
+      onAction("Indique o título da notícia.");
+      return;
     }
-  };
-
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    if (proximo !== "rascunho" && !excerpt.trim()) {
+      onAction("Escreva o resumo da notícia.");
+      return;
+    }
+    if (proximo !== "rascunho" && !textoDeHtml(body)) {
+      onAction("Escreva o texto da notícia.");
+      return;
+    }
     setBusy(true);
     try {
-      await publishNoticia({ title: title.trim(), excerpt: excerpt.trim(), body: body.trim(), image: imageUrl || null });
-      setTitle("");
-      setExcerpt("");
-      setBody("");
-      setImageUrl("");
-      window.localStorage.removeItem(RASCUNHO_NOTICIA_KEY);
-      onAction("A notícia foi publicada em /noticias.");
+      const slug = await guardarNoticia({
+        slug: slugAtual || undefined,
+        title: titulo,
+        excerpt: excerpt.trim() || textoDeHtml(body).slice(0, 180),
+        body: body.trim(),
+        image: imageUrl || null,
+        estado: proximo,
+      });
+      setSlugAtual(slug);
+      setEstado(proximo);
+      setTitle(titulo);
+      window.localStorage.setItem(
+        RASCUNHO_NOTICIA_KEY,
+        JSON.stringify({ title: titulo, excerpt, body, imageUrl, estado: proximo, slug })
+      );
+      setFiltro(proximo);
+      if (proximo === "publicado") {
+        window.localStorage.removeItem(RASCUNHO_NOTICIA_KEY);
+        onAction("A notícia foi publicada em /noticias.");
+      } else if (proximo === "revisao") {
+        onAction("A notícia ficou pendente para revisão.");
+      } else {
+        onAction("Rascunho guardado.");
+      }
     } catch (error) {
-      onAction(cmsError(error));
+      if (proximo === "rascunho") {
+        try {
+          window.localStorage.setItem(
+            RASCUNHO_NOTICIA_KEY,
+            JSON.stringify({ title, excerpt, body, imageUrl, estado: "rascunho", slug: slugAtual })
+          );
+          onAction("Rascunho guardado neste dispositivo.");
+        } catch {
+          onAction(cmsError(error));
+        }
+      } else {
+        onAction(cmsError(error));
+      }
     } finally {
       setBusy(false);
     }
@@ -893,11 +1015,18 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
     year: "numeric",
   });
 
+  const estadoLabel =
+    filtro === "publicado" ? "Publicado" : filtro === "revisao" ? "Pendente para revisão" : "Rascunho";
+
   return (
     <div className="text-[#2c3338]">
-      <h1 className="font-serif text-2xl font-bold text-navy-900 mb-4">Adicionar notícia</h1>
-
-      <form onSubmit={onSubmit} className="flex flex-col lg:flex-row gap-5 items-start">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void gravar(filtro);
+        }}
+        className="flex flex-col lg:flex-row gap-5 items-start"
+      >
         <div className="flex-1 w-full space-y-5 min-w-0">
           <input
             required
@@ -907,43 +1036,28 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
             className={`${noticiaInputClass} h-[50px] px-3 text-[1.4rem]`}
           />
 
-          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-3 border-b border-[#ccd0d4] bg-white">
+          <div className="bg-white border border-[#ccd0d4] overflow-hidden shadow-sm">
+            <div className="p-2.5 bg-[#f6f7f7] border-b border-[#dcdcde]">
               <h2 className="font-semibold text-[14px] text-[#1d2327]">Resumo</h2>
             </div>
-            <div className="p-4 bg-white">
-              <textarea
-                rows={2}
-                required
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-                placeholder="Duas linhas para a página inicial"
-                className={`${noticiaInputClass} p-3 text-[14px]`}
-              />
-            </div>
+            <textarea
+              rows={2}
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              placeholder="Duas linhas para a página inicial"
+              className="w-full bg-white text-[#2c3338] p-3 text-[14px] border-0 outline-none resize-y shadow-none"
+            />
           </div>
 
-          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-3 border-b border-[#ccd0d4] bg-white">
-              <h2 className="font-semibold text-[14px] text-[#1d2327]">Texto</h2>
-            </div>
-            <div className="p-4 bg-white">
-              <textarea
-                rows={12}
-                required
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Corpo da notícia"
-                className={`${noticiaInputClass} p-3 text-[14px]`}
-              />
-            </div>
+          <div className="bg-white border border-[#ccd0d4] overflow-hidden shadow-sm">
+            <NoticiaEditor value={body} onChange={setBody} placeholder="Comece a escrever…" />
           </div>
         </div>
 
         <div className="w-full lg:w-[280px] space-y-5 shrink-0">
-          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-2.5 border-b border-[#ccd0d4] bg-white">
-              <h2 className="font-semibold text-[14px] text-[#1d2327]">Imagem de destaque</h2>
+          <div className="bg-white border border-[#ccd0d4] overflow-hidden shadow-sm">
+            <div className="p-2.5 bg-[#f6f7f7] border-b border-[#dcdcde]">
+              <h2 className="font-semibold text-[14px] text-[#1d2327]">Imagem em destaque</h2>
             </div>
             <div className="p-3">
               {imageUrl ? (
@@ -958,15 +1072,20 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
                   </button>
                 </div>
               ) : (
-                <button type="button" onClick={() => setIsImageSelectorOpen(true)} className="text-[#2271b1] text-[13px] hover:text-[#135e96] underline underline-offset-2 text-left">
-                  Definir imagem de destaque
+                <button
+                  type="button"
+                  onClick={() => setIsImageSelectorOpen(true)}
+                  className="w-full min-h-[160px] p-8 border-2 border-dashed border-[#ccd0d4] bg-white/50 flex flex-col items-center justify-center gap-3"
+                >
+                  <Upload className="w-12 h-12 text-[#ccd0d4]" />
+                  <span className="text-[14px] text-[#3c434a]">Imagem em destaque</span>
                 </button>
               )}
             </div>
           </div>
 
-          <div className="bg-white border border-[#ccd0d4] rounded-[8px] overflow-hidden shadow-sm">
-            <div className="p-2.5 border-b border-[#ccd0d4] bg-white flex items-center justify-between">
+          <div className="bg-white border border-[#ccd0d4] overflow-hidden shadow-sm">
+            <div className="p-2.5 bg-[#f6f7f7] border-b border-[#dcdcde] flex items-center justify-between">
               <h2 className="font-semibold text-[14px] text-[#1d2327]">Publicar</h2>
               <ChevronUp className="w-4 h-4 text-[#787c82]" />
             </div>
@@ -974,36 +1093,39 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
               <div className="flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-[#787c82] shrink-0" />
                 <span>
-                  Estado: <strong>Publicado</strong>
+                  Estado: <strong>{estadoLabel}</strong>
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-[#787c82] shrink-0" />
                 <span>
-                  Visibilidade: <strong>Público</strong>
+                  Visibilidade: <strong>{filtro === "publicado" ? "Público" : "Privado"}</strong>
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#787c82] shrink-0" />
-                <span className="border border-[#ccd0d4] rounded-[4px] px-2.5 py-1 text-[#1d2327]">{hoje}</span>
+                <span className="border border-[#ccd0d4] px-2.5 py-1 text-[#1d2327]">{hoje}</span>
               </div>
             </div>
-            <div className="p-3 bg-[#f6f7f7] flex items-center justify-between gap-2 border-t border-[#ccd0d4]">
-              <button
-                type="button"
-                onClick={guardarRascunho}
-                className="px-3 py-2 bg-white border border-[#ccd0d4] text-[#50575e] text-[12px] font-semibold rounded-[4px] hover:bg-[#f0f0f1] whitespace-nowrap"
-              >
-                Guardar rascunho
-              </button>
-              <button
-                type="submit"
-                disabled={busy}
-                className="px-4 py-2 bg-[#2271b1] text-white text-[13px] font-medium rounded-[4px] hover:bg-[#135e96] disabled:opacity-50 whitespace-nowrap"
-              >
-                {busy ? "A publicar…" : "Publicar"}
-              </button>
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <select
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value as EstadoNoticia)}
+              className="w-full h-9 px-2 text-[13px] text-[#1d2327] bg-white border border-[#ccd0d4] outline-none focus:border-[#2271b1]"
+            >
+              <option value="rascunho">Rascunho</option>
+              <option value="revisao">Pendente para revisão</option>
+              <option value="publicado">Publicadas</option>
+            </select>
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full px-4 py-2 bg-[#2271b1] text-white text-[13px] font-medium hover:bg-[#135e96] disabled:opacity-50"
+            >
+              {busy ? "A gravar…" : "Publicar"}
+            </button>
           </div>
         </div>
       </form>
@@ -1019,8 +1141,12 @@ function Noticias({ onAction }: { onAction: (m: string) => void }) {
 }
 
 function Videos({ onAction }: { onAction: (m: string) => void }) {
-  const [items, setItems] = useState<{ id: string; title: string; url: string }[]>([]);
+  const [items, setItems] = useState<{ id: string; title: string; url: string; principal?: boolean }[]>([]);
   const [busy, setBusy] = useState(false);
+  const [abrir, setAbrir] = useState(false);
+  const [editar, setEditar] = useState<{ id: string; title: string; url: string } | null>(null);
+  const [titulo, setTitulo] = useState("");
+  const [ligacao, setLigacao] = useState("");
 
   const refresh = () => {
     listVideosGestao()
@@ -1032,16 +1158,71 @@ function Videos({ onAction }: { onAction: (m: string) => void }) {
     refresh();
   }, []);
 
+  const abrirNovo = () => {
+    setEditar(null);
+    setTitulo("");
+    setLigacao("");
+    setAbrir(true);
+  };
+
+  const abrirEditar = (v: { id: string; title: string; url: string }) => {
+    setEditar(v);
+    setTitulo(v.title);
+    setLigacao(v.url);
+    setAbrir(true);
+  };
+
+  const fechar = () => {
+    setAbrir(false);
+    setEditar(null);
+  };
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+    const title = titulo.trim();
+    const url = ligacao.trim();
+    if (!title || !url) {
+      onAction("Indique o título e a ligação do vídeo.");
+      return;
+    }
     setBusy(true);
     try {
-      await publishVideo(String(fd.get("title") || "").trim(), String(fd.get("url") || "").trim());
-      form.reset();
+      if (editar) {
+        await updateVideo(editar.id, title, url);
+        onAction("O vídeo foi actualizado.");
+      } else {
+        await publishVideo(title, url);
+        onAction("O vídeo foi gravado.");
+      }
+      fechar();
       refresh();
-      onAction("O vídeo foi gravado.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const tornarPrincipal = async (v: { id: string; title: string }) => {
+    setBusy(true);
+    try {
+      await setVideoPrincipal(v.id);
+      refresh();
+      onAction("Este vídeo é o principal da playlist.");
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const eliminar = async (v: { id: string; title: string }) => {
+    if (!window.confirm(`Eliminar «${v.title}»?`)) return;
+    setBusy(true);
+    try {
+      await deleteVideo(v.id);
+      refresh();
+      onAction("O vídeo foi eliminado.");
     } catch (error) {
       onAction(cmsError(error));
     } finally {
@@ -1050,38 +1231,118 @@ function Videos({ onAction }: { onAction: (m: string) => void }) {
   };
 
   return (
-    <div className="max-w-2xl bg-white border border-navy-100 p-8">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Vídeos da ESJ TV</h2>
-      <ul className="mt-6 space-y-3 text-sm">
-        {items.length === 0 && (
-          <li className="text-navy-900/50">Ainda sem vídeos na base.</li>
-        )}
-        {items.map((v) => (
-          <li key={v.id} className="border border-navy-100 px-4 py-3">
-            <span className="font-semibold text-navy-900">{v.title}</span>
-            <a href={v.url} className="block text-sky text-xs mt-0.5 break-all" target="_blank" rel="noreferrer">
-              {v.url}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-          <input name="title" required className="esj-field" placeholder="Título do vídeo" />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Ligação YouTube ou Vimeo</span>
-          <input name="url" type="url" required className="esj-field" placeholder="https://" />
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-        >
-          {busy ? "A PUBLICAR…" : "PUBLICAR VÍDEO"}
-        </button>
-      </form>
+    <div>
+      <button id="videos-adicionar" type="button" className="hidden" onClick={abrirNovo} />
+
+      {items.length === 0 ? (
+        <p className="text-sm text-navy-900/50">Ainda sem vídeos na base.</p>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
+          {items.map((v) => {
+            const src = videoEmbedSrc(v.url);
+            return (
+              <div key={v.id} className="bg-white border border-navy-100">
+                <div className="relative aspect-video bg-black">
+                  {src ? (
+                    <iframe
+                      src={src}
+                      title={v.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full"
+                    />
+                  ) : (
+                    <a
+                      href={v.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute inset-0 flex items-center justify-center text-white text-sm p-4 text-center"
+                    >
+                      {v.title}
+                    </a>
+                  )}
+                </div>
+                <div className="p-2.5">
+                  <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">{v.title}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={() => abrirEditar(v)}
+                      className="text-[12px] text-sky hover:underline"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void eliminar(v)}
+                      className="text-[12px] text-crimson hover:underline disabled:opacity-50"
+                    >
+                      Eliminar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || v.principal}
+                      onClick={() => void tornarPrincipal(v)}
+                      className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                    >
+                      {v.principal ? "Fixado" : "Fixar"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {abrir && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-navy-100 p-8">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <h2 className="font-serif text-xl font-bold text-navy-900">
+                {editar ? "Editar vídeo" : "Adicionar vídeos"}
+              </h2>
+              <button type="button" onClick={fechar} className="text-navy-900/50 hover:text-navy-900">
+                <X size={18} />
+              </button>
+            </div>
+            <form className="space-y-5" onSubmit={onSubmit}>
+              <label className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
+                <div className="bg-white border border-[#ccd0d4]">
+                  <textarea
+                    value={titulo}
+                    onChange={(e) => setTitulo(e.target.value)}
+                    required
+                    rows={4}
+                    placeholder="Escreva o título…"
+                    className="w-full min-h-[6rem] px-4 py-3 text-[16px] text-[#2c3338] leading-relaxed border-0 outline-none resize-y bg-transparent"
+                  />
+                </div>
+              </label>
+              <label className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">Ligação YouTube ou Vimeo</span>
+                <input
+                  value={ligacao}
+                  onChange={(e) => setLigacao(e.target.value)}
+                  type="url"
+                  required
+                  className="esj-field"
+                  placeholder="https://"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={busy}
+                className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+              >
+                {busy ? "A GRAVAR…" : editar ? "GUARDAR" : "PUBLICAR VÍDEO"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1201,8 +1462,16 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
   const [items, setItems] = useState<
     { id: string; destinatarios: string; assunto: string; mensagem: string }[]
   >([]);
+  const [inscricoes, setInscricoes] = useState<
+    { telefone: string | null; curso: string | null; delegacao: string | null }[]
+  >([]);
+  const [destinatarios, setDestinatarios] = useState("Todos os estudantes");
+  const [assunto, setAssunto] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [extra, setExtra] = useState("");
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [smsOk, setSmsOk] = useState<boolean | null>(null);
 
   const refresh = () => {
     listAnunciosGestao()
@@ -1218,22 +1487,44 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
 
   useEffect(() => {
     refresh();
+    listTelefonesInscricoes()
+      .then(setInscricoes)
+      .catch(() => setInscricoes([]));
+    fetch("/api/sms")
+      .then((res) => res.json())
+      .then((data) => setSmsOk(Boolean(data.configurado)))
+      .catch(() => setSmsOk(false));
   }, []);
+
+  const numeros = telemoveisUnicos(inscricoes, destinatarios, extra);
+  const conta = segmentosSms(mensagem);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+    if (!mensagem.trim()) return;
     setBusy(true);
     try {
-      await publishAnuncio({
-        destinatarios: String(fd.get("destinatarios") || "Todos os estudantes"),
-        assunto: String(fd.get("assunto") || "").trim(),
-        mensagem: String(fd.get("mensagem") || "").trim(),
+      const res = await fetch("/api/sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destinatarios,
+          assunto: assunto.trim(),
+          mensagem: mensagem.trim(),
+          extra,
+        }),
       });
-      form.reset();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Não foi possível enviar o SMS.");
+      setAssunto("");
+      setMensagem("");
+      setExtra("");
       refresh();
-      onAction("O anúncio foi gravado na base da ESJ.");
+      onAction(
+        data.falhados
+          ? `SMS enviado a ${data.enviados} de ${data.total} estudantes.`
+          : `SMS enviado a ${data.enviados} estudante(s).`
+      );
     } catch (error) {
       if (isMissingTable(error)) setMissing(true);
       onAction(cmsError(error));
@@ -1245,17 +1536,32 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
   return (
     <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
       <form className="bg-white border border-navy-100 p-8 space-y-4" onSubmit={onSubmit}>
-        <h2 className="font-serif text-2xl font-bold text-navy-900">
-          Anúncio aos estudantes
-        </h2>
+        <h2 className="font-serif text-2xl font-bold text-navy-900">SMS aos estudantes</h2>
         <p className="text-sm text-navy-900/65 leading-relaxed">
-          Os avisos ficam guardados aqui. O envio automático para o eDondzo ainda
-          não está ligado.
+          A mensagem sai para os telemóveis das pré-inscrições. Números de Moçambique
+          (82–87) são normalizados automaticamente.
         </p>
         {missing && <SchemaInstall />}
+        {smsOk === false && (
+          <div className="border border-navy-100 bg-cream p-4 text-sm text-navy-900/80 leading-relaxed">
+            Para activar o envio, defina no servidor{" "}
+            <span className="font-semibold">TWILIO_ACCOUNT_SID</span>,{" "}
+            <span className="font-semibold">TWILIO_AUTH_TOKEN</span> e{" "}
+            <span className="font-semibold">TWILIO_FROM</span> (número Twilio com
+            envio para Moçambique). Em alternativa,{" "}
+            <span className="font-semibold">SMS_API_URL</span>,{" "}
+            <span className="font-semibold">SMS_API_TOKEN</span> e{" "}
+            <span className="font-semibold">SMS_FROM</span>.
+          </div>
+        )}
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Destinatários</span>
-          <select name="destinatarios" className="esj-field">
+          <select
+            name="destinatarios"
+            className="esj-field"
+            value={destinatarios}
+            onChange={(e) => setDestinatarios(e.target.value)}
+          >
             <option>Todos os estudantes</option>
             <option>Maputo — Sede</option>
             <option>Manica — Delegação Académica</option>
@@ -1264,33 +1570,60 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
             <option>Licenciatura em Relações Públicas</option>
             <option>Licenciatura em Biblioteconomia e Documentação</option>
           </select>
+          <span className="mt-1.5 block text-xs text-navy-900/55">
+            {numeros.length} telemóvel(eis) neste grupo
+          </span>
         </label>
         <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Assunto</span>
-          <input name="assunto" required className="esj-field" placeholder="Assunto do anúncio" />
+          <span className="block text-sm font-bold text-navy-900 mb-1.5">Assunto interno</span>
+          <input
+            name="assunto"
+            className="esj-field"
+            placeholder="Referência na gestão (não vai no SMS)"
+            value={assunto}
+            onChange={(e) => setAssunto(e.target.value)}
+          />
         </label>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Mensagem</span>
           <textarea
             name="mensagem"
             required
-            className="esj-field h-32 py-3"
-            placeholder="Texto do anúncio"
+            className="esj-field-area"
+            placeholder="Texto do SMS"
+            value={mensagem}
+            onChange={(e) => setMensagem(e.target.value)}
+          />
+          <span className="mt-1.5 block text-xs text-navy-900/55">
+            {conta.caracteres} caracteres
+            {conta.segmentos > 0 ? ` · ${conta.segmentos} SMS` : ""}
+          </span>
+        </label>
+        <label className="block">
+          <span className="block text-sm font-bold text-navy-900 mb-1.5">
+            Números extra (opcional)
+          </span>
+          <textarea
+            name="extra"
+            className="esj-field !h-auto min-h-[5.5rem] py-2.5 resize-y"
+            placeholder="Um número por linha, se precisar de acrescentar"
+            value={extra}
+            onChange={(e) => setExtra(e.target.value)}
           />
         </label>
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || smsOk === false || numeros.length === 0 || !mensagem.trim()}
           className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
         >
-          {busy ? "A GRAVAR…" : "GRAVAR ANÚNCIO"}
+          {busy ? "A ENVIAR…" : "ENVIAR SMS"}
         </button>
       </form>
       <aside className="bg-white border border-navy-100 p-6">
-        <h3 className="font-serif font-bold text-navy-900">Anúncios gravados</h3>
+        <h3 className="font-serif font-bold text-navy-900">SMS enviados</h3>
         <ul className="mt-4 space-y-3 text-sm">
           {items.length === 0 && (
-            <li className="text-navy-900/50">Ainda sem anúncios.</li>
+            <li className="text-navy-900/50">Ainda sem envios.</li>
           )}
           {items.map((a) => (
             <li key={a.id}>

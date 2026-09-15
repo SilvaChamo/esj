@@ -152,7 +152,7 @@ export default function Header() {
           <div className={`items-center gap-3 ${searchOpen ? "flex w-full sm:w-auto" : "flex"}`}>
             <div
               className={`relative h-10 overflow-hidden transition-[width] duration-300 ease-out ${
-                searchOpen ? "flex-1 sm:flex-none sm:w-[315px]" : "w-0 sm:w-[210px]"
+                searchOpen ? "flex-1 sm:flex-none sm:w-[315px]" : "w-0 sm:w-[280px]"
               }`}
             >
               <div
@@ -167,7 +167,7 @@ export default function Header() {
                     href="/gestao"
                     className="hover:text-sky-300 transition-colors whitespace-nowrap"
                   >
-                    Painel
+                    Voltar ao PAINEL
                   </Link>
                 )}
               </div>

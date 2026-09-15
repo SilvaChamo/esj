@@ -84,12 +84,21 @@ export function writePublicacao(data: Publicacao, categoria: Categoria = "livro"
 export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Publicacao> {
   const supabase = getSupabase();
   if (supabase) {
-    const { data } = await supabase
+    const comDestaque = await supabase
       .from("publicacoes")
-      .select("title, subtitle, authors, date_label, venue, image, tipo")
+      .select("title, subtitle, authors, date_label, venue, image, tipo, destaque")
       .eq("categoria", categoria)
+      .order("destaque", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1);
+    const { data } = comDestaque.error
+      ? await supabase
+          .from("publicacoes")
+          .select("title, subtitle, authors, date_label, venue, image, tipo")
+          .eq("categoria", categoria)
+          .order("created_at", { ascending: false })
+          .limit(1)
+      : comDestaque;
     const row = data?.[0];
     if (row?.image) {
       return {

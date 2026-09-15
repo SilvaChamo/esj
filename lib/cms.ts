@@ -1,6 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
-import { comprimirBlobImagem, comprimirImagemUpload } from "@/lib/comprimir-imagem";
+import { htmlParaParagrafos, sanitizarHtmlNoticia } from "@/lib/html-noticia";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
 export function slugify(text: string) {
@@ -46,6 +46,78 @@ export async function uploadMedia(file: File, folder: string) {
   return data.publicUrl;
 }
 
+export function tituloDeImagem(url: string, tipo: "livro" | "cartaz") {
+  try {
+    const last = decodeURIComponent(url.split("/").pop() || "")
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/[-_]+/g, " ")
+      .trim();
+    return last || (tipo === "cartaz" ? "Cartaz" : "Livro");
+  } catch {
+    return tipo === "cartaz" ? "Cartaz" : "Livro";
+  }
+}
+
+export async function addPublicacaoImagem(image: string, categoria: Categoria) {
+  const supabase = createBrowserSupabase();
+  const tipo = categoria === "evento" ? "cartaz" : "livro";
+  const ins = await supabase.from("publicacoes").insert({
+    title: tituloDeImagem(image, tipo),
+    subtitle: "",
+    authors: "",
+    date_label: "",
+    venue: "",
+    image,
+    tipo,
+    categoria,
+    destaque: false,
+  });
+  if (ins.error) throw ins.error;
+}
+
+export async function listPublicacoesGestao(categoria: Categoria) {
+  const supabase = createBrowserSupabase();
+  const comDestaque = await supabase
+    .from("publicacoes")
+    .select("id, title, image, created_at, destaque")
+    .eq("categoria", categoria)
+    .order("destaque", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(60);
+  if (!comDestaque.error) return comDestaque.data ?? [];
+  const { data, error } = await supabase
+    .from("publicacoes")
+    .select("id, title, image, created_at")
+    .eq("categoria", categoria)
+    .order("created_at", { ascending: false })
+    .limit(60);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function setPublicacaoDestaque(id: string, categoria: Categoria) {
+  const supabase = createBrowserSupabase();
+  const unset = await supabase
+    .from("publicacoes")
+    .update({ destaque: false })
+    .eq("categoria", categoria);
+  if (unset.error) throw unset.error;
+  const set = await supabase.from("publicacoes").update({ destaque: true }).eq("id", id);
+  if (set.error) throw set.error;
+}
+
+export async function updatePublicacaoImagem(id: string, image: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("publicacoes").update({ image }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deletePublicacao(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("publicacoes").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function publishPublicacao(
   data: Publicacao,
   file?: File | null,
@@ -65,15 +137,6 @@ export async function publishPublicacao(
     destaque: true,
   };
 
-  // Apaga todos os cartazes desta categoria — e, no evento, também os
-  // "cartaz" antigos que ficaram gravados como livro.
-  const delCat = await supabase.from("publicacoes").delete().eq("categoria", categoria);
-  if (delCat.error) throw delCat.error;
-  if (categoria === "evento") {
-    const delTipo = await supabase.from("publicacoes").delete().eq("tipo", "cartaz");
-    if (delTipo.error) throw delTipo.error;
-  }
-
   const ins = await supabase.from("publicacoes").insert(row);
   if (ins.error) throw ins.error;
   return image;
@@ -85,14 +148,43 @@ export async function deletePublicacaoAtual(categoria: Categoria) {
   if (error) throw error;
 }
 
-export async function publishNoticia(input: {
+export type EstadoNoticia = "rascunho" | "revisao" | "publicado";
+
+export async function guardarNoticia(input: {
+  slug?: string;
   title: string;
   excerpt: string;
   body: string;
   image?: string | null;
+  estado: EstadoNoticia;
 }) {
   const supabase = createBrowserSupabase();
   const image = input.image || "/studentes.jpg";
+  const html = sanitizarHtmlNoticia(input.body);
+  const paragraphs = htmlParaParagrafos(html);
+  const body = paragraphs.length ? paragraphs : [input.excerpt || input.title];
+  const row = {
+    title: input.title,
+    excerpt: input.excerpt,
+    body,
+    image,
+    date_label: dateLabel(),
+    estado: input.estado,
+    published_at: new Date().toISOString(),
+  };
+
+  if (input.slug) {
+    const upd = await supabase.from("noticias").update(row).eq("slug", input.slug);
+    if (!upd.error) return input.slug;
+    if (input.estado !== "publicado") throw upd.error;
+    const semEstado = { ...row } as Record<string, unknown>;
+    delete semEstado.estado;
+    if (input.estado === "publicado") semEstado.published_at = new Date().toISOString();
+    const retry = await supabase.from("noticias").update(semEstado).eq("slug", input.slug);
+    if (retry.error) throw retry.error;
+    return input.slug;
+  }
+
   const base = slugify(input.title);
   let slug = base;
   for (let i = 2; i < 20; i += 1) {
@@ -100,31 +192,47 @@ export async function publishNoticia(input: {
     if (!data) break;
     slug = `${base}-${i}`;
   }
-  const paragraphs = input.body
-    .split(/\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const { error } = await supabase.from("noticias").insert({
+  const ins = await supabase.from("noticias").insert({ ...row, slug });
+  if (!ins.error) return slug;
+  if (input.estado !== "publicado") throw ins.error;
+  const fallback = {
     slug,
-    title: input.title,
-    excerpt: input.excerpt,
-    body: paragraphs.length ? paragraphs : [input.excerpt],
-    image,
-    date_label: dateLabel(),
-    published_at: new Date().toISOString(),
-  });
+    title: row.title,
+    excerpt: row.excerpt,
+    body: row.body,
+    image: row.image,
+    date_label: row.date_label,
+    published_at: row.published_at || new Date().toISOString(),
+  };
+  const { error } = await supabase.from("noticias").insert(fallback);
   if (error) throw error;
+  return slug;
+}
+
+export async function publishNoticia(input: {
+  title: string;
+  excerpt: string;
+  body: string;
+  image?: string | null;
+}) {
+  return guardarNoticia({ ...input, estado: "publicado" });
 }
 
 export async function listNoticiasGestao() {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
     .from("noticias")
-    .select("slug, title, date_label")
+    .select("slug, title, date_label, excerpt, image, body, estado")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (!error) return data ?? [];
+  const simples = await supabase
+    .from("noticias")
+    .select("slug, title, date_label, excerpt, image, body")
     .order("published_at", { ascending: false })
-    .limit(20);
-  if (error) throw error;
-  return data ?? [];
+    .limit(30);
+  if (simples.error) throw simples.error;
+  return (simples.data ?? []).map((row) => ({ ...row, estado: "publicado" as const }));
 }
 
 export async function publishVideo(title: string, url: string) {
@@ -133,15 +241,63 @@ export async function publishVideo(title: string, url: string) {
   if (error) throw error;
 }
 
+export async function updateVideo(id: string, title: string, url: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("videos").update({ title, url }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteVideo(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("videos").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function setVideoPrincipal(id: string) {
+  const supabase = createBrowserSupabase();
+  const unset = await supabase.from("videos").update({ principal: false }).neq("id", id);
+  if (!unset.error) {
+    const set = await supabase.from("videos").update({ principal: true }).eq("id", id);
+    if (set.error) throw set.error;
+    return;
+  }
+  if (!isMissingTable(unset.error)) throw unset.error;
+
+  const agora = new Date().toISOString();
+  const lista = await supabase.from("videos").select("id, created_at");
+  if (lista.error) throw lista.error;
+  for (const v of lista.data ?? []) {
+    if (v.id === id) continue;
+    if (String(v.created_at || "").startsWith("2099")) {
+      const reset = await supabase.from("videos").update({ created_at: agora }).eq("id", v.id);
+      if (reset.error) throw reset.error;
+    }
+  }
+  const pin = await supabase.from("videos").update({ created_at: "2099-12-31T00:00:00.000Z" }).eq("id", id);
+  if (pin.error) throw pin.error;
+}
+
+function videoFixado(row: { created_at?: string | null; principal?: boolean | null }) {
+  if (row.principal) return true;
+  return String(row.created_at || "").startsWith("2099");
+}
+
 export async function listVideosGestao() {
   const supabase = createBrowserSupabase();
+  const comPrincipal = await supabase
+    .from("videos")
+    .select("id, title, url, created_at, principal")
+    .order("principal", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (!comPrincipal.error) return comPrincipal.data ?? [];
   const { data, error } = await supabase
     .from("videos")
     .select("id, title, url, created_at")
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(40);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({ ...row, principal: videoFixado(row) }));
 }
 
 export async function publishEdital(file: File, title: string) {
@@ -172,9 +328,16 @@ export async function listInscricoesGestao() {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
     .from("inscricoes")
-    .select("protocolo, nome, email, curso, delegacao, created_at")
+    .select("protocolo, nome, email, telefone, curso, delegacao, created_at")
     .order("created_at", { ascending: false })
     .limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function listTelefonesInscricoes() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase.from("inscricoes").select("telefone, curso, delegacao");
   if (error) throw error;
   return data ?? [];
 }
@@ -202,8 +365,21 @@ export async function publishAnuncio(input: {
   destinatarios: string;
   assunto: string;
   mensagem: string;
+  canal?: string;
+  enviados?: number;
+  falhados?: number;
 }) {
   const supabase = createBrowserSupabase();
+  const row = {
+    destinatarios: input.destinatarios,
+    assunto: input.assunto,
+    mensagem: input.mensagem,
+    canal: input.canal || "sms",
+    enviados: input.enviados ?? 0,
+    falhados: input.falhados ?? 0,
+  };
+  const first = await supabase.from("anuncios").insert(row);
+  if (!first.error) return;
   const { error } = await supabase.from("anuncios").insert({
     destinatarios: input.destinatarios,
     assunto: input.assunto,

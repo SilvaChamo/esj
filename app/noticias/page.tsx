@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import BannerInterior from "@/components/BannerInterior";
 import { listNoticias } from "@/lib/noticias";
 
 export const metadata = {
@@ -15,15 +16,11 @@ export default async function NoticiasPage() {
 
   return (
     <main className="bg-cream min-h-[70vh]">
-      <section className="bg-navy-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
-          <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">BLOG</p>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold">Notícias</h1>
-          <p className="mt-3 text-white/70 max-w-2xl text-sm leading-relaxed">
-            Acompanhe os lançamentos, as conferências e a vida da Escola Superior de Jornalismo.
-          </p>
-        </div>
-      </section>
+      <BannerInterior
+        kicker="BLOG"
+        title="Notícias"
+        description="Acompanhe os lançamentos, as conferências e a vida da Escola Superior de Jornalismo."
+      />
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

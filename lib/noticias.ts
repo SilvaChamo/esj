@@ -117,6 +117,7 @@ type NoticiaRow = {
   excerpt: string;
   image: string;
   body: string[] | null;
+  estado?: string | null;
 };
 
 function fromRow(row: NoticiaRow): Noticia {
@@ -130,9 +131,20 @@ function fromRow(row: NoticiaRow): Noticia {
   };
 }
 
+function visivel(row: NoticiaRow) {
+  return !row.estado || row.estado === "publicado";
+}
+
 export async function listNoticias(): Promise<Noticia[]> {
   const supabase = getSupabase();
   if (!supabase) return noticias;
+  const comEstado = await supabase
+    .from("noticias")
+    .select("slug, date_label, title, excerpt, image, body, estado")
+    .order("published_at", { ascending: false });
+  if (!comEstado.error && comEstado.data?.length) {
+    return comEstado.data.filter(visivel).map(fromRow);
+  }
   const { data, error } = await supabase
     .from("noticias")
     .select("slug, date_label, title, excerpt, image, body")
@@ -153,6 +165,14 @@ export function getNoticia(slug: string) {
 export async function findNoticia(slug: string): Promise<Noticia | undefined> {
   const supabase = getSupabase();
   if (!supabase) return getNoticia(slug);
+  const comEstado = await supabase
+    .from("noticias")
+    .select("slug, date_label, title, excerpt, image, body, estado")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!comEstado.error && comEstado.data) {
+    return visivel(comEstado.data) ? fromRow(comEstado.data) : undefined;
+  }
   const { data, error } = await supabase
     .from("noticias")
     .select("slug, date_label, title, excerpt, image, body")

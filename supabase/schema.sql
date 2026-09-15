@@ -40,6 +40,7 @@ create table if not exists videos (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   url text not null default '',
+  principal boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -317,6 +318,17 @@ select * from (values
 where not exists (select 1 from livros);
 
 alter table inscricoes add column if not exists nivel text not null default 'Licenciatura';
+
+alter table anuncios add column if not exists canal text not null default 'sms';
+alter table anuncios add column if not exists enviados int not null default 0;
+alter table anuncios add column if not exists falhados int not null default 0;
+
+alter table noticias add column if not exists estado text not null default 'publicado';
+alter table videos add column if not exists principal boolean not null default false;
+
+drop policy if exists "noticias_public_read" on noticias;
+create policy "noticias_public_read" on noticias
+  for select using (coalesce(estado, 'publicado') = 'publicado');
 
 create table if not exists pauta_admissao (
   id uuid primary key default gen_random_uuid(),

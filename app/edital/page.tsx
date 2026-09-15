@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
 import EditalPdfViewer from "@/components/EditalPdfViewer";
-import VoltarBanner from "@/components/VoltarBanner";
+import BannerInterior from "@/components/BannerInterior";
 import { loadEdital } from "@/lib/editais";
 
 export const metadata = {
@@ -17,22 +17,12 @@ export default async function EditalPage() {
 
   return (
     <main className="bg-cream min-h-[70vh]">
-      <section className="bg-navy-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">
-              ADMISSÕES — ANO LECTIVO 2026
-            </p>
-            <h1 className="font-serif text-3xl md:text-4xl font-bold">
-              Edital de Admissão
-            </h1>
-            <p className="mt-3 text-white/70 max-w-xl text-sm leading-relaxed">
-              Leia o documento completo antes de se inscrever. Os exames de admissão
-              cobrem Português e História para os cursos de licenciatura da ESJ.
-            </p>
-            <VoltarBanner href="/inscricoes" label="Voltar às admissões" />
-          </div>
-          <div className="flex flex-wrap gap-3 shrink-0">
+      <BannerInterior
+        kicker="ADMISSÕES — ANO LECTIVO 2026"
+        title="Edital de Admissão"
+        description="Leia o documento completo antes de se inscrever. Os exames de admissão cobrem Português e História para os cursos de licenciatura da ESJ."
+        actions={
+          <>
             <Link
               href="/inscricoes"
               className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3 transition-colors"
@@ -47,9 +37,9 @@ export default async function EditalPage() {
               <Download size={15} />
               DESCARREGAR PDF
             </a>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
         <EditalPdfViewer src={edital.file_url} />

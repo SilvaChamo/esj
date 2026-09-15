@@ -24,9 +24,11 @@ export default function About() {
         <p className="mt-5 text-navy-900/70 leading-relaxed">
           A ESJ é uma instituição pública de ensino superior, vocacionada para a formação de
           quadros nas áreas do Jornalismo, Publicidade e Marketing, Relações Públicas e
-          Biblioteconomia e Documentação. Com sede em Maputo e delegação académica em Manica, a
-          ESJ forma profissionais críticos, éticos e capazes de responder aos desafios da
-          comunicação em Moçambique.
+          Biblioteconomia e Documentação.
+        </p>
+        <p className="mt-4 text-sm text-navy-900/70 leading-relaxed">
+          Com sede em Maputo e delegação académica em Manica, forma profissionais críticos,
+          éticos e capazes de responder aos desafios da comunicação em Moçambique.
         </p>
 
         <div className="mt-6">

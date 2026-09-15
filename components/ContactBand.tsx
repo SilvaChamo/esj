@@ -201,11 +201,7 @@ export default function ContactBand() {
       </div>
 
       <div className="relative bg-sky-600">
-        <div className="h-1.5 w-full flex" aria-hidden>
-          <div className="flex-1 bg-sky" />
-          <div className="flex-1 bg-leaf" />
-          <div className="flex-1 bg-crimson" />
-        </div>
+        <div className="h-1.5 w-full bg-sky-700" aria-hidden />
         <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 py-9 md:py-12">
           <form
             onSubmit={subscribe}

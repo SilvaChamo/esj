@@ -11,12 +11,7 @@ export default function SearchResults() {
   const results = searchSite(query);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8 py-16 min-h-[60vh]">
-      <p className="text-sky-700 font-semibold tracking-widest text-xs mb-3">PESQUISA</p>
-      <h1 className="font-serif text-3xl md:text-4xl font-bold text-navy-900">
-        Resultados da busca
-      </h1>
-
+    <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 min-h-[40vh]">
       {query ? (
         <p className="mt-3 text-navy-900/70">
           {results.length === 1
