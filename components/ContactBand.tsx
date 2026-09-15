@@ -80,13 +80,13 @@ export default function ContactBand() {
           <div className="relative flex flex-col md:flex-row md:items-stretch">
             <form
               onSubmit={sendMessage}
-              className="relative z-10 border border-white bg-[#1a5a78]/35 px-5 py-8 sm:px-10 sm:py-10 w-full md:flex-1"
+              className="relative z-10 flex flex-col justify-center border border-white bg-[#1a5a78]/35 px-5 py-8 sm:px-10 sm:py-10 w-full md:flex-1"
             >
               <p className="text-sky-300 font-bold tracking-widest text-sm mb-3">CONTACTO</p>
               <h2 className="font-serif text-3xl md:text-[2.05rem] font-bold text-white">
                 Fale <span className="text-sky-300">connosco</span>
               </h2>
-              <p className="mt-4 mb-7 text-white/85 leading-relaxed">
+              <p className="mt-4 mb-7 text-sm text-white/85 leading-relaxed">
                 A Escola Superior de Jornalismo está disponível para esclarecer dúvidas sobre
                 admissões, cursos e parcerias. Contacte a Secretaria Académica pelos meios ao
                 lado ou preencha o formulário abaixo e responderemos o mais breve possível.
@@ -133,8 +133,12 @@ export default function ContactBand() {
               )}
             </form>
 
-            <aside className="relative z-0 bg-navy-800 text-white px-8 py-9 w-full md:w-[360px] md:shrink-0 md:-my-10 md:pl-16">
-              <dl className="divide-y divide-white/20 text-[15px] leading-relaxed">
+            <aside className="relative z-0 flex flex-col justify-center bg-navy-800 text-white w-full md:w-[360px] md:shrink-0 md:-mb-10">
+              <div className="bg-navy-900 px-5 py-8 sm:px-10 sm:py-10">
+                <h3 className="font-serif text-xl font-bold text-white">Nossa Localização</h3>
+              </div>
+              <div className="h-1.5 bg-crimson" aria-hidden />
+              <dl className="px-5 py-8 sm:px-10 sm:py-10 divide-y divide-white/20 text-[15px] leading-relaxed">
                 <div className="pb-5">
                   <dt className="font-semibold mb-1.5">Morada</dt>
                   <dd className="text-white/95">
