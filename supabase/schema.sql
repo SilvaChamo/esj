@@ -143,6 +143,8 @@ create policy "inscricoes_auth_read" on inscricoes for select to authenticated u
 create policy "anuncios_auth_all" on anuncios for all to authenticated using (true) with check (true);
 create policy "newsletter_public_insert" on newsletter for insert with check (true);
 create policy "newsletter_auth_read" on newsletter for select to authenticated using (true);
+drop policy if exists "newsletter_auth_write" on newsletter;
+create policy "newsletter_auth_write" on newsletter for all to authenticated using (true) with check (true);
 create policy "contactos_public_insert" on contactos for insert with check (true);
 create policy "contactos_auth_read" on contactos for select to authenticated using (true);
 create policy "calendario_public_read" on calendario_academico for select using (true);
@@ -318,6 +320,8 @@ select * from (values
 where not exists (select 1 from livros);
 
 alter table inscricoes add column if not exists nivel text not null default 'Licenciatura';
+
+alter table newsletter add column if not exists telefone text not null default '';
 
 alter table anuncios add column if not exists canal text not null default 'sms';
 alter table anuncios add column if not exists enviados int not null default 0;
@@ -798,4 +802,20 @@ drop policy if exists "media_details_auth_write" on media_details;
 
 create policy "media_details_public_read" on media_details for select using (true);
 create policy "media_details_auth_write" on media_details for all to authenticated using (true) with check (true);
+
+create table if not exists folha_academica (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  file_url text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table folha_academica enable row level security;
+
+drop policy if exists "folha_public_read" on folha_academica;
+drop policy if exists "folha_auth_write" on folha_academica;
+
+create policy "folha_public_read" on folha_academica for select using (true);
+create policy "folha_auth_write" on folha_academica for all to authenticated using (true) with check (true);
 

@@ -30,6 +30,7 @@ import {
   type Publicacao,
 } from "@/lib/publicacao";
 import { ImgACarregar } from "@/components/Carregando";
+import EntradaHome from "@/components/EntradaHome";
 
 type SectionTab = "ensino" | "calendario" | "cursos";
 
@@ -220,6 +221,7 @@ export default function Academics() {
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="py-16 md:py-20">
         {tab === "ensino" && (
+          <EntradaHome>
           <div className="grid lg:grid-cols-[1fr_1.08fr] gap-12 lg:gap-16 items-start">
             <div>
               <p className="text-sky font-bold tracking-widest text-sm mb-3">ENSINO E HISTÓRIA</p>
@@ -307,24 +309,27 @@ export default function Academics() {
               </div>
             </div>
           </div>
+          </EntradaHome>
         )}
 
         {tab === "calendario" && (
           <div>
-            <div>
-              <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-                Datas do ano lectivo
-              </h2>
-              <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
-                Início do ano lectivo, inscrições, exames de admissão e publicação de
-                resultados — as datas oficiais e definitivas são as do{" "}
-                <Link href="/edital" className="text-sky hover:underline">
-                  edital de admissão
-                </Link>
-                .
-              </p>
-            </div>
+            <EntradaHome>
+              <div>
+                <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
+                  Datas do ano lectivo
+                </h2>
+                <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
+                  Início do ano lectivo, inscrições, exames de admissão e publicação de
+                  resultados — as datas oficiais e definitivas são as do{" "}
+                  <Link href="/edital" className="text-sky hover:underline">
+                    edital de admissão
+                  </Link>
+                  .
+                </p>
+              </div>
+            </EntradaHome>
 
             <div className="mt-14 relative">
               <div
@@ -335,65 +340,67 @@ export default function Academics() {
                 {DATAS.map((d, i) => {
                   const isRight = i % 2 === 1;
                   return (
-                    <div
-                      key={d.titulo}
-                      className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10"
-                    >
-                      <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">
-                          {d.numero}
+                    <EntradaHome key={d.titulo} atraso={i * 0.12}>
+                      <div className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10">
+                        <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">
+                            {d.numero}
+                          </span>
                         </span>
-                      </span>
-                      <div
-                        className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
-                          isRight ? "sm:col-start-2" : "sm:col-start-1"
-                        }`}
-                      >
-                        <span
-                          aria-hidden
-                          className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
+                        <div
+                          className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
+                            isRight ? "sm:col-start-2" : "sm:col-start-1"
+                          }`}
                         >
-                          {d.numero}
-                        </span>
-                        <d.icon size={22} className="relative shrink-0 mt-0.5 text-sky" />
-                        <div className="relative min-w-0">
-                          <h3 className="font-serif font-bold text-navy-900">{d.titulo}</h3>
-                          <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
-                          {d.link && (
-                            <Link
-                              href={d.link.href}
-                              className="mt-3 inline-block text-sm text-sky hover:underline"
-                            >
-                              {d.link.label} →
-                            </Link>
-                          )}
+                          <span
+                            aria-hidden
+                            className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
+                          >
+                            {d.numero}
+                          </span>
+                          <d.icon size={22} className="relative shrink-0 mt-0.5 text-sky" />
+                          <div className="relative min-w-0">
+                            <h3 className="font-serif text-lg font-bold text-navy-900">{d.titulo}</h3>
+                            <p className="mt-1.5 text-sm text-navy-900/70 leading-relaxed">{d.texto}</p>
+                            {d.link && (
+                              <Link
+                                href={d.link.href}
+                                className="mt-3 inline-block text-sm text-sky hover:underline"
+                              >
+                                {d.link.label} →
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </EntradaHome>
                   );
                 })}
               </div>
             </div>
 
-            <div className="mt-16 flex flex-wrap gap-3 justify-center">
-              <Link
-                href="/edital"
-                className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-              >
-                VER EDITAL DE ADMISSÃO
-              </Link>
-              <Link
-                href="/inscricoes"
-                className="inline-flex items-center bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-              >
-                ESTADO DAS INSCRIÇÕES
-              </Link>
-            </div>
+            <EntradaHome atraso={0.48}>
+              <div className="mt-16 flex flex-wrap gap-3 justify-center">
+                <Link
+                  href="/edital"
+                  className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+                >
+                  VER EDITAL DE ADMISSÃO
+                </Link>
+                <Link
+                  href="/inscricoes"
+                  className="esj-btn-move inline-flex items-center bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
+                >
+                  ESTADO DAS INSCRIÇÕES
+                </Link>
+              </div>
+            </EntradaHome>
           </div>
         )}
 
         {tab === "cursos" && (
           <div>
+            <EntradaHome>
             <div className="flex flex-wrap items-center justify-between gap-5">
               <div>
                 <p className="text-sky font-bold tracking-widest text-sm mb-3">ÁREAS DE FORMAÇÃO</p>
@@ -422,25 +429,30 @@ export default function Academics() {
                 ))}
               </div>
             </div>
-            <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {CURSOS.filter((c) => c.nivel === nivelCurso).map((c) => (
-                <div key={c.titulo} className="bg-cream border border-navy-100 p-6 flex gap-4">
-                  <c.icon size={22} className="shrink-0 mt-0.5 text-sky" />
-                  <div>
-                    <h3 className="font-serif font-bold text-navy-900">{c.titulo}</h3>
-                    <p className="mt-2 text-sm text-navy-900/70 leading-relaxed">{c.texto}</p>
+            </EntradaHome>
+            <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+              {CURSOS.filter((c) => c.nivel === nivelCurso).map((c, i) => (
+                <EntradaHome key={c.titulo} atraso={Math.floor(i / 3) * 0.12}>
+                  <div className="bg-cream border border-navy-100 p-6 flex gap-4 h-full">
+                    <c.icon size={22} className="shrink-0 mt-0.5 text-sky" />
+                    <div>
+                      <h3 className="font-serif font-bold text-navy-900">{c.titulo}</h3>
+                      <p className="mt-2 text-sm text-navy-900/70 leading-relaxed">{c.texto}</p>
+                    </div>
                   </div>
-                </div>
+                </EntradaHome>
               ))}
             </div>
+            <EntradaHome atraso={0.18}>
             <div className="mt-10">
               <Link
                 href={`/inscricao?${filtroQuery({ nivel: NIVEL_ADMISSAO[nivelCurso], regime: "Diurno" })}`}
-                className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+                className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
               >
                 CANDIDATAR-SE
               </Link>
             </div>
+            </EntradaHome>
           </div>
         )}
         </div>

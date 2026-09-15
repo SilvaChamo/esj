@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, Download, FileText, Printer, Trash2, X } from "lucide-react";
 import {
   cmsError,
@@ -43,46 +43,88 @@ function tipoDocumento(file: MediaFile) {
   return "outro";
 }
 
+const ESTILO_LEITURA = `<style>
+  html, body { margin: 0; background: #d9d9d9; }
+  .docx-wrapper { background: #d9d9d9 !important; padding: 16px 8px !important; align-items: stretch !important; }
+  .docx-wrapper > section.docx { width: 100% !important; max-width: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+</style>`;
+
 function WordLeitura({ url }: { url: string }) {
-  const [html, setHtml] = useState("");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState("Carregando ficheiro…");
 
   useEffect(() => {
     let cancelado = false;
-    setHtml("");
+    const iframe = iframeRef.current;
+    if (!iframe) return;
     setStatus("Carregando ficheiro…");
+
     void (async () => {
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error();
         const arrayBuffer = await res.arrayBuffer();
-        const mammoth = await import("mammoth");
-        const result = await mammoth.convertToHtml({ arrayBuffer });
         if (cancelado) return;
-        setHtml(result.value || "<p>Documento vazio.</p>");
-        setStatus("");
+        const doc = iframe.contentDocument;
+        if (!doc) throw new Error();
+
+        try {
+          const { renderAsync } = await import("docx-preview");
+          doc.open();
+          doc.write(
+            `<!doctype html><html><head><meta charset="utf-8">${ESTILO_LEITURA}</head><body><div id="documento-pagina"></div></body></html>`
+          );
+          doc.close();
+          const alvo = doc.getElementById("documento-pagina");
+          if (!alvo) throw new Error();
+          await renderAsync(arrayBuffer, alvo, doc.head, {
+            ignoreWidth: true,
+            ignoreHeight: true,
+            breakPages: true,
+            ignoreLastRenderedPageBreak: true,
+            experimental: true,
+            renderHeaders: true,
+            renderFooters: true,
+            useBase64URL: true,
+          });
+        } catch {
+          const mammoth = await import("mammoth");
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          if (cancelado) return;
+          doc.open();
+          doc.write(
+            `<!doctype html><html><head><meta charset="utf-8">${ESTILO_LEITURA}
+            <style>
+              #documento-pagina { background: #fff; min-height: 100vh; padding: 2.54cm 2cm; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+              img { max-width: 100%; }
+            </style></head><body><div id="documento-pagina">${result.value || "<p>Documento vazio.</p>"}</div></body></html>`
+          );
+          doc.close();
+        }
+        if (!cancelado) setStatus("");
       } catch {
         if (!cancelado) setStatus("Não foi possível mostrar este documento neste ecrã.");
       }
     })();
+
     return () => {
       cancelado = true;
     };
   }, [url]);
 
   return (
-    <div className="absolute inset-0 overflow-auto bg-[#d9d9d9] py-8 px-6">
-      <div
-        id="documento-pagina"
-        className="mx-auto bg-white text-[#1d2327] shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm] text-[12pt] leading-[1.15] font-serif [&_p]:mb-[10pt] [&_h1]:mb-4 [&_h1]:text-[16pt] [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-[14pt] [&_h2]:font-bold [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#000] [&_td]:p-1.5 [&_th]:border [&_th]:border-[#000] [&_th]:p-1.5 [&_img]:max-w-full"
-        style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
-      >
-        {html ? (
-          <div dangerouslySetInnerHTML={{ __html: html }} />
-        ) : (
+    <div className="absolute inset-0 bg-[#d9d9d9]">
+      {status ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <p className="text-sm text-[#50575e]">{status}</p>
-        )}
-      </div>
+        </div>
+      ) : null}
+      <iframe
+        id="documento-leitura-frame"
+        ref={iframeRef}
+        title="Documento"
+        className="absolute inset-0 w-full h-full border-0 bg-[#d9d9d9]"
+      />
     </div>
   );
 }
@@ -201,20 +243,23 @@ export default function Documentos() {
     try {
       const tipo = tipoDocumento(file);
       if (tipo === "word") {
-        const pagina = document.getElementById("documento-pagina");
-        await imprimirNumIframe(
-          undefined,
-          `<!doctype html><html><head><meta charset="utf-8"><title></title>
-          <style>
-            @page { margin: 2cm; }
-            body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #1d2327; }
-            p { margin: 0 0 12px; }
-            table { width: 100%; border-collapse: collapse; }
-            td, th { border: 1px solid #ccc; padding: 6px; }
-            img { max-width: 100%; }
-          </style></head><body>${pagina?.innerHTML || ""}</body></html>`
-        );
-        return;
+        const frame = document.getElementById("documento-leitura-frame") as HTMLIFrameElement | null;
+        const win = frame?.contentWindow;
+        if (win) {
+          await new Promise<void>((resolve) => {
+            let feito = false;
+            const acabar = () => {
+              if (feito) return;
+              feito = true;
+              resolve();
+            };
+            win.addEventListener("afterprint", acabar, { once: true });
+            win.focus();
+            win.print();
+            window.setTimeout(acabar, 1200);
+          });
+          return;
+        }
       }
       const res = await fetch(file.url);
       if (!res.ok) throw new Error();
@@ -351,10 +396,10 @@ export default function Documentos() {
             </div>
             <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
               {tipoDocumento(ler) === "imagem" ? (
-                <div className="absolute inset-0 overflow-auto py-8 px-6">
+                <div className="absolute inset-0 overflow-auto py-4 px-2">
                   <div
-                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm] flex justify-center"
-                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
+                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full flex justify-center"
+                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
                   >
                     <img src={ler.url} alt="" className="max-w-full h-auto" />
                   </div>
@@ -370,10 +415,10 @@ export default function Documentos() {
                   className="absolute inset-0 w-full h-full bg-white"
                 />
               ) : (
-                <div className="absolute inset-0 overflow-auto py-8 px-6">
+                <div className="absolute inset-0 overflow-auto py-4 px-2">
                   <div
-                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm]"
-                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
+                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full"
+                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
                   >
                     <p className="text-sm text-[#50575e]">Este ficheiro não tem pré-visualização neste ecrã.</p>
                   </div>

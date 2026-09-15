@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import VideoPlaylist from "@/components/VideoPlaylist";
 import { FotoACarregar } from "@/components/Carregando";
+import EntradaHome from "@/components/EntradaHome";
 import type { Noticia } from "@/lib/noticias";
 import type { VideoItem } from "@/lib/videos";
 
@@ -53,18 +54,18 @@ export default function NewsSeccao({
               </h2>
               <Link
                 href="/noticias"
-                className="inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson transition-colors"
+                className="esj-btn-move inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson"
               >
                 Ver todas as notícias →
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {noticias.map((item) => (
-                <Link
-                  key={item.slug}
-                  href={`/noticias/${item.slug}`}
-                  className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col"
-                >
+              {noticias.map((item, i) => (
+                <EntradaHome key={item.slug} atraso={i * 0.05}>
+                  <Link
+                    href={`/noticias/${item.slug}`}
+                    className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col h-full"
+                  >
                   <div className="relative overflow-hidden h-44">
                     <FotoACarregar
                       src={item.image}
@@ -86,6 +87,7 @@ export default function NewsSeccao({
                     </p>
                   </div>
                 </Link>
+                </EntradaHome>
               ))}
             </div>
           </>
@@ -99,7 +101,7 @@ export default function NewsSeccao({
               </h2>
               <Link
                 href="/videos"
-                className="inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson transition-colors"
+                className="esj-btn-move inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson"
               >
                 Ver mais vídeos →
               </Link>

@@ -138,13 +138,13 @@ export default function Header() {
       {/* Top utility bar */}
       <div className="bg-navy-800 text-white text-[11px] font-medium">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 flex items-center justify-between h-10">
-          <div className={`items-center gap-5 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
-            <span className="flex items-center gap-2">
+          <div className={`items-center gap-5 shrink-0 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
+            <span className="flex items-center gap-2 shrink-0 whitespace-nowrap">
               <MapPin size={14} />
               <span className="sm:hidden">Av. 24 de Julho</span>
               <span className="hidden sm:inline">Av. 24 de Julho, Maputo</span>
             </span>
-            <a href="tel:+25821302721" className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+            <a href="tel:+25821302721" className="flex items-center gap-2 shrink-0 whitespace-nowrap hover:text-sky-300 transition-colors">
               <Phone size={14} />
               <span className="text-white">+258 21 302 721</span>
             </a>
@@ -152,7 +152,7 @@ export default function Header() {
           <div className={`items-center gap-3 ${searchOpen ? "flex w-full sm:w-auto" : "flex"}`}>
             <div
               className={`relative h-10 overflow-hidden transition-[width] duration-300 ease-out ${
-                searchOpen ? "flex-1 sm:flex-none sm:w-[315px]" : "w-0 sm:w-[280px]"
+                searchOpen ? "flex-1 sm:flex-none sm:w-[315px]" : loggedIn ? "w-0 sm:w-[280px]" : "w-0"
               }`}
             >
               <div

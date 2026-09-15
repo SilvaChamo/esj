@@ -91,3 +91,52 @@ body {
     background: white;
   }
 }
+
+.esj-entrada {
+  transform: translate3d(0, 7rem, 0);
+}
+
+.esj-entrada-on {
+  transform: none;
+  transition: transform 0.65s ease-out;
+}
+
+.esj-entrada-hero {
+  animation: esj-subir 0.65s ease-out both;
+}
+
+.esj-entrada-hero-atraso {
+  animation-delay: 0.18s;
+}
+
+@keyframes esj-subir {
+  from {
+    transform: translate3d(0, 7rem, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .esj-entrada,
+  .esj-entrada-on,
+  .esj-entrada-hero,
+  .esj-btn-move,
+  .esj-btn-move:hover {
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+}
+
+.esj-btn-move {
+  transition: transform 0.4s ease-out, background-color 0.25s ease, color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .esj-btn-move:hover {
+    transform: translate3d(0, -2px, 0);
+  }
+}

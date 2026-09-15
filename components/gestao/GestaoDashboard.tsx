@@ -25,6 +25,9 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
+  ScrollText,
+  Send,
+  Trash2,
   Upload,
   Users,
   Video,
@@ -47,6 +50,7 @@ import {
   listAnunciosGestao,
   listInscricoesGestao,
   listNewsletterGestao,
+  deleteNewsletter,
   listTelefonesInscricoes,
   listVideosGestao,
   listEditaisGestao,
@@ -68,7 +72,7 @@ import {
   statsAnoLectivo,
   type EstadoNoticia,
 } from "@/lib/cms";
-import { segmentosSms, telemoveisUnicos } from "@/lib/sms";
+import { destEhSubscritores, segmentosSms, telemoveisDeContactos, telemoveisUnicos } from "@/lib/sms";
 import { videoEmbedSrc } from "@/lib/videos";
 import { tipoFicheiroEdital } from "@/lib/editais";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
@@ -77,6 +81,8 @@ import Galeria from "@/components/gestao/Galeria";
 import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
+import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
+import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import { textoDeHtml } from "@/lib/html-noticia";
 
 type Section =
@@ -87,6 +93,8 @@ type Section =
   | "edital"
   | "noticias"
   | "anuncios"
+  | "newsletter"
+  | "folha"
   | "eventos"
   | "livros"
   | "galeria"
@@ -120,6 +128,8 @@ const NAV: NavEntry[] = [
     icon: BookOpen,
     children: [
       { id: "noticias", label: "Notícias", icon: Newspaper },
+      { id: "newsletter", label: "Newsletter", icon: Send },
+      { id: "folha", label: "Folha académica", icon: ScrollText },
       { id: "anuncios", label: "SMS", icon: Bell },
       { id: "eventos", label: "Eventos", icon: CalendarDays },
       { id: "livros", label: "Livros", icon: Book },
@@ -163,6 +173,7 @@ export default function GestaoDashboard() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [smsBloqueado, setSmsBloqueado] = useState<{ telefones: string[] } | null>(null);
 
   useEffect(() => {
     const active = groupOf(section);
@@ -172,6 +183,7 @@ export default function GestaoDashboard() {
   // Clicar no cabeçalho de um grupo abre-o e navega logo para o seu
   // primeiro item — o chevron, à parte, só expande/colapsa sem navegar.
   const goToGroup = (label: string, firstId: Section) => {
+    setSmsBloqueado(null);
     setOpenGroup(label);
     setSection(firstId);
     setIsMobileMenuOpen(false);
@@ -182,6 +194,7 @@ export default function GestaoDashboard() {
   };
 
   const goToLeaf = (id: Section) => {
+    setSmsBloqueado(null);
     setSection(id);
     setIsMobileMenuOpen(false);
   };
@@ -466,6 +479,15 @@ export default function GestaoDashboard() {
                 Adicionar ficheiro
               </label>
             )}
+            {section === "subscritores" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("subscritores-baixar-pdf")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Baixar PDF
+              </button>
+            )}
             <button
               type="button"
               onClick={sair}
@@ -479,7 +501,15 @@ export default function GestaoDashboard() {
 
         <main className="flex-1 px-4 sm:px-8 py-8">
           {needsSchema && <SchemaInstall />}
-          {section === "painel" && <Painel onGo={setSection} userEmail={userEmail} />}
+          {section === "painel" && (
+            <Painel
+              onGo={(id) => {
+                setSmsBloqueado(null);
+                setSection(id);
+              }}
+              userEmail={userEmail}
+            />
+          )}
           {section === "edital" && <Edital onAction={showNote} />}
           {section === "livros" && (
             <Publicacoes key="livro" onAction={showNote} categoria="livro" />
@@ -491,11 +521,29 @@ export default function GestaoDashboard() {
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
+          {section === "newsletter" && <NewsletterEnvio onAction={showNote} />}
+          {section === "folha" && <FolhaAcademica onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "documentos" && <Documentos />}
           {section === "candidaturas" && <Candidaturas />}
-          {section === "anuncios" && <Anuncios onAction={showNote} />}
-          {section === "subscritores" && <Subscritores />}
+          {section === "anuncios" && (
+            <Anuncios
+              key={smsBloqueado ? "sms-subscritores" : "sms"}
+              onAction={showNote}
+              bloqueado={smsBloqueado}
+            />
+          )}
+          {section === "subscritores" && (
+            <Subscritores
+              onAction={showNote}
+              onEnviarSms={(telefones) => {
+                setSmsBloqueado({ telefones });
+                setOpenGroup("Publicações");
+                setSection("anuncios");
+                setIsMobileMenuOpen(false);
+              }}
+            />
+          )}
         </main>
       </div>
 
@@ -1082,6 +1130,14 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
     loadCalendario().then(setData);
   }, []);
 
+  const palavrasDe = (texto: string) =>
+    texto.trim() ? texto.trim().split(/\s+/).filter(Boolean).length : 0;
+
+  const actualizarCampo = (key: keyof Calendario, valor: string) => {
+    if (palavrasDe(valor) > 30) return;
+    setData({ ...data, [key]: valor });
+  };
+
   const publish = async () => {
     setBusy(true);
     try {
@@ -1108,20 +1164,30 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
       <h2 className="font-serif text-2xl font-bold text-navy-900">Calendário Académico</h2>
       <p className="text-sm text-navy-900/65 leading-relaxed">
         Estes textos aparecem na secção Ensino e História, separador &ldquo;Calendário
-        Académico&rdquo;, em /#ensino.
+        Académico&rdquo;, em /#ensino. Máximo de 30 palavras por campo.
       </p>
       {missing && <SchemaInstall />}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {fields.map((f) => (
-          <label key={f.key} className="block">
-            <span className="block text-sm font-bold text-navy-900 mb-1.5">{f.label}</span>
-            <textarea
-              className="esj-field min-h-[76px] py-2.5"
-              value={data[f.key]}
-              onChange={(e) => setData({ ...data, [f.key]: e.target.value })}
-            />
-          </label>
-        ))}
+        {fields.map((f) => {
+          const palavras = palavrasDe(data[f.key]);
+          return (
+            <label key={f.key} className="block">
+              <span className="block text-sm font-bold text-navy-900 mb-1.5">{f.label}</span>
+              <textarea
+                className="esj-field min-h-[11rem] py-3 leading-relaxed resize-y"
+                value={data[f.key]}
+                onChange={(e) => actualizarCampo(f.key, e.target.value)}
+              />
+              <span
+                className={`mt-1.5 block text-xs ${
+                  palavras >= 30 ? "text-crimson font-semibold" : "text-navy-900/55"
+                }`}
+              >
+                {palavras}/30 palavras
+              </span>
+            </label>
+          );
+        })}
       </div>
       <button
         type="button"
@@ -1584,11 +1650,9 @@ function Candidaturas() {
 
   return (
     <div className="bg-white border border-navy-100 p-8">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Pré-inscrições</h2>
-      <p className="mt-2 text-sm text-navy-900/65">Candidaturas submetidas em /inscricoes.</p>
       {missing && <SchemaInstall />}
-      {error && <p className="mt-4 text-sm text-crimson">{error}</p>}
-      <ul className="mt-6 divide-y divide-navy-100">
+      {error && <p className="text-sm text-crimson">{error}</p>}
+      <ul className="divide-y divide-navy-100">
         {items.length === 0 && !error && !missing && (
           <li className="py-3 text-sm text-navy-900/50">Ainda não há candidaturas.</li>
         )}
@@ -1608,30 +1672,248 @@ function Candidaturas() {
   );
 }
 
-function Subscritores() {
-  const [items, setItems] = useState<{ id: string; email: string; created_at: string }[]>([]);
+type SubscritorLinha = { email: string; telefone?: string | null; created_at: string };
+
+function textoPdf(s: string) {
+  let out = "";
+  const t = s.replace(/[—–]/g, "-").replace(/[“”«»]/g, '"').replace(/’/g, "'");
+  for (const ch of t) {
+    const c = ch.codePointAt(0) ?? 63;
+    if (c === 40 || c === 41 || c === 92) out += `\\${ch}`;
+    else if (c >= 32 && c <= 126) out += ch;
+    else if (c <= 255) out += `\\${c.toString(8).padStart(3, "0")}`;
+    else out += "?";
+  }
+  return out;
+}
+
+function pdfListaSubscritores(linhas: SubscritorLinha[]) {
+  const left = 48;
+  const top = 792;
+  const fundo = 48;
+  const passo = 16;
+  const paginas: string[] = [];
+  let y = top;
+  let stream = "";
+
+  const linhaPdf = (txt: string, x: number, yy: number, tam: number) => {
+    stream += `BT /F1 ${tam} Tf 1 0 0 1 ${x} ${yy} Tm (${textoPdf(txt)}) Tj ET\n`;
+  };
+
+  const cabecalho = () => {
+    stream = "";
+    y = top;
+    linhaPdf("ESJ — Lista de subscritores", left, y, 14);
+    y -= 22;
+    linhaPdf("E-mail", left, y, 9);
+    linhaPdf("Telemovel", left + 280, y, 9);
+    linhaPdf("Data de registo", left + 400, y, 9);
+    y -= 14;
+  };
+
+  cabecalho();
+  for (const s of linhas) {
+    if (y < fundo) {
+      paginas.push(stream);
+      cabecalho();
+    }
+    linhaPdf(s.email, left, y, 9);
+    linhaPdf(s.telefone || "-", left + 280, y, 9);
+    linhaPdf(new Date(s.created_at).toLocaleDateString("pt-PT"), left + 400, y, 9);
+    y -= passo;
+  }
+  paginas.push(stream);
+
+  const n = paginas.length;
+  const firstContent = 4;
+  const firstPage = 4 + n;
+  const offsets: number[] = [];
+  let body = "%PDF-1.4\n";
+  const addObj = (num: number, raw: string) => {
+    offsets[num] = body.length;
+    body += `${num} 0 obj\n${raw}\nendobj\n`;
+  };
+  addObj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  addObj(2, `<< /Type /Pages /Kids [${paginas.map((_, i) => `${firstPage + i} 0 R`).join(" ")}] /Count ${n} >>`);
+  addObj(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  paginas.forEach((s, i) => {
+    addObj(firstContent + i, `<< /Length ${s.length} >>\nstream\n${s}endstream`);
+  });
+  paginas.forEach((_, i) => {
+    addObj(
+      firstPage + i,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents ${firstContent + i} 0 R /Resources << /Font << /F1 3 0 R >> >> >>`
+    );
+  });
+  const xrefPos = body.length;
+  const last = firstPage + n - 1;
+  let xref = `xref\n0 ${last + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= last; i += 1) {
+    xref += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  }
+  body += `${xref}trailer\n<< /Size ${last + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  return new Blob([body], { type: "application/pdf" });
+}
+
+function Subscritores({
+  onAction,
+  onEnviarSms,
+}: {
+  onAction: (m: string) => void;
+  onEnviarSms?: (telefones: string[]) => void;
+}) {
+  const [items, setItems] = useState<
+    { id: string; email: string; telefone?: string | null; created_at: string }[]
+  >([]);
+  const [escolhidos, setEscolhidos] = useState<string[]>([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  const refresh = () => {
     listNewsletterGestao()
-      .then(setItems)
+      .then((rows) => {
+        setItems(rows);
+        setEscolhidos((prev) => prev.filter((id) => rows.some((r) => r.id === id)));
+      })
       .catch((err) => {
         if (isMissingTable(err)) setMissing(true);
         else setError(cmsError(err));
       });
+  };
+
+  useEffect(() => {
+    refresh();
   }, []);
+
+  const todos = items.length > 0 && escolhidos.length === items.length;
+  const alguns = escolhidos.length > 0 && !todos;
+  const seleccionados = items.filter((s) => escolhidos.includes(s.id));
+
+  const toggleUm = (id: string) => {
+    setEscolhidos((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const baixarPdf = () => {
+    const linhas = seleccionados.length > 0 ? seleccionados : items;
+    if (linhas.length === 0) return;
+    const blob = pdfListaSubscritores(linhas);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "subscritores.pdf";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    onAction("Lista descarregada em PDF.");
+  };
+
+  const eliminar = async (ids = escolhidos) => {
+    if (ids.length === 0) return;
+    if (!window.confirm(`Eliminar ${ids.length} subscritor(es)?`)) return;
+    setBusy(true);
+    try {
+      await deleteNewsletter(ids);
+      setEscolhidos((prev) => prev.filter((id) => !ids.includes(id)));
+      refresh();
+      onAction("Subscritores eliminados.");
+    } catch (err) {
+      onAction(cmsError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const linha =
+    "p-2.5 grid grid-cols-[auto_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
 
   return (
     <div className="bg-white border border-navy-100 p-8">
+      <button type="button" id="subscritores-baixar-pdf" className="hidden" onClick={baixarPdf} />
       {missing && <SchemaInstall />}
       {error && <p className="text-sm text-crimson">{error}</p>}
       <ul className="divide-y divide-navy-100">
+        {items.length > 0 && (
+          <li className={linha}>
+            <input
+              type="checkbox"
+              checked={todos}
+              ref={(el) => {
+                if (el) el.indeterminate = alguns;
+              }}
+              onChange={() => setEscolhidos(todos ? [] : items.map((s) => s.id))}
+              aria-label="Seleccionar todos"
+            />
+            {escolhidos.length > 1 ? (
+              <span className="flex items-center gap-3 min-w-0">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={baixarPdf}
+                  className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                >
+                  Baixar PDF
+                </button>
+                {onEnviarSms && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      const telefones = seleccionados
+                        .map((s) => s.telefone)
+                        .filter((t): t is string => !!t?.trim());
+                      if (telefones.length === 0) {
+                        onAction("Os seleccionados não têm telemóvel.");
+                        return;
+                      }
+                      onEnviarSms(telefones);
+                    }}
+                    className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                  >
+                    Enviar SMS
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void eliminar()}
+                  title="Eliminar"
+                  aria-label="Eliminar seleccionados"
+                  className="text-crimson hover:text-[#b32d2e] disabled:opacity-50 p-0.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-navy-900">E-mail</span>
+            )}
+            <span className="text-xs font-semibold text-navy-900">Telemóvel</span>
+            <span className="text-xs font-semibold text-navy-900">Data de registo</span>
+            <span className="text-xs font-semibold text-navy-900 text-right">Acção</span>
+          </li>
+        )}
         {items.map((s) => (
-          <li key={s.id} className="py-3 flex items-center justify-between gap-4">
-            <span className="text-sm text-navy-900">{s.email}</span>
-            <span className="text-[11px] text-navy-900/50 shrink-0">
+          <li key={s.id} className={linha}>
+            <input
+              type="checkbox"
+              checked={escolhidos.includes(s.id)}
+              onChange={() => toggleUm(s.id)}
+              aria-label={s.email}
+            />
+            <span className="min-w-0 truncate text-sm text-navy-900">{s.email}</span>
+            <span className="text-sm text-navy-900/80">{s.telefone || "—"}</span>
+            <span className="text-[11px] text-navy-900/50">
               {new Date(s.created_at).toLocaleDateString("pt-PT")}
+            </span>
+            <span className="flex items-center justify-end">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void eliminar([s.id])}
+                title="Eliminar"
+                aria-label="Eliminar"
+                className="text-crimson hover:text-[#b32d2e] disabled:opacity-50 p-0.5"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </span>
           </li>
         ))}
@@ -1640,23 +1922,34 @@ function Subscritores() {
   );
 }
 
-function Anuncios({ onAction }: { onAction: (m: string) => void }) {
+function Anuncios({
+  onAction,
+  bloqueado,
+}: {
+  onAction: (m: string) => void;
+  bloqueado?: { telefones: string[] } | null;
+}) {
   const [items, setItems] = useState<
     { id: string; destinatarios: string; assunto: string; mensagem: string }[]
   >([]);
   const [inscricoes, setInscricoes] = useState<
     { telefone: string | null; curso: string | null; delegacao: string | null }[]
   >([]);
-  const [destinatarios, setDestinatarios] = useState("Todos os estudantes");
+  const [subscritores, setSubscritores] = useState<{ telefone?: string | null }[]>([]);
+  const [destinatarios, setDestinatarios] = useState(
+    bloqueado?.telefones.length ? "Subscritores" : "Todos os estudantes"
+  );
   const [assunto, setAssunto] = useState("");
   const [mensagem, setMensagem] = useState("");
-  const [extra, setExtra] = useState("");
+  const [extra, setExtra] = useState(
+    bloqueado?.telefones.length ? bloqueado.telefones.join("\n") : ""
+  );
   const [busy, setBusy] = useState(false);
   const [missing, setMissing] = useState(false);
   const [smsOk, setSmsOk] = useState<boolean | null>(null);
 
   const refresh = () => {
-    listAnunciosGestao()
+    listAnunciosGestao("sms")
       .then((rows) => {
         setItems(rows);
         setMissing(false);
@@ -1672,13 +1965,24 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
     listTelefonesInscricoes()
       .then(setInscricoes)
       .catch(() => setInscricoes([]));
+    listNewsletterGestao()
+      .then(setSubscritores)
+      .catch(() => setSubscritores([]));
     fetch("/api/sms")
       .then((res) => res.json())
       .then((data) => setSmsOk(Boolean(data.configurado)))
       .catch(() => setSmsOk(false));
   }, []);
 
-  const numeros = telemoveisUnicos(inscricoes, destinatarios, extra);
+  const numeros =
+    destEhSubscritores(destinatarios) && bloqueado?.telefones.length
+      ? telemoveisDeContactos([], extra)
+      : destEhSubscritores(destinatarios)
+        ? telemoveisDeContactos(
+            subscritores.map((s) => s.telefone),
+            extra
+          )
+        : telemoveisUnicos(inscricoes, destinatarios, extra);
   const conta = segmentosSms(mensagem);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -1704,8 +2008,8 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
       refresh();
       onAction(
         data.falhados
-          ? `SMS enviado a ${data.enviados} de ${data.total} estudantes.`
-          : `SMS enviado a ${data.enviados} estudante(s).`
+          ? `SMS enviado a ${data.enviados} de ${data.total} ${destEhSubscritores(destinatarios) ? "subscritores" : "estudantes"}.`
+          : `SMS enviado a ${data.enviados} ${destEhSubscritores(destinatarios) ? "subscritor(es)" : "estudante(s)"}.`
       );
     } catch (error) {
       if (isMissingTable(error)) setMissing(true);
@@ -1751,6 +2055,7 @@ function Anuncios({ onAction }: { onAction: (m: string) => void }) {
             <option>Licenciatura em Publicidade e Marketing</option>
             <option>Licenciatura em Relações Públicas</option>
             <option>Licenciatura em Biblioteconomia e Documentação</option>
+            <option>Subscritores</option>
           </select>
           <span className="mt-1.5 block text-xs text-navy-900/55">
             {numeros.length} telemóvel(eis) neste grupo

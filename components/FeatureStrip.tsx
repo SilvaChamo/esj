@@ -26,7 +26,8 @@ const features = [
 export default function FeatureStrip() {
   return (
     <div className="relative z-10 -mt-14 mx-auto max-w-7xl px-4 lg:px-8">
-      <div className="bg-white shadow-xl rounded-sm px-0 py-2 lg:py-8 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-[#B8C5DB]">
+      <div className="esj-entrada-hero esj-entrada-hero-atraso">
+        <div className="bg-white shadow-xl rounded-sm px-0 py-2 lg:py-8 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-[#B8C5DB]">
         {features.map(({ icon: Icon, title, text }) => (
           <div key={title} className="flex flex-col items-start gap-2 px-5 md:px-7 py-4 lg:py-1">
             <Icon className="text-sky" size={26} strokeWidth={1.75} />
@@ -34,6 +35,7 @@ export default function FeatureStrip() {
             <div className="text-xs text-navy-900/60 leading-snug min-h-[2.5rem]">{text}</div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

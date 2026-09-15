@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { Clock, Globe, MapPin, Phone } from "lucide-react";
+import EntradaHome from "@/components/EntradaHome";
 
 const fieldClass =
   "w-full bg-transparent border border-white/80 px-3 text-sm text-white placeholder:text-white/80 outline-none focus:border-white";
@@ -13,25 +14,36 @@ function growMessageField(el: HTMLTextAreaElement) {
 }
 
 export default function ContactBand() {
-  const [newsState, setNewsState] = useState<"idle" | "busy" | "ok" | "err">("idle");
+  const [newsBusy, setNewsBusy] = useState(false);
+  const [newsPopup, setNewsPopup] = useState<{ ok: boolean; texto: string } | null>(null);
   const [msgState, setMsgState] = useState<"idle" | "busy" | "ok" | "err">("idle");
 
   const subscribe = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const email = String(new FormData(e.currentTarget).get("news_email") || "").trim();
-    if (!email) return;
-    setNewsState("busy");
+    const form = e.currentTarget;
+    const dados = new FormData(form);
+    const email = String(dados.get("news_email") || "").trim();
+    const telefone = String(dados.get("news_contacto") || "").trim();
+    if (!email || !telefone) return;
+    setNewsBusy(true);
+    setNewsPopup(null);
     try {
       const res = await fetch("/api/contacto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo: "newsletter", email }),
+        body: JSON.stringify({ tipo: "newsletter", email, telefone }),
       });
-      if (!res.ok) throw new Error("fail");
-      setNewsState("ok");
-      e.currentTarget.reset();
-    } catch {
-      setNewsState("err");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Não foi possível subcrever. Tente de novo.");
+      form.reset();
+      setNewsPopup({ ok: true, texto: "Inscrição recebida." });
+    } catch (err) {
+      setNewsPopup({
+        ok: false,
+        texto: err instanceof Error ? err.message : "Não foi possível subcrever. Tente de novo.",
+      });
+    } finally {
+      setNewsBusy(false);
     }
   };
 
@@ -68,9 +80,10 @@ export default function ContactBand() {
       <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-16 pb-6 md:pt-24 md:pb-8">
         <div className="mb-[72px]">
           <div className="flex flex-col md:flex-row md:items-stretch">
+            <EntradaHome className="w-full md:flex-1 md:self-center">
             <form
               onSubmit={sendMessage}
-              className="relative z-0 overflow-hidden flex flex-col justify-center border border-white p-8 sm:p-10 w-full md:flex-1 md:self-center md:translate-y-5"
+              className="relative z-0 overflow-hidden flex flex-col justify-center border border-white p-8 sm:p-10 w-full md:translate-y-5"
             >
               <Image
                 src="/JornalistaII.jpg"
@@ -120,7 +133,7 @@ export default function ContactBand() {
                 <button
                   type="submit"
                   disabled={msgState === "busy"}
-                  className="h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] hover:bg-cream disabled:opacity-60"
+                  className="esj-btn-move h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] hover:bg-navy-900 hover:text-white disabled:opacity-60"
                 >
                   {msgState === "busy" ? "A ENVIAR…" : "ENVIAR MENSAGEM"}
                 </button>
@@ -132,8 +145,10 @@ export default function ContactBand() {
                 <p className="mt-4 text-sm text-white text-right">Não foi possível enviar. Tente de novo.</p>
               )}
             </form>
+            </EntradaHome>
 
-            <aside className="relative z-0 flex flex-col justify-center bg-navy-800 text-white w-full md:w-[360px] md:shrink-0 md:-mb-10">
+            <EntradaHome atraso={0.1} className="w-full md:w-[360px] md:shrink-0 md:-mb-10">
+            <aside className="relative z-0 flex flex-col justify-center bg-navy-800 text-white w-full h-full">
               <div className="bg-navy-900 p-8 sm:p-10">
                 <h3 className="font-serif text-xl font-bold text-white text-center uppercase">Nossa Localização</h3>
               </div>
@@ -196,6 +211,7 @@ export default function ContactBand() {
                 </div>
               </dl>
             </aside>
+            </EntradaHome>
           </div>
         </div>
       </div>
@@ -205,7 +221,7 @@ export default function ContactBand() {
         <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 py-9 md:py-12">
           <form
             onSubmit={subscribe}
-            className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6"
+            className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4"
           >
             <h2 className="font-serif text-3xl md:text-[2.15rem] font-bold shrink-0 text-white">
               A nossa <span className="text-navy-900">newsletter</span>
@@ -215,25 +231,51 @@ export default function ContactBand() {
               name="news_email"
               required
               autoComplete="email"
-              placeholder="Introduza o seu correio electrónico"
+              placeholder="E-mail"
               className="h-11 w-full md:flex-1 bg-white/15 px-4 text-sm text-white placeholder:text-white/80 outline-none"
+            />
+            <input
+              type="tel"
+              name="news_contacto"
+              required
+              autoComplete="tel"
+              placeholder="Contacto"
+              className="h-11 w-full md:w-40 md:shrink-0 bg-white/15 px-4 text-sm text-white placeholder:text-white/80 outline-none"
             />
             <button
               type="submit"
-              disabled={newsState === "busy"}
-              className="h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] shrink-0 hover:bg-cream disabled:opacity-60"
+              disabled={newsBusy}
+              className="esj-btn-move h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] shrink-0 hover:bg-navy-900 hover:text-white disabled:opacity-60"
             >
-              {newsState === "busy" ? "A SUBSCREVER…" : "SUBSCREVER AGORA"}
+              {newsBusy ? "A SUBSCREVER…" : "SUBSCREVER"}
             </button>
           </form>
-          {newsState === "ok" && (
-            <p className="text-sm text-white pb-2 -mt-1">Inscrição recebida.</p>
-          )}
-          {newsState === "err" && (
-            <p className="text-sm text-white pb-2 -mt-1">Não foi possível subcrever. Tente de novo.</p>
-          )}
         </div>
       </div>
+      {newsPopup && (
+        <div
+          className="fixed inset-0 z-[220] bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setNewsPopup(null)}
+        >
+          <div
+            className="bg-white border border-navy-100 px-8 py-6 max-w-sm w-full"
+            role="alertdialog"
+            aria-live="polite"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className={`text-sm leading-relaxed ${newsPopup.ok ? "text-navy-900" : "text-crimson"}`}>
+              {newsPopup.texto}
+            </p>
+            <button
+              type="button"
+              onClick={() => setNewsPopup(null)}
+              className="mt-5 h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] border border-navy-900 hover:bg-navy-900 hover:text-white"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

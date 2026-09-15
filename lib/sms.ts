@@ -32,7 +32,27 @@ export function filtrarInscricoesSms(rows: InscricaoSms[], destinatarios: string
   });
 }
 
+export function destEhSubscritores(destinatarios: string) {
+  return /subscritor/i.test(destinatarios);
+}
+
+export function telemoveisDeContactos(telefones: (string | null | undefined)[], extra = "") {
+  const set = new Set<string>();
+  for (const valor of telefones) {
+    const tel = normalizarTelemovelMz(valor || "");
+    if (tel) set.add(tel);
+  }
+  for (const linha of extra.split(/[\n,;]+/)) {
+    const tel = normalizarTelemovelMz(linha);
+    if (tel) set.add(tel);
+  }
+  return [...set];
+}
+
 export function telemoveisUnicos(rows: InscricaoSms[], destinatarios: string, extra = "") {
+  if (destEhSubscritores(destinatarios)) {
+    return telemoveisDeContactos(rows.map((row) => row.telefone), extra);
+  }
   const set = new Set<string>();
   for (const row of filtrarInscricoesSms(rows, destinatarios)) {
     const tel = normalizarTelemovelMz(row.telefone || "");

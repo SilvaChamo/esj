@@ -427,15 +427,23 @@ export async function publishAnuncio(input: {
   if (error) throw error;
 }
 
-export async function listAnunciosGestao() {
+export async function listAnunciosGestao(canal?: string) {
   const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
+  let q = supabase
+    .from("anuncios")
+    .select("id, destinatarios, assunto, mensagem, created_at, canal")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (canal) q = q.eq("canal", canal);
+  const { data, error } = await q;
+  if (!error) return data ?? [];
+  const simples = await supabase
     .from("anuncios")
     .select("id, destinatarios, assunto, mensagem, created_at")
     .order("created_at", { ascending: false })
     .limit(30);
-  if (error) throw error;
-  return data ?? [];
+  if (simples.error) throw simples.error;
+  return simples.data ?? [];
 }
 
 export async function publishCalendario(data: Calendario) {
@@ -680,11 +688,72 @@ export async function saveMediaDetails(fileName: string, details: MediaDetails) 
 
 export async function listNewsletterGestao() {
   const supabase = createBrowserSupabase();
+  const comTel = await supabase
+    .from("newsletter")
+    .select("id, email, telefone, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (!comTel.error) return comTel.data ?? [];
   const { data, error } = await supabase
     .from("newsletter")
     .select("id, email, created_at")
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw error;
+  const contactos = await supabase
+    .from("contactos")
+    .select("email, mensagem, created_at")
+    .eq("nome", "Newsletter")
+    .order("created_at", { ascending: true });
+  const porEmail = new Map<string, string>();
+  for (const row of contactos.data ?? []) {
+    if (row.email && row.mensagem) porEmail.set(row.email, row.mensagem);
+  }
+  return (data ?? []).map((row) => ({ ...row, telefone: porEmail.get(row.email) || "" }));
+}
+
+export async function deleteNewsletter(ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("newsletter").delete().in("id", ids);
+  if (error) throw error;
+}
+
+export async function listFolhasGestao() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("folha_academica")
+    .select("id, title, file_url, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (error) throw error;
   return data ?? [];
+}
+
+export async function addFolha(title: string, file_url: string) {
+  const supabase = createBrowserSupabase();
+  const agora = new Date().toISOString();
+  const { error } = await supabase.from("folha_academica").insert({
+    title: title.trim(),
+    file_url,
+    updated_at: agora,
+  });
+  if (error) throw error;
+}
+
+export async function updateFolha(id: string, title: string, file_url?: string) {
+  const supabase = createBrowserSupabase();
+  const row: { title: string; file_url?: string; updated_at: string } = {
+    title: title.trim(),
+    updated_at: new Date().toISOString(),
+  };
+  if (file_url) row.file_url = file_url;
+  const { error } = await supabase.from("folha_academica").update(row).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteFolha(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("folha_academica").delete().eq("id", id);
+  if (error) throw error;
 }

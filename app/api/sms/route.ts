@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { enviarUmSms, smsProvider, telemoveisUnicos } from "@/lib/sms";
+import { destEhSubscritores, enviarUmSms, smsProvider, telemoveisUnicos } from "@/lib/sms";
 
 async function utilizadorGestao() {
   const supabase = createServerSupabase();
@@ -42,14 +42,45 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
-    .from("inscricoes")
-    .select("telefone, curso, delegacao");
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  let rows: { telefone: string | null; curso: string | null; delegacao: string | null }[] = [];
+  if (destEhSubscritores(destinatarios)) {
+    const lista = await supabase.from("newsletter").select("telefone");
+    if (lista.error) {
+      const soEmail = await supabase.from("newsletter").select("email");
+      if (soEmail.error) {
+        return NextResponse.json({ error: lista.error.message }, { status: 400 });
+      }
+      const contactos = await supabase
+        .from("contactos")
+        .select("email, mensagem")
+        .eq("nome", "Newsletter");
+      const porEmail = new Map<string, string>();
+      for (const row of contactos.data ?? []) {
+        if (row.email && row.mensagem) porEmail.set(row.email, row.mensagem);
+      }
+      rows = (soEmail.data ?? []).map((row) => ({
+        telefone: porEmail.get(row.email) || null,
+        curso: null,
+        delegacao: null,
+      }));
+    } else {
+      rows = (lista.data ?? []).map((row) => ({
+        telefone: row.telefone ?? null,
+        curso: null,
+        delegacao: null,
+      }));
+    }
+  } else {
+    const { data, error } = await supabase
+      .from("inscricoes")
+      .select("telefone, curso, delegacao");
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    rows = data ?? [];
   }
 
-  const numeros = telemoveisUnicos(data ?? [], destinatarios, extra);
+  const numeros = telemoveisUnicos(rows, destinatarios, extra);
   if (numeros.length === 0) {
     return NextResponse.json(
       { error: "Não há telemóveis válidos para este grupo." },

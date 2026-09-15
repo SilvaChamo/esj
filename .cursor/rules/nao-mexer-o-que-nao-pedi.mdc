@@ -1,0 +1,15 @@
+---
+description: Nunca alterar o que o utilizador não pediu
+alwaysApply: true
+---
+
+# Só o que foi pedido
+
+Quando o utilizador pedir uma alteração, fazer **apenas** essa alteração.
+
+- Não mexer noutros ecrãs, menus, componentes ou ficheiros fora do pedido.
+- Não “aproveitar” para limpar, alinhar, refatorar, acrescentar barras, tabs, cards ou atalhos.
+- Não copiar um padrão de uma página para outra sem ter sido pedido.
+- Se algo parecer relacionado mas não foi pedido, deixar estar.
+
+A Galeria, em particular, não se altera a menos que o pedido seja explicitamente sobre a Galeria.
