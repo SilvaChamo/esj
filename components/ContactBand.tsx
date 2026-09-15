@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useState } from "react";
+import { Clock, Globe, MapPin, Phone } from "lucide-react";
 
 const fieldClass =
   "w-full bg-transparent border border-white/80 px-3 text-sm text-white placeholder:text-white/80 outline-none focus:border-white";
@@ -136,42 +137,54 @@ export default function ContactBand() {
               <div className="bg-navy-900 p-8 sm:p-10">
                 <h3 className="font-serif text-xl font-bold text-white">Nossa Localização</h3>
               </div>
-              <div className="h-1.5 bg-crimson" aria-hidden />
+              <div className="h-1.5 bg-sky-300" aria-hidden />
               <dl className="p-8 sm:p-10 divide-y divide-white/20 text-[15px] leading-relaxed">
-                <div className="pb-5">
-                  <dt className="font-semibold mb-1.5">Morada</dt>
-                  <dd className="text-white/95">
-                    Av. 24 de Julho, antiga Escola Industrial, Maputo
-                  </dd>
+                <div className="pb-5 flex gap-3">
+                  <MapPin size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <div>
+                    <dt className="font-semibold mb-1.5">Morada</dt>
+                    <dd className="text-white/95">
+                      Av. 24 de Julho, antiga Escola Industrial, Maputo
+                    </dd>
+                  </div>
                 </div>
-                <div className="py-5">
-                  <dt className="font-semibold mb-1.5">Telefone</dt>
-                  <dd>
-                    <a href="tel:+25821302721" className="hover:underline">
-                      +258 21 302 721
-                    </a>
-                  </dd>
+                <div className="py-5 flex gap-3">
+                  <Phone size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <div>
+                    <dt className="font-semibold mb-1.5">Telefone</dt>
+                    <dd>
+                      <a href="tel:+25821302721" className="hover:underline">
+                        +258 21 302 721
+                      </a>
+                    </dd>
+                  </div>
                 </div>
-                <div className="py-5">
-                  <dt className="font-semibold mb-1.5">Portal</dt>
-                  <dd>
-                    <a
-                      href="https://esj.edondzo.ac.mz"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline break-all"
-                    >
-                      esj.edondzo.ac.mz
-                    </a>
-                  </dd>
+                <div className="py-5 flex gap-3">
+                  <Globe size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <div>
+                    <dt className="font-semibold mb-1.5">Portal</dt>
+                    <dd>
+                      <a
+                        href="https://esj.edondzo.ac.mz"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline break-all"
+                      >
+                        esj.edondzo.ac.mz
+                      </a>
+                    </dd>
+                  </div>
                 </div>
-                <div className="pt-5">
-                  <dt className="font-semibold mb-1.5">Horário</dt>
-                  <dd>
-                    Seg–Sex: 8h00–15h30
-                    <br />
-                    Sáb–Dom: encerrado
-                  </dd>
+                <div className="pt-5 flex gap-3">
+                  <Clock size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <div>
+                    <dt className="font-semibold mb-1.5">Horário</dt>
+                    <dd>
+                      Seg–Sex: 8h00–15h30
+                      <br />
+                      Sáb–Dom: encerrado
+                    </dd>
+                  </div>
                 </div>
               </dl>
             </aside>
@@ -180,6 +193,7 @@ export default function ContactBand() {
       </div>
 
       <div className="relative bg-sky-600">
+        <div className="h-1.5 w-full bg-crimson" aria-hidden />
         <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 py-9 md:py-12">
           <form
             onSubmit={subscribe}
