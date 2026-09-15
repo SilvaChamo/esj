@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { filtroQuery } from "@/lib/admissao";
 
 type MenuChild = { label: string; href?: string };
 type MenuItem = { label: string; href?: string; children?: MenuChild[] };
@@ -28,11 +29,26 @@ const menu: MenuItem[] = [
     label: "ENSINO",
     href: "/#ensino",
     children: [
-      { label: "Jornalismo" },
-      { label: "Publicidade e Marketing" },
-      { label: "Relações Públicas" },
-      { label: "Biblioteconomia e Documentação" },
-      { label: "Pós-Graduação" },
+      {
+        label: "Jornalismo",
+        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "jornalismo" })}`,
+      },
+      {
+        label: "Publicidade e Marketing",
+        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "publicidade-e-marketing" })}`,
+      },
+      {
+        label: "Relações Públicas",
+        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "relacoes-publicas" })}`,
+      },
+      {
+        label: "Biblioteconomia e Documentação",
+        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "biblioteconomia-e-documentacao" })}`,
+      },
+      {
+        label: "Pós-Graduação",
+        href: `/inscricao?${filtroQuery({ nivel: "Pós-Graduação", regime: "Diurno" })}`,
+      },
       { label: "Admissões", href: "/inscricoes" },
     ],
   },
