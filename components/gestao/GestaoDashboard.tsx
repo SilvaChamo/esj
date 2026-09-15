@@ -78,6 +78,7 @@ import { tipoFicheiroEdital } from "@/lib/editais";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import ResultadosPauta from "@/components/gestao/ResultadosPauta";
 import Galeria from "@/components/gestao/Galeria";
+import AlbunsGaleria from "@/components/gestao/AlbunsGaleria";
 import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
@@ -98,6 +99,7 @@ type Section =
   | "eventos"
   | "livros"
   | "galeria"
+  | "albuns"
   | "videos"
   | "documentos"
   | "subscritores";
@@ -140,6 +142,7 @@ const NAV: NavEntry[] = [
     label: "Galeria",
     icon: Images,
     children: [
+      { id: "albuns", label: "Álbum", icon: Images },
       { id: "galeria", label: "Imagens", icon: ImageIcon },
       { id: "documentos", label: "Documentos", icon: FileText },
     ],
@@ -443,6 +446,16 @@ export default function GestaoDashboard() {
                 Adicionar ficheiros multimédia
               </label>
             )}
+            {section === "albuns" && (
+              <button
+                type="button"
+                id="albuns-adicionar"
+                onClick={() => document.getElementById("albuns-novo")?.click()}
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar álbum
+              </button>
+            )}
             {section === "livros" && (
               <button
                 type="button"
@@ -518,6 +531,7 @@ export default function GestaoDashboard() {
             <Publicacoes key="evento" onAction={showNote} categoria="evento" />
           )}
           {section === "galeria" && <Galeria />}
+          {section === "albuns" && <AlbunsGaleria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}

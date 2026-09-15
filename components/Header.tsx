@@ -52,7 +52,7 @@ const menu: MenuItem[] = [
     children: [
       { label: "Linhas de Pesquisa" },
       { label: "Projectos" },
-      { label: "Biblioteca" },
+      { label: "Biblioteca", href: "/#biblioteca-virtual" },
     ],
   },
   {
@@ -73,7 +73,7 @@ const menu: MenuItem[] = [
       { label: "Conselho Científico-Pedagógico" },
     ],
   },
-  { label: "CONTACTO", href: "/#contacto" },
+  { label: "CONTACTO", href: "/contacto" },
 ];
 
 export default function Header() {

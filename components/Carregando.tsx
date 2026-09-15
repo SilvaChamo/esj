@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { IframeHTMLAttributes, ImgHTMLAttributes, useState } from "react";
+import { IframeHTMLAttributes, ImgHTMLAttributes, useEffect, useState } from "react";
 
 export function CarregandoTexto({ texto }: { texto: string }) {
   return <p className="px-6 py-10 text-center text-sm text-navy-900/60">{texto}</p>;
@@ -23,23 +23,40 @@ export function FotoACarregar({
   texto = "A carregar a imagem…",
   onLoad,
   onError,
+  className,
+  alt,
+  src,
   ...props
 }: ImageProps & { texto?: string }) {
   const [pronta, setPronta] = useState(false);
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    setPronta(false);
+    setFalhou(false);
+  }, [src]);
+
+  if (falhou) {
+    return <span className="absolute inset-0 bg-navy-100/40" aria-hidden />;
+  }
+
   return (
     <>
       {!pronta && (
-        <span className="absolute inset-0 z-[1] flex items-center justify-center px-3 text-center text-sm text-navy-900/60 bg-white">
-          {texto}
-        </span>
+        <span className="absolute inset-0 z-[1] bg-navy-100/25" aria-hidden />
       )}
       <Image
         {...props}
+        src={src}
+        alt={alt ?? ""}
+        className={className}
+        onLoadingComplete={() => setPronta(true)}
         onLoad={(e) => {
           setPronta(true);
           onLoad?.(e);
         }}
         onError={(e) => {
+          setFalhou(true);
           setPronta(true);
           onError?.(e);
         }}
@@ -53,25 +70,39 @@ export function ImgACarregar({
   className,
   onLoad,
   onError,
+  alt,
+  src,
   ...props
 }: ImgHTMLAttributes<HTMLImageElement> & { texto?: string }) {
   const [pronta, setPronta] = useState(false);
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    setPronta(false);
+    setFalhou(false);
+  }, [src]);
+
   return (
     <>
-      {!pronta && (
-        <span className="absolute inset-0 z-[1] flex items-center justify-center px-3 text-center text-sm text-navy-900/60 bg-white">
-          {texto}
-        </span>
+      {!pronta && !falhou && (
+        <span className="absolute inset-0 z-[1] bg-navy-100/25" aria-hidden />
+      )}
+      {falhou && (
+        <span className="absolute inset-0 z-[1] bg-navy-100/40" aria-hidden />
       )}
       <img
         {...props}
-        className={className}
+        src={src}
+        alt={falhou ? "" : alt ?? ""}
+        className={`${className ?? ""}${falhou ? " opacity-0" : ""}`.trim()}
         onLoad={(e) => {
           setPronta(true);
           onLoad?.(e);
         }}
         onError={(e) => {
+          setFalhou(true);
           setPronta(true);
+          e.currentTarget.alt = "";
           onError?.(e);
         }}
       />

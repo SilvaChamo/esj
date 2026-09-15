@@ -3,8 +3,9 @@ import Hero from "@/components/Hero";
 import FeatureStrip from "@/components/FeatureStrip";
 import About from "@/components/About";
 import Academics from "@/components/Academics";
+import BibliotecaVirtual from "@/components/BibliotecaVirtual";
 import News from "@/components/News";
-import ContactBand from "@/components/ContactBand";
+import EnsinoHistoria from "@/components/EnsinoHistoria";
 import { CarregandoTexto } from "@/components/Carregando";
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
       <FeatureStrip />
       <About />
       <Academics />
+      <BibliotecaVirtual />
       <Suspense
         fallback={
           <section className="bg-cream">
@@ -27,7 +29,7 @@ export default function Home() {
       >
         <News />
       </Suspense>
-      <ContactBand />
+      <EnsinoHistoria />
     </main>
   );
 }

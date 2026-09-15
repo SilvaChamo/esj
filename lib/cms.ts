@@ -105,6 +105,27 @@ export async function setPublicacaoDestaque(id: string, categoria: Categoria) {
   if (unset.error) throw unset.error;
   const set = await supabase.from("publicacoes").update({ destaque: true }).eq("id", id);
   if (set.error) throw set.error;
+
+  const { data } = await supabase
+    .from("publicacoes")
+    .select("title, subtitle, authors, date_label, venue, image, tipo")
+    .eq("id", id)
+    .maybeSingle();
+  if (data?.image) {
+    const { writePublicacao } = await import("@/lib/publicacao");
+    writePublicacao(
+      {
+        image: data.image,
+        title: data.title,
+        subtitle: data.subtitle,
+        authors: data.authors,
+        date: data.date_label,
+        venue: data.venue,
+        tipo: categoria === "evento" ? "cartaz" : "livro",
+      },
+      categoria
+    );
+  }
 }
 
 export async function updatePublicacaoImagem(id: string, image: string) {

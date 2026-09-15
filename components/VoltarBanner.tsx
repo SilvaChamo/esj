@@ -23,6 +23,10 @@ function destinoDe(path: string) {
   if (p === "/cursos" || p.startsWith("/cursos/")) {
     return { href: "/#ensino", label: "Voltar ao Ensino" };
   }
+  if (p === "/galeria" || p.startsWith("/galeria/")) {
+    return { href: "/galeria", label: "Voltar à galeria" };
+  }
+  if (p === "/contacto") return { href: "/contacto", label: "Voltar ao contacto" };
   if (p === "/resultados") return { href: "/resultados", label: "Voltar aos resultados" };
   if (p.startsWith("/resultados/")) return { href: "/resultados", label: "Voltar aos cursos" };
   if (p === "/busca") return { href: "/busca", label: "Voltar à pesquisa" };

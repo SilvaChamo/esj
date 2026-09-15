@@ -58,6 +58,28 @@ function defaultFor(categoria: Categoria) {
   return categoria === "evento" ? DEFAULT_EVENTO : DEFAULT_PUBLICACAO;
 }
 
+function deLinha(
+  row: {
+    title: string;
+    subtitle: string;
+    authors: string;
+    date_label: string;
+    venue: string;
+    image: string;
+  },
+  categoria: Categoria
+): Publicacao {
+  return {
+    image: row.image,
+    title: row.title,
+    subtitle: row.subtitle,
+    authors: row.authors,
+    date: row.date_label,
+    venue: row.venue,
+    tipo: categoria === "evento" ? "cartaz" : "livro",
+  };
+}
+
 export function readPublicacao(categoria: Categoria = "livro"): Publicacao {
   const fallback = defaultFor(categoria);
   if (typeof window === "undefined") return fallback;
@@ -76,41 +98,67 @@ export function readPublicacao(categoria: Categoria = "livro"): Publicacao {
   }
 }
 
-export function writePublicacao(data: Publicacao, categoria: Categoria = "livro") {
+export function writePublicacao(
+  data: Publicacao,
+  categoria: Categoria = "livro",
+  opts?: { silently?: boolean }
+) {
+  if (typeof window === "undefined") return;
   window.localStorage.setItem(keyFor(categoria), JSON.stringify(data));
-  window.dispatchEvent(new Event("esj-publicacao"));
+  if (!opts?.silently) {
+    window.dispatchEvent(new Event("esj-publicacao"));
+  }
 }
 
-export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Publicacao> {
-  const supabase = getSupabase();
-  if (supabase) {
-    const comDestaque = await supabase
-      .from("publicacoes")
-      .select("title, subtitle, authors, date_label, venue, image, tipo, destaque")
-      .eq("categoria", categoria)
-      .order("destaque", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const { data } = comDestaque.error
-      ? await supabase
-          .from("publicacoes")
-          .select("title, subtitle, authors, date_label, venue, image, tipo")
-          .eq("categoria", categoria)
-          .order("created_at", { ascending: false })
-          .limit(1)
-      : comDestaque;
-    const row = data?.[0];
-    if (row?.image) {
-      return {
-        image: row.image,
-        title: row.title,
-        subtitle: row.subtitle,
-        authors: row.authors,
-        date: row.date_label,
-        venue: row.venue,
-        tipo: categoria === "evento" ? "cartaz" : "livro",
-      };
+async function clientePublico() {
+  if (typeof window !== "undefined") {
+    try {
+      const { createBrowserSupabase } = await import("@/lib/supabase/browser");
+      return createBrowserSupabase();
+    } catch {
+      return getSupabase();
     }
+  }
+  return getSupabase();
+}
+
+/** Lê do Supabase o item fixado (painel); actualiza o cache local. */
+export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Publicacao> {
+  try {
+    const supabase = await clientePublico();
+    if (!supabase) return readPublicacao(categoria);
+
+    const campos = "title, subtitle, authors, date_label, venue, image, tipo";
+
+    const fixado = await supabase
+      .from("publicacoes")
+      .select(campos)
+      .eq("categoria", categoria)
+      .eq("destaque", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let row = !fixado.error && fixado.data?.image ? fixado.data : null;
+
+    if (!row) {
+      const recente = await supabase
+        .from("publicacoes")
+        .select(campos)
+        .eq("categoria", categoria)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!recente.error && recente.data?.image) row = recente.data;
+    }
+
+    if (row?.image) {
+      const pub = deLinha(row, categoria);
+      writePublicacao(pub, categoria, { silently: true });
+      return pub;
+    }
+  } catch {
+    /* fallback abaixo */
   }
   return readPublicacao(categoria);
 }
