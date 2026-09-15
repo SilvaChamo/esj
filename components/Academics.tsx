@@ -74,15 +74,33 @@ const CURSOS: { titulo: string; texto: string; icon: LucideIcon; nivel: NivelCur
     nivel: "licenciatura",
   },
   {
+    titulo: "Pós-Graduação",
+    texto: "Percursos de especialização e investigação avançada em Ciências da Comunicação.",
+    icon: GraduationCap,
+    nivel: "licenciatura",
+  },
+  {
     titulo: "Serviços Sociais",
     texto: "Apoio à vida académica dos estudantes: alojamento, alimentação, saúde e apoio social.",
     icon: HeartHandshake,
     nivel: "licenciatura",
   },
   {
-    titulo: "Pós-Graduação em Ciências da Comunicação",
-    texto: "Percursos de especialização e investigação avançada em Ciências da Comunicação.",
-    icon: GraduationCap,
+    titulo: "Pós-Graduação em Jornalismo de Investigação",
+    texto: "Apuração avançada, verificação de factos e jornalismo de dados.",
+    icon: Newspaper,
+    nivel: "pos-graduacao",
+  },
+  {
+    titulo: "Pós-Graduação em Comunicação Estratégica e Marketing",
+    texto: "Planeamento de marca, comunicação corporativa e gestão de campanhas.",
+    icon: Megaphone,
+    nivel: "pos-graduacao",
+  },
+  {
+    titulo: "Pós-Graduação em Gestão da Informação e Documentação",
+    texto: "Arquivística, bibliotecas digitais e políticas de informação.",
+    icon: BookOpen,
     nivel: "pos-graduacao",
   },
 ];
@@ -381,10 +399,10 @@ export default function Academics() {
                     key={n.id}
                     type="button"
                     onClick={() => setNivelCurso(n.id)}
-                    className={`relative px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+                    className={`px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
                       nivelCurso === n.id
-                        ? "z-10 -mt-px bg-white text-crimson border-b border-l border-r border-navy-100"
-                        : "bg-cream text-navy-900/45 hover:text-navy-900/70"
+                        ? "text-crimson"
+                        : "text-navy-900/45 hover:text-navy-900/70"
                     }`}
                   >
                     {n.label.toUpperCase()}
