@@ -189,13 +189,13 @@ export default function Academics() {
   return (
     <section id="ensino" className="relative bg-white">
       {tab === "cursos" && (
-        <div className="hidden lg:flex fixed right-0 top-1/2 z-20 -translate-y-1/2 flex-col">
+        <div className="hidden lg:flex absolute left-0 top-1/2 z-20 -translate-y-1/2 flex-col">
           {NIVEIS_CURSO.map((n) => (
             <button
               key={n.id}
               type="button"
               onClick={() => setNivelCurso(n.id)}
-              className={`px-2.5 py-4 text-xs font-bold tracking-wide transition-colors [writing-mode:vertical-rl] ${
+              className={`px-2.5 py-4 text-xs font-bold tracking-wide transition-colors [writing-mode:vertical-rl] rotate-180 ${
                 nivelCurso === n.id
                   ? "bg-navy-800 text-white"
                   : "bg-white text-navy-800 border border-navy-100 hover:border-sky"

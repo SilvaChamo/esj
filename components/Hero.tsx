@@ -124,17 +124,17 @@ export default function Hero() {
             </p>
           </div>
 
-          <div className="mt-8 flex items-center justify-between gap-4 w-full">
-            <div className="flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+            <div className="flex gap-2 sm:gap-3">
               <a
                 href="#ensino"
-                className="bg-sky hover:bg-crimson transition-colors text-white font-semibold text-xs tracking-wide px-5 py-3 flex items-center gap-2"
+                className="bg-sky hover:bg-crimson transition-colors text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
               >
                 LICENCIATURA <ChevronRight size={14} />
               </a>
               <a
                 href="#ensino"
-                className="bg-crimson hover:bg-crimson/90 transition-colors text-white font-semibold text-xs tracking-wide px-5 py-3 flex items-center gap-2"
+                className="bg-crimson hover:bg-crimson/90 transition-colors text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
               >
                 PÓS-GRADUAÇÃO <ChevronRight size={14} />
               </a>
