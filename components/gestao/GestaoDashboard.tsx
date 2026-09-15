@@ -238,7 +238,7 @@ export default function GestaoDashboard() {
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-navy-900 border-b border-white/10 z-[80] flex items-center justify-between px-4">
         <span className="flex items-center gap-2.5 overflow-hidden">
           <Image
-            src="/esj-logo-mark.png"
+            src="/esj-logo-mark.webp"
             alt="ESJ"
             width={32}
             height={32}
@@ -273,7 +273,7 @@ export default function GestaoDashboard() {
           }`}
         >
           <Image
-            src="/esj-logo-mark.png"
+            src="/esj-logo-mark.webp"
             alt="ESJ"
             width={40}
             height={40}

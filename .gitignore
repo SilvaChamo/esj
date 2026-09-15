@@ -8,7 +8,6 @@ out
 npm-debug.log*
 supabase/.temp
 .open-next
-.wrangler
 .dev.vars
 tsconfig.tsbuildinfo
 modern-company-time-line-template

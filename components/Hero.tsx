@@ -7,7 +7,7 @@ import { AUTOPLAY_MS, useSlideProgress } from "@/components/SlideProgressContext
 
 const slides = [
   {
-    image: "/Graduacao-ESJ-III.jpg",
+    image: "/Graduacao-ESJ-III.webp",
     position: "object-[40%_40%]",
     eyebrow: "INSTITUIÇÃO PÚBLICA DESDE 2008",
     titleLine1: "Formando Profissionais",
@@ -16,7 +16,7 @@ const slides = [
     text: "A ESJ forma profissionais críticos, éticos e competentes nas Ciências da Comunicação e da Informação, ao serviço de Moçambique.",
   },
   {
-    image: "/JornalistaII.jpg",
+    image: "/JornalistaII.webp",
     position: "object-center",
     eyebrow: "ENSINO SUPERIOR PÚBLICO",
     titleLine1: "Da Sala de Aula",
@@ -25,7 +25,7 @@ const slides = [
     text: "Estúdios de televisão e laboratórios de rádio numa redação com aprendizagem verdadeiramente alinhada à prática do jornalismo contemporâneo.",
   },
   {
-    image: "/grupo-do-campo.jpg",
+    image: "/grupo-do-campo.webp",
     position: "object-[50%_40%]",
     eyebrow: "ATENTA ÀS MUDANÇAS",
     titleLine1: "Extensão e Inovação",

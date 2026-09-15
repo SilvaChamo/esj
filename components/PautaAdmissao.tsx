@@ -46,7 +46,7 @@ export default function PautaAdmissao({
     <article className="bg-white border border-navy-100 print:border-0">
       <header className="border-b border-navy-100 px-5 sm:px-8 py-5 flex items-center gap-4">
         <img
-          src="/esj-logo-mark.png"
+          src="/esj-logo-mark.webp"
           alt="Escola Superior de Jornalismo"
           className="h-16 w-16 object-contain rounded-sm shrink-0"
         />

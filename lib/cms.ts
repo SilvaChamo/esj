@@ -160,7 +160,7 @@ export async function guardarNoticia(input: {
   estado: EstadoNoticia;
 }) {
   const supabase = createBrowserSupabase();
-  const image = input.image || "/studentes.jpg";
+  const image = input.image || "/studentes.webp";
   const html = sanitizarHtmlNoticia(input.body);
   const paragraphs = htmlParaParagrafos(html);
   const body = paragraphs.length ? paragraphs : [input.excerpt || input.title];

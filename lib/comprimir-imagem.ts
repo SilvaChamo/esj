@@ -1,6 +1,6 @@
 const ALVO_BYTES = 50 * 1024;
 const LADO_INICIAL = 1600;
-const LADO_MINIMO = 720;
+const LADO_MINIMO = 480;
 const QUALIDADE_MAX = 0.88;
 const QUALIDADE_MIN = 0.62;
 
@@ -45,8 +45,10 @@ function canvasParaBlob(canvas: HTMLCanvasElement, tipo: string, qualidade: numb
 
 async function escolherFormato(canvas: HTMLCanvasElement) {
   const webp = await canvasParaBlob(canvas, "image/webp", QUALIDADE_MAX);
-  if (webp.type === "image/webp") return { tipo: "image/webp" as const, ext: "webp" };
-  return { tipo: "image/jpeg" as const, ext: "jpg" };
+  if (webp.type !== "image/webp") {
+    throw new Error("O navegador não suporta conversão para WebP.");
+  }
+  return { tipo: "image/webp" as const, ext: "webp" };
 }
 
 function medidas(img: HTMLImageElement, lado: number) {
@@ -88,14 +90,13 @@ function nomeFicheiro(original: string, ext: string) {
 
 export async function comprimirImagemUpload(file: File, maxBytes = ALVO_BYTES): Promise<File> {
   if (typeof window === "undefined" || !eImagem(file)) return file;
-  if (file.size <= maxBytes) return file;
 
   try {
     const img = await lerImagem(file);
     let lado = Math.min(LADO_INICIAL, Math.max(img.naturalWidth, img.naturalHeight));
     let melhor: Blob | null = null;
-    let ext = "jpg";
-    let tipo: "image/webp" | "image/jpeg" = "image/jpeg";
+    let ext = "webp";
+    let tipo: "image/webp" = "image/webp";
 
     while (lado >= LADO_MINIMO) {
       const { largura, altura } = medidas(img, lado);
@@ -109,7 +110,9 @@ export async function comprimirImagemUpload(file: File, maxBytes = ALVO_BYTES): 
       lado = Math.round(lado * 0.82);
     }
 
-    if (!melhor || melhor.size >= file.size) return file;
+    if (!melhor || melhor.size > maxBytes) {
+      throw new Error("Não foi possível manter a imagem abaixo de 50 KB.");
+    }
     return new File([melhor], nomeFicheiro(file.name, ext), { type: tipo, lastModified: Date.now() });
   } catch {
     return file;

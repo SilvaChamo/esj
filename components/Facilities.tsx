@@ -4,28 +4,28 @@ import { ChevronRight } from "lucide-react";
 
 const facilities = [
   {
-    image: "/televisao.jpeg",
+    image: "/televisao.webp",
     position: "object-[68%_center]",
     icon: Tv,
     title: "Estúdio de Televisão",
     text: "Prática jornalística em ambiente real de televisão.",
   },
   {
-    image: "/Curso-Publicidade-e-Marketing-ESJ.jpg",
+    image: "/Curso-Publicidade-e-Marketing-ESJ.webp",
     position: "object-center",
     icon: Megaphone,
     title: "Laboratório de Marketing Digital",
     text: "Ferramentas de publicidade e redes sociais.",
   },
   {
-    image: "/ESJ-background.jpg",
+    image: "/ESJ-background.webp",
     position: "object-center",
     icon: BookOpen,
     title: "Biblioteca",
     text: "Acervo de referência em Ciências da Comunicação.",
   },
   {
-    image: "/Graduacao-ESJ.jpg",
+    image: "/Graduacao-ESJ.webp",
     position: "object-[48%_22%]",
     icon: Landmark,
     title: "Auditório",

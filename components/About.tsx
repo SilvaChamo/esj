@@ -10,7 +10,7 @@ export default function About() {
           <div className="relative">
             <div className="relative h-[420px] rounded-sm overflow-hidden">
               <FotoACarregar
-                src="/Graduacao-ESJ.jpg"
+                src="/Graduacao-ESJ.webp"
                 alt="Estudantes finalistas da ESJ na cerimónia de graduação"
                 fill
                 sizes="(min-width: 768px) 50vw, 100vw"

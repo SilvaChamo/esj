@@ -2,11 +2,11 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 
 const photos = [
-  { src: "/Graduacao-ESJ.jpg", position: "object-[50%_30%]", caption: "Cerimónia de Graduação" },
-  { src: "/curso-jornalismo-ESJ.jpg", position: "object-center", caption: "Prática em Jornalismo" },
-  { src: "/Graduacao-ESJ.jpg", position: "object-[70%_50%]", caption: "Semana da Comunicação" },
-  { src: "/ESJ-background.jpg", position: "object-center", caption: "Investigação & Biblioteca" },
-  { src: "/Curso-Publicidade-e-Marketing-ESJ.jpg", position: "object-center", caption: "ESJ TV & Marketing" },
+  { src: "/Graduacao-ESJ.webp", position: "object-[50%_30%]", caption: "Cerimónia de Graduação" },
+  { src: "/curso-jornalismo-ESJ.webp", position: "object-center", caption: "Prática em Jornalismo" },
+  { src: "/Graduacao-ESJ.webp", position: "object-[70%_50%]", caption: "Semana da Comunicação" },
+  { src: "/ESJ-background.webp", position: "object-center", caption: "Investigação & Biblioteca" },
+  { src: "/Curso-Publicidade-e-Marketing-ESJ.webp", position: "object-center", caption: "ESJ TV & Marketing" },
 ];
 
 export default function StudentLife() {

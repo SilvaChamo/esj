@@ -86,7 +86,7 @@ export default function ContactBand() {
               className="relative z-0 overflow-hidden flex flex-col justify-center border border-white p-8 sm:p-10 w-full md:translate-y-5"
             >
               <Image
-                src="/JornalistaII.jpg"
+                src="/JornalistaII.webp"
                 alt=""
                 fill
                 sizes="(max-width: 1280px) 100vw, 1280px"

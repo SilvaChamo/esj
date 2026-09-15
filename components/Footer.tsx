@@ -25,7 +25,7 @@ export default function Footer() {
         <div>
           <Link href="/" className="inline-block mb-5">
             <Image
-              src="/esj-logo.png"
+              src="/esj-logo.webp"
               alt="Escola Superior de Jornalismo"
               width={160}
               height={160}

@@ -22,16 +22,16 @@ export type LivroThumb = {
 };
 
 export const LIVROS_ANTERIORES: LivroThumb[] = [
-  { image: "/livro-infovula.jpg", title: "Infovula" },
-  { image: "/livro-noivas.jpg", title: "As Noivas do Homem Maduro" },
+  { image: "/livro-infovula.webp", title: "Infovula" },
+  { image: "/livro-noivas.webp", title: "As Noivas do Homem Maduro" },
   {
-    image: "/livro-experiencias.jpg",
+    image: "/livro-experiencias.webp",
     title: "Conhecimento que conecta",
   },
 ];
 
 export const DEFAULT_PUBLICACAO: Publicacao = {
-  image: "/livro-infovula.jpg",
+  image: "/livro-infovula.webp",
   title: "Infovula",
   subtitle: "Do pauperismo semântico à qualidade da informação da televisão em Moçambique",
   authors: "Sérgio Langa\nJoana Machuza",
@@ -41,7 +41,7 @@ export const DEFAULT_PUBLICACAO: Publicacao = {
 };
 
 export const DEFAULT_EVENTO: Publicacao = {
-  image: "/Sala de conferencias.jpg",
+  image: "/Sala de conferencias.webp",
   title: "Agenda de eventos da ESJ",
   subtitle: "Conferências, colóquios e a Semana da Comunicação e Informação",
   authors: "",

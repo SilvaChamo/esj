@@ -116,7 +116,7 @@ export default function EntrarPage() {
         <div className="w-full max-w-sm min-w-0 bg-white border border-navy-100 p-5 sm:p-8 md:p-10">
           <Link href="/" className="block mx-auto w-fit">
             <Image
-              src="/esj-logo-mark.png"
+              src="/esj-logo-mark.webp"
               alt="ESJ"
               width={64}
               height={64}
