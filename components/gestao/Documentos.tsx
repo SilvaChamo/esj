@@ -70,21 +70,19 @@ function WordLeitura({ url }: { url: string }) {
     };
   }, [url]);
 
-  if (!html) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-[#e8e8e8]">
-        <p className="text-sm text-[#50575e]">{status}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="absolute inset-0 overflow-auto bg-[#e8e8e8] py-8 px-4">
+    <div className="absolute inset-0 overflow-auto bg-[#d9d9d9] py-8 px-6">
       <div
         id="documento-pagina"
-        className="mx-auto bg-white shadow-[0_1px_6px_rgba(0,0,0,0.15)] w-full max-w-[794px] min-h-[1123px] px-[2.5cm] py-[2.5cm] text-[15px] text-[#1d2327] leading-[1.6] [&_p]:mb-3 [&_h1]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-bold [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#ccd0d4] [&_td]:p-2 [&_th]:border [&_th]:border-[#ccd0d4] [&_th]:p-2 [&_img]:max-w-full"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+        className="mx-auto bg-white text-[#1d2327] shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm] text-[12pt] leading-[1.15] font-serif [&_p]:mb-[10pt] [&_h1]:mb-4 [&_h1]:text-[16pt] [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-[14pt] [&_h2]:font-bold [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#000] [&_td]:p-1.5 [&_th]:border [&_th]:border-[#000] [&_th]:p-1.5 [&_img]:max-w-full"
+        style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
+      >
+        {html ? (
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        ) : (
+          <p className="text-sm text-[#50575e]">{status}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -351,10 +349,15 @@ export default function Documentos() {
                 </button>
               </div>
             </div>
-            <div className="relative flex-1 min-h-0 bg-[#e8e8e8]">
+            <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
               {tipoDocumento(ler) === "imagem" ? (
-                <div className="absolute inset-0 overflow-auto p-4 flex items-start justify-center">
-                  <img src={ler.url} alt="" className="max-w-full h-auto bg-white shadow" />
+                <div className="absolute inset-0 overflow-auto py-8 px-6">
+                  <div
+                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm] flex justify-center"
+                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
+                  >
+                    <img src={ler.url} alt="" className="max-w-full h-auto" />
+                  </div>
                 </div>
               ) : tipoDocumento(ler) === "pdf" ? (
                 <iframe src={ler.url} title={ler.name} className="absolute inset-0 w-full h-full bg-white" />
@@ -367,8 +370,13 @@ export default function Documentos() {
                   className="absolute inset-0 w-full h-full bg-white"
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                  <p className="text-sm text-[#50575e]">Este ficheiro não tem pré-visualização neste ecrã.</p>
+                <div className="absolute inset-0 overflow-auto py-8 px-6">
+                  <div
+                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full max-w-[21cm] min-h-[29.7cm]"
+                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 3.17cm" }}
+                  >
+                    <p className="text-sm text-[#50575e]">Este ficheiro não tem pré-visualização neste ecrã.</p>
+                  </div>
                 </div>
               )}
             </div>

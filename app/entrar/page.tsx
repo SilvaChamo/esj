@@ -201,31 +201,17 @@ export default function EntrarPage() {
           )}
 
           <div className="mt-5 space-y-2 text-center text-sm">
-            {recuperar ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setRecuperar(false);
-                  setError("");
-                  setInfo("");
-                }}
-                className="block w-full text-sky hover:underline"
-              >
-                Voltar ao início de sessão
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setRecuperar(true);
-                  setError("");
-                  setInfo("");
-                }}
-                className="block w-full text-sky hover:underline"
-              >
-                Recuperar senha
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setRecuperar((v) => !v);
+                setError("");
+                setInfo("");
+              }}
+              className="block w-full text-sky hover:underline"
+            >
+              Recuperar senha
+            </button>
             <Link href="/" className="block w-full text-navy-900/70 hover:text-sky hover:underline">
               Voltar à Home
             </Link>
