@@ -16,6 +16,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { filtroQuery } from "@/lib/admissao";
 import {
   CALENDARIO_EVENT,
   DEFAULT_CALENDARIO,
@@ -42,6 +43,11 @@ const SECTION_TABS: { id: SectionTab; label: string }[] = [
 ];
 
 type NivelCurso = "licenciatura" | "pos-graduacao";
+
+const NIVEL_ADMISSAO: Record<NivelCurso, "Licenciatura" | "Pós-Graduação"> = {
+  licenciatura: "Licenciatura",
+  "pos-graduacao": "Pós-Graduação",
+};
 
 const NIVEIS_CURSO: { id: NivelCurso; label: string }[] = [
   { id: "licenciatura", label: "Licenciatura" },
@@ -382,7 +388,7 @@ export default function Academics() {
 
         {tab === "cursos" && (
           <div>
-            <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-5">
               <div>
                 <p className="text-sky font-bold tracking-widest text-sm mb-3">ÁREAS DE FORMAÇÃO</p>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
@@ -393,16 +399,16 @@ export default function Academics() {
                   percursos de pós-graduação em Ciências da Comunicação.
                 </p>
               </div>
-              <div className="flex flex-wrap shrink-0 border-t border-navy-100">
+              <div className="flex gap-2 shrink-0">
                 {NIVEIS_CURSO.map((n) => (
                   <button
                     key={n.id}
                     type="button"
                     onClick={() => setNivelCurso(n.id)}
-                    className={`px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+                    className={`px-4 py-2.5 text-xs font-bold tracking-wide transition-colors ${
                       nivelCurso === n.id
-                        ? "text-crimson"
-                        : "text-navy-900/45 hover:text-navy-900/70"
+                        ? "bg-navy-800 text-white"
+                        : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
                     }`}
                   >
                     {n.label.toUpperCase()}
@@ -423,7 +429,7 @@ export default function Academics() {
             </div>
             <div className="mt-10">
               <Link
-                href="/inscricao"
+                href={`/inscricao?${filtroQuery({ nivel: NIVEL_ADMISSAO[nivelCurso], regime: "Diurno" })}`}
                 className="inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
               >
                 CANDIDATAR-SE
