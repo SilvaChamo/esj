@@ -82,9 +82,15 @@ export default function ContactBand() {
               onSubmit={sendMessage}
               className="relative z-10 border border-white bg-[#1a5a78]/35 px-5 py-8 sm:px-10 sm:py-10 w-full md:flex-1"
             >
-              <h2 className="font-serif text-3xl md:text-[2.05rem] font-bold text-white mb-7">
-                Fale <span className="text-navy-900">connosco</span>
+              <p className="text-sky-300 font-bold tracking-widest text-sm mb-3">CONTACTO</p>
+              <h2 className="font-serif text-3xl md:text-[2.05rem] font-bold text-white">
+                Fale <span className="text-sky-300">connosco</span>
               </h2>
+              <p className="mt-4 mb-7 text-white/85 leading-relaxed">
+                A Escola Superior de Jornalismo está disponível para esclarecer dúvidas sobre
+                admissões, cursos e parcerias. Contacte a Secretaria Académica pelos meios ao
+                lado ou preencha o formulário abaixo e responderemos o mais breve possível.
+              </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 <input
                   name="nome"

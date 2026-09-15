@@ -51,12 +51,10 @@ export async function publishPublicacao(
 ) {
   const supabase = createBrowserSupabase();
   const image = file ? await uploadMedia(file, "publicacoes") : data.image;
-  const unset = await supabase
-    .from("publicacoes")
-    .update({ destaque: false })
-    .eq("destaque", true)
-    .eq("categoria", categoria);
-  if (unset.error) throw unset.error;
+  // Apaga sempre o(s) cartaz(es) anterior(es) desta categoria antes de
+  // gravar o novo — não fica histórico, só o cartaz actual.
+  const del = await supabase.from("publicacoes").delete().eq("categoria", categoria);
+  if (del.error) throw del.error;
   const { error } = await supabase.from("publicacoes").insert({
     title: data.title,
     subtitle: data.subtitle,
@@ -68,6 +66,12 @@ export async function publishPublicacao(
     categoria,
     destaque: true,
   });
+  if (error) throw error;
+}
+
+export async function deletePublicacaoAtual(categoria: Categoria) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("publicacoes").delete().eq("categoria", categoria);
   if (error) throw error;
 }
 

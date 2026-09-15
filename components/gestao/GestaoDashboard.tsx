@@ -58,6 +58,7 @@ import {
   publishCalendario,
   publishEdital,
   publishNoticia,
+  deletePublicacaoAtual,
   publishPublicacao,
   publishVideo,
   statsAnoLectivo,
@@ -650,6 +651,7 @@ function Publicacoes({
   const [data, setData] = useState<Publicacao>(DEFAULT_PUBLICACAO);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [apagando, setApagando] = useState(false);
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
@@ -682,6 +684,25 @@ function Publicacoes({
       onAction(cmsError(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const apagar = async () => {
+    if (!window.confirm("Apagar o cartaz actual? A página volta a mostrar o cartaz por omissão.")) {
+      return;
+    }
+    setApagando(true);
+    try {
+      await deletePublicacaoAtual(categoria);
+      const fallback = categoria === "livro" ? DEFAULT_PUBLICACAO : DEFAULT_EVENTO;
+      setData(fallback);
+      setFile(null);
+      onAction("O cartaz actual foi apagado.");
+    } catch (error) {
+      if (isMissingTable(error)) setMissing(true);
+      onAction(cmsError(error));
+    } finally {
+      setApagando(false);
     }
   };
 
@@ -813,14 +834,24 @@ function Publicacoes({
             onChange={(e) => setData({ ...data, venue: e.target.value })}
           />
         </label>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={publish}
-          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-        >
-          {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={publish}
+            className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          >
+            {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
+          </button>
+          <button
+            type="button"
+            disabled={apagando}
+            onClick={() => void apagar()}
+            className="bg-white hover:border-crimson hover:text-crimson disabled:opacity-60 border border-navy-100 text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+          >
+            {apagando ? "A APAGAR…" : "APAGAR CARTAZ ACTUAL"}
+          </button>
+        </div>
       </div>
     </div>
   );
