@@ -1,3 +1,4 @@
+import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 function protocolNumber() {
@@ -15,13 +16,14 @@ export async function submitInscricao(
 
   for (const [id, file] of Object.entries(files)) {
     if (!file) continue;
+    const comprimido = await comprimirImagemUpload(file);
     const ext =
-      (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") ||
+      (comprimido.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") ||
       "bin";
     const path = `${protocolo}/${id}.${ext}`;
-    const { error } = await supabase.storage.from("inscricoes").upload(path, file, {
+    const { error } = await supabase.storage.from("inscricoes").upload(path, comprimido, {
       upsert: false,
-      contentType: file.type || undefined,
+      contentType: comprimido.type || undefined,
     });
     if (error) throw error;
     documentos[id] = path;

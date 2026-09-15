@@ -64,15 +64,11 @@ export function readPublicacao(categoria: Categoria = "livro"): Publicacao {
   try {
     const raw = window.localStorage.getItem(keyFor(categoria));
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Partial<Publicacao> & { meta?: string };
+    const parsed = JSON.parse(raw) as Partial<Publicacao>;
     return {
       ...fallback,
       ...parsed,
-      authors: parsed.authors?.includes("-PHD") || parsed.authors?.includes("Jeremias")
-        ? fallback.authors
-        : parsed.authors ?? fallback.authors,
-      date: parsed.date ?? fallback.date,
-      venue: parsed.venue ?? fallback.venue,
+      image: parsed.image || fallback.image,
       tipo: categoria === "evento" ? "cartaz" : "livro",
     };
   } catch {
@@ -91,17 +87,18 @@ export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Pu
     const { data } = await supabase
       .from("publicacoes")
       .select("title, subtitle, authors, date_label, venue, image, tipo")
-      .eq("destaque", true)
       .eq("categoria", categoria)
-      .maybeSingle();
-    if (data) {
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const row = data?.[0];
+    if (row?.image) {
       return {
-        image: data.image,
-        title: data.title,
-        subtitle: data.subtitle,
-        authors: data.authors,
-        date: data.date_label,
-        venue: data.venue,
+        image: row.image,
+        title: row.title,
+        subtitle: row.subtitle,
+        authors: row.authors,
+        date: row.date_label,
+        venue: row.venue,
         tipo: categoria === "evento" ? "cartaz" : "livro",
       };
     }

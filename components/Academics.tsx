@@ -24,13 +24,9 @@ import {
   type Calendario,
 } from "@/lib/calendario";
 import {
-  DEFAULT_EVENTO,
-  DEFAULT_PUBLICACAO,
-  LIVROS_ANTERIORES,
-  loadLivros,
   loadPublicacao,
+  readPublicacao,
   type Categoria,
-  type LivroThumb,
   type Publicacao,
 } from "@/lib/publicacao";
 
@@ -116,17 +112,15 @@ export default function Academics() {
   const [nivelCurso, setNivelCurso] = useState<NivelCurso>("licenciatura");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<Categoria>("livro");
-  const [livroBook, setLivroBook] = useState<Publicacao>(DEFAULT_PUBLICACAO);
-  const [eventoBook, setEventoBook] = useState<Publicacao>(DEFAULT_EVENTO);
-  const [livros, setLivros] = useState<LivroThumb[]>(LIVROS_ANTERIORES);
-  const [viewer, setViewer] = useState<LivroThumb | null>(null);
+  const [livroBook, setLivroBook] = useState<Publicacao>(() => readPublicacao("livro"));
+  const [eventoBook, setEventoBook] = useState<Publicacao>(() => readPublicacao("evento"));
+  const [viewer, setViewer] = useState<Publicacao | null>(null);
   const [cal, setCal] = useState<Calendario>(DEFAULT_CALENDARIO);
 
   useEffect(() => {
     const load = () => {
       loadPublicacao("livro").then(setLivroBook);
       loadPublicacao("evento").then(setEventoBook);
-      loadLivros().then(setLivros);
       loadCalendario().then(setCal);
     };
     load();
@@ -153,13 +147,10 @@ export default function Academics() {
     };
   }, [open]);
 
-  const show = (item: LivroThumb) => {
+  const show = (item: Publicacao) => {
     setViewer(item);
     setOpen(true);
   };
-
-  const book = active === "livro" ? livroBook : eventoBook;
-  const isLivro = active === "livro";
 
   const DATAS: {
     titulo: string;
@@ -228,7 +219,7 @@ export default function Academics() {
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <div className="py-16 md:py-20">
         {tab === "ensino" && (
-          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-12 lg:gap-16 items-start">
+          <div className="grid lg:grid-cols-[1fr_1.08fr] gap-12 lg:gap-16 items-start">
             <div>
               <p className="text-sky font-bold tracking-widest text-sm mb-3">ENSINO E HISTÓRIA</p>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
@@ -276,47 +267,41 @@ export default function Academics() {
               </div>
             </div>
 
-            <div
-              className={`relative w-full overflow-hidden bg-cream border border-navy-100 flex flex-col ${
-                active === "evento" ? "aspect-[210/297]" : "aspect-square"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => show({ image: book.image, title: book.title })}
-                className={`relative min-h-0 ${isLivro ? "flex-1" : "h-full"}`}
-                aria-label={`Ver cartaz de ${book.title}`}
-              >
-                <img
-                  src={book.image}
-                  alt={book.title}
-                  className={
-                    isLivro
-                      ? "absolute inset-0 w-full h-full object-contain p-2 pb-1"
-                      : "absolute inset-0 w-full h-full object-cover"
-                  }
-                />
-              </button>
-
-              {isLivro && (
-                <div className="grid grid-cols-3 gap-1 px-1.5 pb-1.5 flex-[0_0_27%]">
-                  {livros.map((liv) => (
-                    <button
-                      key={liv.image}
-                      type="button"
-                      onClick={() => show(liv)}
-                      className="relative h-full overflow-hidden border border-navy-100 bg-white hover:border-crimson transition-colors"
-                      aria-label={`Ver ${liv.title}`}
-                    >
-                      <img
-                        src={liv.image}
-                        alt={liv.title}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+            <div>
+              <div className={active === "livro" ? "relative" : "hidden"}>
+                <div className="relative w-full overflow-hidden bg-cream border border-navy-100 aspect-square">
+                  <button
+                    type="button"
+                    onClick={() => show(livroBook)}
+                    className="absolute inset-0"
+                    aria-label="Ver lançamento do livro"
+                  >
+                    <img
+                      key={`livro-${livroBook.image}`}
+                      src={livroBook.image}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-contain p-2"
+                    />
+                  </button>
                 </div>
-              )}
+              </div>
+              <div className={active === "evento" ? "relative" : "hidden"}>
+                <div className="relative w-full overflow-hidden bg-cream border border-navy-100 aspect-[210/297]">
+                  <button
+                    type="button"
+                    onClick={() => show(eventoBook)}
+                    className="absolute inset-0"
+                    aria-label="Ver cartaz de eventos"
+                  >
+                    <img
+                      key={`evento-${eventoBook.image}`}
+                      src={eventoBook.image}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -464,7 +449,7 @@ export default function Academics() {
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label={viewer.title}
+          aria-label="Imagem"
         >
           <button
             type="button"
@@ -477,7 +462,7 @@ export default function Academics() {
           <div className="relative max-h-[90vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
             <img
               src={viewer.image}
-              alt={viewer.title}
+              alt=""
               className="max-h-[90vh] max-w-[92vw] w-auto h-auto object-contain shadow-2xl"
             />
           </div>

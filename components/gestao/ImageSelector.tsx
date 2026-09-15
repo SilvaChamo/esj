@@ -170,7 +170,7 @@ export default function ImageSelector({ onSelect, onClose, initialTab = "upload"
 
       <div className="p-4 border-t border-[#ccd0d4] bg-[#f6f7f7] flex justify-between items-center shrink-0">
         <div className="text-xs text-[#50575e]">
-          {tab === "upload" ? "A foto carregada fica também guardada na Galeria." : "Escolha uma foto já usada no sítio."}
+          {tab === "upload" ? "A foto é comprimida automaticamente (~50 KB) e fica também na Galeria." : "Escolha uma foto já usada no sítio."}
         </div>
         <button type="button" onClick={onClose} className="px-6 py-2 bg-white border border-[#ccd0d4] text-[#50575e] text-[13px] font-bold rounded-[4px] hover:bg-[#f0f0f1] transition-all">
           Fechar

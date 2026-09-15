@@ -1,5 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
+import { comprimirBlobImagem, comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
 export function slugify(text: string) {
@@ -32,12 +33,13 @@ export function isMissingTable(error: unknown) {
 
 export async function uploadMedia(file: File, folder: string) {
   const supabase = createBrowserSupabase();
+  const comprimido = await comprimirImagemUpload(file);
   const ext =
-    (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
+    (comprimido.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from("media").upload(path, file, {
+  const { error } = await supabase.storage.from("media").upload(path, comprimido, {
     upsert: false,
-    contentType: file.type || undefined,
+    contentType: comprimido.type || undefined,
   });
   if (error) throw error;
   const { data } = supabase.storage.from("media").getPublicUrl(path);
@@ -51,22 +53,30 @@ export async function publishPublicacao(
 ) {
   const supabase = createBrowserSupabase();
   const image = file ? await uploadMedia(file, "publicacoes") : data.image;
-  // Apaga sempre o(s) cartaz(es) anterior(es) desta categoria antes de
-  // gravar o novo — não fica histórico, só o cartaz actual.
-  const del = await supabase.from("publicacoes").delete().eq("categoria", categoria);
-  if (del.error) throw del.error;
-  const { error } = await supabase.from("publicacoes").insert({
+  const row = {
     title: data.title,
     subtitle: data.subtitle,
     authors: data.authors,
     date_label: data.date,
     venue: data.venue,
     image,
-    tipo: data.tipo,
+    tipo: categoria === "evento" ? "cartaz" : "livro",
     categoria,
     destaque: true,
-  });
-  if (error) throw error;
+  };
+
+  // Apaga todos os cartazes desta categoria — e, no evento, também os
+  // "cartaz" antigos que ficaram gravados como livro.
+  const delCat = await supabase.from("publicacoes").delete().eq("categoria", categoria);
+  if (delCat.error) throw delCat.error;
+  if (categoria === "evento") {
+    const delTipo = await supabase.from("publicacoes").delete().eq("tipo", "cartaz");
+    if (delTipo.error) throw delTipo.error;
+  }
+
+  const ins = await supabase.from("publicacoes").insert(row);
+  if (ins.error) throw ins.error;
+  return image;
 }
 
 export async function deletePublicacaoAtual(categoria: Categoria) {
@@ -346,9 +356,10 @@ function limparNomeFicheiro(nome: string) {
 
 export async function uploadMediaGaleria(file: File) {
   const supabase = createBrowserSupabase();
-  const path = `${GALERIA_FOLDER}/${limparNomeFicheiro(file.name)}`;
-  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, file, {
-    contentType: file.type || undefined,
+  const comprimido = await comprimirImagemUpload(file);
+  const path = `${GALERIA_FOLDER}/${limparNomeFicheiro(comprimido.name)}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, comprimido, {
+    contentType: comprimido.type || undefined,
     upsert: false,
   });
   if (error) throw error;
@@ -356,9 +367,10 @@ export async function uploadMediaGaleria(file: File) {
 
 export async function uploadMediaGaleriaBlob(blob: Blob, filename: string) {
   const supabase = createBrowserSupabase();
-  const path = `${GALERIA_FOLDER}/${filename}`;
-  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, blob, {
-    contentType: blob.type || undefined,
+  const comprimido = await comprimirBlobImagem(blob, filename);
+  const path = `${GALERIA_FOLDER}/${limparNomeFicheiro(comprimido.name)}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, comprimido, {
+    contentType: comprimido.type || undefined,
     upsert: false,
   });
   if (error) throw error;
@@ -402,9 +414,10 @@ export async function listMediaDocumentos(): Promise<MediaFile[]> {
 
 export async function uploadMediaDocumento(file: File) {
   const supabase = createBrowserSupabase();
-  const path = `${DOCUMENTOS_FOLDER}/${limparNomeFicheiro(file.name)}`;
-  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, file, {
-    contentType: file.type || undefined,
+  const comprimido = await comprimirImagemUpload(file);
+  const path = `${DOCUMENTOS_FOLDER}/${limparNomeFicheiro(comprimido.name)}`;
+  const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, comprimido, {
+    contentType: comprimido.type || undefined,
     upsert: false,
   });
   if (error) throw error;

@@ -18,7 +18,7 @@ const facilities = [
     text: "Ferramentas de publicidade e redes sociais.",
   },
   {
-    image: "/ESJ-background.png",
+    image: "/ESJ-background.jpg",
     position: "object-center",
     icon: BookOpen,
     title: "Biblioteca",

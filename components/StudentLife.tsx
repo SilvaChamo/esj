@@ -5,7 +5,7 @@ const photos = [
   { src: "/Graduacao-ESJ.jpg", position: "object-[50%_30%]", caption: "Cerimónia de Graduação" },
   { src: "/curso-jornalismo-ESJ.jpg", position: "object-center", caption: "Prática em Jornalismo" },
   { src: "/Graduacao-ESJ.jpg", position: "object-[70%_50%]", caption: "Semana da Comunicação" },
-  { src: "/ESJ-background.png", position: "object-center", caption: "Investigação & Biblioteca" },
+  { src: "/ESJ-background.jpg", position: "object-center", caption: "Investigação & Biblioteca" },
   { src: "/Curso-Publicidade-e-Marketing-ESJ.jpg", position: "object-center", caption: "ESJ TV & Marketing" },
 ];
 

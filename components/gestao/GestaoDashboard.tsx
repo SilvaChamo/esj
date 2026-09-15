@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
-  Award,
   Bell,
   Book,
   BookOpen,
@@ -37,10 +36,9 @@ import {
   type Calendario,
 } from "@/lib/calendario";
 import {
-  DEFAULT_EVENTO,
-  DEFAULT_PUBLICACAO,
-  LIVROS_ANTERIORES,
   loadPublicacao,
+  readPublicacao,
+  writePublicacao,
   type Categoria,
   type Publicacao,
 } from "@/lib/publicacao";
@@ -58,7 +56,6 @@ import {
   publishCalendario,
   publishEdital,
   publishNoticia,
-  deletePublicacaoAtual,
   publishPublicacao,
   publishVideo,
   statsAnoLectivo,
@@ -100,7 +97,7 @@ const NAV: NavEntry[] = [
     icon: GraduationCap,
     children: [
       { id: "candidaturas", label: "Candidaturas", icon: Users },
-      { id: "resultados", label: "Resultados", icon: Award },
+      { id: "resultados", label: "Pautas", icon: ClipboardList },
       { id: "calendario", label: "Calendário Académico", icon: Calendar },
       { id: "edital", label: "Edital", icon: FileText },
     ],
@@ -113,7 +110,6 @@ const NAV: NavEntry[] = [
       { id: "anuncios", label: "Anúncios", icon: Bell },
       { id: "eventos", label: "Eventos", icon: CalendarDays },
       { id: "livros", label: "Livros", icon: Book },
-      { id: "resultados", label: "Pautas", icon: ClipboardList },
     ],
   },
   {
@@ -412,14 +408,15 @@ export default function GestaoDashboard() {
         </header>
 
         <main className="flex-1 px-4 sm:px-8 py-8">
-          {note && (
-            <p className="mb-5 bg-navy-800 text-white text-sm px-4 py-3">{note}</p>
-          )}
           {needsSchema && <SchemaInstall />}
           {section === "painel" && <Painel onGo={setSection} userEmail={userEmail} />}
           {section === "edital" && <Edital onAction={showNote} />}
-          {section === "livros" && <Publicacoes onAction={showNote} defaultCategoria="livro" />}
-          {section === "eventos" && <Publicacoes onAction={showNote} defaultCategoria="evento" />}
+          {section === "livros" && (
+            <Publicacoes key="livro" onAction={showNote} categoria="livro" />
+          )}
+          {section === "eventos" && (
+            <Publicacoes key="evento" onAction={showNote} categoria="evento" />
+          )}
           {section === "galeria" && <Galeria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
@@ -431,6 +428,15 @@ export default function GestaoDashboard() {
           {section === "subscritores" && <Subscritores />}
         </main>
       </div>
+
+      {note && (
+        <div
+          className="fixed bottom-6 right-6 z-[200] max-w-sm bg-navy-800 text-white text-sm font-semibold px-5 py-4 shadow-lg"
+          role="status"
+        >
+          {note}
+        </div>
+      )}
     </div>
   );
 }
@@ -642,81 +648,63 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
 
 function Publicacoes({
   onAction,
-  defaultCategoria = "livro",
+  categoria,
 }: {
   onAction: (m: string) => void;
-  defaultCategoria?: Categoria;
+  categoria: Categoria;
 }) {
-  const [categoria, setCategoria] = useState<Categoria>(defaultCategoria);
-  const [livro, setLivro] = useState<Publicacao>(DEFAULT_PUBLICACAO);
-  const [evento, setEvento] = useState<Publicacao>(DEFAULT_EVENTO);
-  const [file, setFile] = useState<File | null>(null);
+  const [data, setData] = useState<Publicacao>(() => readPublicacao(categoria));
+  const [selectorAberto, setSelectorAberto] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [apagando, setApagando] = useState(false);
   const [missing, setMissing] = useState(false);
-  const [galeriaAberta, setGaleriaAberta] = useState(false);
-  const [fileKey, setFileKey] = useState(0);
-
-  const data = categoria === "livro" ? livro : evento;
-
-  const guardar = (next: Publicacao | ((prev: Publicacao) => Publicacao)) => {
-    const apply = (prev: Publicacao) => (typeof next === "function" ? next(prev) : next);
-    if (categoria === "livro") setLivro(apply);
-    else setEvento(apply);
-  };
-
-  const irPara = (next: Categoria) => {
-    if (next === categoria) return;
-    setCategoria(next);
-    setFile(null);
-    setFileKey((n) => n + 1);
-  };
+  const [geracao, setGeracao] = useState(0);
+  const editado = useRef(false);
+  const carga = useRef(0);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   useEffect(() => {
-    let cancelado = false;
-    Promise.all([loadPublicacao("livro"), loadPublicacao("evento")]).then(([l, e]) => {
-      if (cancelado) return;
-      setLivro({ ...l, tipo: "livro" });
-      setEvento({ ...e, tipo: "cartaz" });
+    const id = ++carga.current;
+    loadPublicacao(categoria).then((next) => {
+      if (id !== carga.current || editado.current) return;
+      setData({ ...next, tipo: categoria === "evento" ? "cartaz" : "livro" });
     });
-    return () => {
-      cancelado = true;
-    };
-  }, []);
+  }, [categoria]);
 
-  const onFile = (next: File | null) => {
-    if (!next) return;
-    const destino = categoria;
-    setFile(next);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const apply = (prev: Publicacao) => ({ ...prev, image: String(reader.result) });
-      if (destino === "livro") setLivro(apply);
-      else setEvento(apply);
-    };
-    reader.readAsDataURL(next);
-  };
-
-  const onGaleria = (url: string) => {
-    setFile(null);
-    setFileKey((n) => n + 1);
-    guardar((prev) => ({ ...prev, image: url }));
+  const aplicarFoto = (image: string) => {
+    editado.current = true;
+    carga.current += 1;
+    setGeracao((n) => n + 1);
+    setData((prev) => {
+      const next = {
+        ...prev,
+        image,
+        tipo: categoria === "evento" ? ("cartaz" as const) : ("livro" as const),
+      };
+      writePublicacao(next, categoria);
+      dataRef.current = next;
+      return next;
+    });
   };
 
   const publish = async () => {
     setBusy(true);
     try {
       const publicado = {
-        ...data,
+        ...dataRef.current,
         tipo: categoria === "evento" ? ("cartaz" as const) : ("livro" as const),
       };
-      await publishPublicacao(publicado, file, categoria);
-      guardar(publicado);
+      const image = await publishPublicacao(publicado, null, categoria);
+      const gravado = { ...publicado, image };
+      dataRef.current = gravado;
+      setData(gravado);
+      writePublicacao(gravado, categoria);
+      setGeracao((n) => n + 1);
       setMissing(false);
       onAction(
         categoria === "livro"
-          ? "O cartaz do lançamento do livro foi publicado."
-          : "O cartaz de eventos foi publicado."
+          ? "A imagem do livro foi publicada."
+          : "A imagem do evento foi publicada."
       );
     } catch (error) {
       if (isMissingTable(error)) setMissing(true);
@@ -726,171 +714,55 @@ function Publicacoes({
     }
   };
 
-  const apagar = async () => {
-    if (!window.confirm("Apagar o cartaz actual? A página volta a mostrar o cartaz por omissão.")) {
-      return;
-    }
-    setApagando(true);
-    try {
-      await deletePublicacaoAtual(categoria);
-      guardar(categoria === "livro" ? DEFAULT_PUBLICACAO : DEFAULT_EVENTO);
-      setFile(null);
-      onAction("O cartaz actual foi apagado.");
-    } catch (error) {
-      if (isMissingTable(error)) setMissing(true);
-      onAction(cmsError(error));
-    } finally {
-      setApagando(false);
-    }
-  };
+  const srcFoto =
+    geracao > 0
+      ? `${data.image}${data.image.includes("?") ? "&" : "?"}cb=${geracao}`
+      : data.image;
 
   return (
     <>
-    <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
-      <div>
-        <div className="flex gap-2 mb-4">
-          <button
-            type="button"
-            onClick={() => irPara("livro")}
-            className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
-              categoria === "livro"
-                ? "bg-navy-800 text-white"
-                : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
-            }`}
-          >
-            LANÇAMENTO DO LIVRO
-          </button>
-          <button
-            type="button"
-            onClick={() => irPara("evento")}
-            className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
-              categoria === "evento"
-                ? "bg-navy-800 text-white"
-                : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
-            }`}
-          >
-            EVENTOS
-          </button>
-        </div>
-        <p className="text-sm font-bold text-navy-900 mb-3">Pré-visualização do cartaz</p>
-        <div
-          className={`relative w-full bg-cream border border-navy-100 overflow-hidden flex flex-col ${
+      {missing && <SchemaInstall />}
+      <div className={categoria === "evento" ? "max-w-sm" : "max-w-lg"}>
+        <button
+          type="button"
+          onClick={() => setSelectorAberto(true)}
+          className={`relative w-full overflow-hidden bg-cream border border-navy-100 group ${
             categoria === "evento" ? "aspect-[210/297]" : "aspect-square"
           }`}
+          aria-label={categoria === "livro" ? "Substituir imagem do livro" : "Substituir imagem do evento"}
         >
-          <div className={`relative min-h-0 ${categoria === "livro" ? "flex-1" : "h-full"}`}>
-            <img
-              src={data.image}
-              alt=""
-              className={
-                categoria === "livro"
-                  ? "absolute inset-0 w-full h-full object-contain p-2 pb-1"
-                  : "absolute inset-0 w-full h-full object-cover"
-              }
-            />
-          </div>
-          {categoria === "livro" && (
-            <div className="grid grid-cols-3 gap-1 px-1.5 pb-1.5 flex-[0_0_27%]">
-              {LIVROS_ANTERIORES.map((liv) => (
-                <div key={liv.image} className="relative h-full overflow-hidden border border-navy-100 bg-white">
-                  <img src={liv.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <img
+            key={srcFoto}
+            src={srcFoto}
+            alt=""
+            className={
+              categoria === "livro"
+                ? "absolute inset-0 w-full h-full object-contain p-2"
+                : "absolute inset-0 w-full h-full object-cover"
+            }
+          />
+          <span className="absolute inset-0 flex items-end justify-center bg-navy-900/0 group-hover:bg-navy-900/45 transition-colors">
+            <span className="mb-4 px-3 py-1.5 bg-white text-navy-900 text-[10px] font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+              CLICAR PARA SUBSTITUIR
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void publish()}
+          className="mt-3 h-11 px-4 bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide whitespace-nowrap transition-colors"
+        >
+          {busy ? "A PUBLICAR…" : "PUBLICAR"}
+        </button>
       </div>
-      <div className="bg-white border border-navy-100 p-8 space-y-4">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">
-          {categoria === "livro" ? "Lançamento do livro" : "Cartaz de eventos"} na página de ensino
-        </h2>
-        <p className="text-sm text-navy-900/65 leading-relaxed -mt-2">
-          Aparece em /#ensino ao clicar no botão &ldquo;
-          {categoria === "livro" ? "Lançamento do livro" : "Eventos"}&rdquo;.
-        </p>
-        {missing && <SchemaInstall />}
-        <p className="text-sm text-navy-900/70 leading-relaxed">
-          {categoria === "livro"
-            ? "A imagem ajusta-se ao A4 e os três livros preenchem o espaço que sobra."
-            : "O cartaz preenche o A4 — nada abaixo da imagem."}
-        </p>
-        <div>
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Cartaz (JPG ou PNG)</span>
-          <input
-            key={`${categoria}-${fileKey}`}
-            type="file"
-            accept=".jpg,.jpeg,.png"
-            className="esj-field-file"
-            onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-          />
-          <button
-            type="button"
-            onClick={() => setGaleriaAberta(true)}
-            className="mt-2 inline-flex items-center gap-2 h-11 px-4 bg-navy-800 text-white text-xs font-semibold tracking-wide hover:bg-navy-900 transition-colors"
-          >
-            <Images size={14} />
-            BUSCAR NA GALERIA
-          </button>
-        </div>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
-          <input
-            className="esj-field"
-            value={data.title}
-            onChange={(e) => guardar({ ...data, title: e.target.value })}
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Autores (um por linha)</span>
-          <textarea
-            className="esj-field min-h-[88px]"
-            value={data.authors}
-            onChange={(e) => guardar({ ...data, authors: e.target.value })}
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Data</span>
-          <input
-            className="esj-field"
-            value={data.date}
-            onChange={(e) => guardar({ ...data, date: e.target.value })}
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Local</span>
-          <input
-            className="esj-field"
-            value={data.venue}
-            onChange={(e) => guardar({ ...data, venue: e.target.value })}
-          />
-        </label>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={publish}
-            className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-          >
-            {busy ? "A PUBLICAR…" : "PUBLICAR CARTAZ"}
-          </button>
-          <button
-            type="button"
-            disabled={apagando}
-            onClick={() => void apagar()}
-            className="bg-white hover:border-crimson hover:text-crimson disabled:opacity-60 border border-navy-100 text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
-          >
-            {apagando ? "A APAGAR…" : "APAGAR CARTAZ ACTUAL"}
-          </button>
-        </div>
-      </div>
-    </div>
-    {galeriaAberta && (
-      <ImageSelector
-        initialTab="galeria"
-        onClose={() => setGaleriaAberta(false)}
-        onSelect={onGaleria}
-      />
-    )}
+      {selectorAberto && (
+        <ImageSelector
+          initialTab="galeria"
+          onClose={() => setSelectorAberto(false)}
+          onSelect={aplicarFoto}
+        />
+      )}
     </>
   );
 }
