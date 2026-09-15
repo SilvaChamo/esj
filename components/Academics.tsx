@@ -41,41 +41,55 @@ const SECTION_TABS: { id: SectionTab; label: string }[] = [
   { id: "ensino", label: "Ensino e História" },
 ];
 
-const CURSOS: { titulo: string; texto: string; icon: LucideIcon }[] = [
+type NivelCurso = "licenciatura" | "pos-graduacao";
+
+const NIVEIS_CURSO: { id: NivelCurso; label: string }[] = [
+  { id: "licenciatura", label: "Licenciatura" },
+  { id: "pos-graduacao", label: "Pós-Graduação" },
+];
+
+const CURSOS: { titulo: string; texto: string; icon: LucideIcon; nivel: NivelCurso }[] = [
   {
     titulo: "Jornalismo",
     texto: "Formação em técnicas e ética do jornalismo, para os media impressos, digitais, rádio e televisão.",
     icon: Newspaper,
+    nivel: "licenciatura",
   },
   {
     titulo: "Publicidade e Marketing",
     texto: "Estratégia, criação e comunicação de marcas para organizações e mercados.",
     icon: Megaphone,
+    nivel: "licenciatura",
   },
   {
     titulo: "Relações Públicas",
     texto: "Gestão da comunicação institucional e da relação com os públicos.",
     icon: Users,
+    nivel: "licenciatura",
   },
   {
     titulo: "Biblioteconomia e Documentação",
     texto: "Organização, gestão e mediação da informação e do conhecimento.",
     icon: BookOpen,
-  },
-  {
-    titulo: "Pós-Graduação",
-    texto: "Percursos de especialização e investigação avançada em Ciências da Comunicação.",
-    icon: GraduationCap,
+    nivel: "licenciatura",
   },
   {
     titulo: "Serviços Sociais",
     texto: "Apoio à vida académica dos estudantes: alojamento, alimentação, saúde e apoio social.",
     icon: HeartHandshake,
+    nivel: "licenciatura",
+  },
+  {
+    titulo: "Pós-Graduação em Ciências da Comunicação",
+    texto: "Percursos de especialização e investigação avançada em Ciências da Comunicação.",
+    icon: GraduationCap,
+    nivel: "pos-graduacao",
   },
 ];
 
 export default function Academics() {
   const [tab, setTab] = useState<SectionTab>("cursos");
+  const [nivelCurso, setNivelCurso] = useState<NivelCurso>("licenciatura");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<Categoria>("livro");
   const [livroBook, setLivroBook] = useState<Publicacao>(DEFAULT_PUBLICACAO);
@@ -350,16 +364,36 @@ export default function Academics() {
 
         {tab === "cursos" && (
           <div>
-            <p className="text-sky font-bold tracking-widest text-sm mb-3">ÁREAS DE FORMAÇÃO</p>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-              O que se estuda na ESJ
-            </h2>
-            <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
-              Licenciaturas em Maputo e na delegação académica de Manica, com
-              percursos de pós-graduação em Ciências da Comunicação.
-            </p>
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div>
+                <p className="text-sky font-bold tracking-widest text-sm mb-3">ÁREAS DE FORMAÇÃO</p>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
+                  O que se estuda na ESJ
+                </h2>
+                <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
+                  Licenciaturas em Maputo e na delegação académica de Manica, com
+                  percursos de pós-graduação em Ciências da Comunicação.
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {NIVEIS_CURSO.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => setNivelCurso(n.id)}
+                    className={`px-4 py-2.5 text-xs font-bold tracking-wide transition-colors ${
+                      nivelCurso === n.id
+                        ? "bg-navy-800 text-white"
+                        : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
+                    }`}
+                  >
+                    {n.label.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {CURSOS.map((c) => (
+              {CURSOS.filter((c) => c.nivel === nivelCurso).map((c) => (
                 <div key={c.titulo} className="bg-cream border border-navy-100 p-6 flex gap-4">
                   <c.icon size={22} className="shrink-0 mt-0.5 text-sky" />
                   <div>
