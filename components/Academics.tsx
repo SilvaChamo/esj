@@ -159,7 +159,7 @@ export default function Academics() {
   };
 
   const book = active === "livro" ? livroBook : eventoBook;
-  const isLivro = active === "livro" && book.tipo === "livro";
+  const isLivro = active === "livro";
 
   const DATAS: {
     titulo: string;

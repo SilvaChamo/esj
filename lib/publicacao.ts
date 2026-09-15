@@ -73,7 +73,7 @@ export function readPublicacao(categoria: Categoria = "livro"): Publicacao {
         : parsed.authors ?? fallback.authors,
       date: parsed.date ?? fallback.date,
       venue: parsed.venue ?? fallback.venue,
-      tipo: parsed.tipo === "cartaz" ? "cartaz" : categoria === "evento" ? "cartaz" : "livro",
+      tipo: categoria === "evento" ? "cartaz" : "livro",
     };
   } catch {
     return fallback;
@@ -102,7 +102,7 @@ export async function loadPublicacao(categoria: Categoria = "livro"): Promise<Pu
         authors: data.authors,
         date: data.date_label,
         venue: data.venue,
-        tipo: data.tipo === "cartaz" ? "cartaz" : "livro",
+        tipo: categoria === "evento" ? "cartaz" : "livro",
       };
     }
   }

@@ -130,7 +130,7 @@ export default function Header() {
             </span>
             <a href="tel:+25821302721" className="flex items-center gap-2 hover:text-sky-300 transition-colors">
               <Phone size={14} />
-              <span className="hidden sm:inline">+258 21 302 721</span>
+              <span className="text-white">+258 21 302 721</span>
             </a>
           </div>
           <div className={`items-center gap-3 ${searchOpen ? "flex w-full sm:w-auto" : "flex"}`}>

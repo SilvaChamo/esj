@@ -11,10 +11,11 @@ import { cmsError, listMediaGaleria, uploadMedia, type MediaFile } from "@/lib/c
 interface ImageSelectorProps {
   onSelect: (url: string) => void;
   onClose: () => void;
+  initialTab?: "upload" | "galeria";
 }
 
-export default function ImageSelector({ onSelect, onClose }: ImageSelectorProps) {
-  const [tab, setTab] = useState<"upload" | "galeria">("upload");
+export default function ImageSelector({ onSelect, onClose, initialTab = "upload" }: ImageSelectorProps) {
+  const [tab, setTab] = useState<"upload" | "galeria">(initialTab);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");

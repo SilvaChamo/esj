@@ -392,7 +392,7 @@ export default function GestaoDashboard() {
           isCollapsed ? "lg:ml-20" : "lg:ml-[240px]"
         }`}
       >
-        <header className="bg-white border-b border-navy-100 px-8 py-4 flex items-center justify-between gap-4">
+        <header className="bg-white border-b border-navy-100 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-xl font-bold text-navy-900">
               {sectionLabel(section)}
@@ -411,7 +411,7 @@ export default function GestaoDashboard() {
           </button>
         </header>
 
-        <main className="flex-1 px-8 py-8">
+        <main className="flex-1 px-4 sm:px-8 py-8">
           {note && (
             <p className="mb-5 bg-navy-800 text-white text-sm px-4 py-3">{note}</p>
           )}
@@ -467,7 +467,7 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
           Olá, {userEmail || "utilizador"}. Este é o seu painel de gestão.
         </p>
 
-        <div className="mt-6 pt-6 border-t border-navy-100 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mt-6 pt-6 border-t border-navy-100 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <p className="text-[11px] font-bold tracking-widest text-sky">INTRODUÇÃO</p>
             <p className="mt-2 text-sm text-navy-900/65">Veja todas as notícias ou</p>
@@ -545,7 +545,7 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
       </div>
 
       <div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {cursosComTotais.map((c, i) => {
             const color = CARD_COLORS[i % CARD_COLORS.length];
             return (
@@ -648,31 +648,70 @@ function Publicacoes({
   defaultCategoria?: Categoria;
 }) {
   const [categoria, setCategoria] = useState<Categoria>(defaultCategoria);
-  const [data, setData] = useState<Publicacao>(DEFAULT_PUBLICACAO);
+  const [livro, setLivro] = useState<Publicacao>(DEFAULT_PUBLICACAO);
+  const [evento, setEvento] = useState<Publicacao>(DEFAULT_EVENTO);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [apagando, setApagando] = useState(false);
   const [missing, setMissing] = useState(false);
+  const [galeriaAberta, setGaleriaAberta] = useState(false);
+  const [fileKey, setFileKey] = useState(0);
+
+  const data = categoria === "livro" ? livro : evento;
+
+  const guardar = (next: Publicacao | ((prev: Publicacao) => Publicacao)) => {
+    const apply = (prev: Publicacao) => (typeof next === "function" ? next(prev) : next);
+    if (categoria === "livro") setLivro(apply);
+    else setEvento(apply);
+  };
+
+  const irPara = (next: Categoria) => {
+    if (next === categoria) return;
+    setCategoria(next);
+    setFile(null);
+    setFileKey((n) => n + 1);
+  };
 
   useEffect(() => {
-    setFile(null);
-    loadPublicacao(categoria).then(setData);
-  }, [categoria]);
+    let cancelado = false;
+    Promise.all([loadPublicacao("livro"), loadPublicacao("evento")]).then(([l, e]) => {
+      if (cancelado) return;
+      setLivro({ ...l, tipo: "livro" });
+      setEvento({ ...e, tipo: "cartaz" });
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   const onFile = (next: File | null) => {
     if (!next) return;
+    const destino = categoria;
     setFile(next);
     const reader = new FileReader();
     reader.onload = () => {
-      setData((prev) => ({ ...prev, image: String(reader.result) }));
+      const apply = (prev: Publicacao) => ({ ...prev, image: String(reader.result) });
+      if (destino === "livro") setLivro(apply);
+      else setEvento(apply);
     };
     reader.readAsDataURL(next);
+  };
+
+  const onGaleria = (url: string) => {
+    setFile(null);
+    setFileKey((n) => n + 1);
+    guardar((prev) => ({ ...prev, image: url }));
   };
 
   const publish = async () => {
     setBusy(true);
     try {
-      await publishPublicacao(data, file, categoria);
+      const publicado = {
+        ...data,
+        tipo: categoria === "evento" ? ("cartaz" as const) : ("livro" as const),
+      };
+      await publishPublicacao(publicado, file, categoria);
+      guardar(publicado);
       setMissing(false);
       onAction(
         categoria === "livro"
@@ -694,8 +733,7 @@ function Publicacoes({
     setApagando(true);
     try {
       await deletePublicacaoAtual(categoria);
-      const fallback = categoria === "livro" ? DEFAULT_PUBLICACAO : DEFAULT_EVENTO;
-      setData(fallback);
+      guardar(categoria === "livro" ? DEFAULT_PUBLICACAO : DEFAULT_EVENTO);
       setFile(null);
       onAction("O cartaz actual foi apagado.");
     } catch (error) {
@@ -707,12 +745,13 @@ function Publicacoes({
   };
 
   return (
+    <>
     <div className="grid lg:grid-cols-[280px_1fr] gap-8 items-start">
       <div>
         <div className="flex gap-2 mb-4">
           <button
             type="button"
-            onClick={() => setCategoria("livro")}
+            onClick={() => irPara("livro")}
             className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
               categoria === "livro"
                 ? "bg-navy-800 text-white"
@@ -723,7 +762,7 @@ function Publicacoes({
           </button>
           <button
             type="button"
-            onClick={() => setCategoria("evento")}
+            onClick={() => irPara("evento")}
             className={`flex-1 px-3 py-2.5 text-xs font-bold tracking-wide transition-colors ${
               categoria === "evento"
                 ? "bg-navy-800 text-white"
@@ -739,18 +778,18 @@ function Publicacoes({
             categoria === "evento" ? "aspect-[210/297]" : "aspect-square"
           }`}
         >
-          <div className={`relative min-h-0 ${data.tipo === "livro" ? "flex-1" : "h-full"}`}>
+          <div className={`relative min-h-0 ${categoria === "livro" ? "flex-1" : "h-full"}`}>
             <img
               src={data.image}
               alt=""
               className={
-                data.tipo === "livro"
+                categoria === "livro"
                   ? "absolute inset-0 w-full h-full object-contain p-2 pb-1"
                   : "absolute inset-0 w-full h-full object-cover"
               }
             />
           </div>
-          {data.tipo === "livro" && (
+          {categoria === "livro" && (
             <div className="grid grid-cols-3 gap-1 px-1.5 pb-1.5 flex-[0_0_27%]">
               {LIVROS_ANTERIORES.map((liv) => (
                 <div key={liv.image} className="relative h-full overflow-hidden border border-navy-100 bg-white">
@@ -770,44 +809,35 @@ function Publicacoes({
           {categoria === "livro" ? "Lançamento do livro" : "Eventos"}&rdquo;.
         </p>
         {missing && <SchemaInstall />}
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-bold text-navy-900 mb-1.5">Tipo de anúncio</legend>
-          <label className="flex items-start gap-2 text-sm text-navy-900/80">
-            <input
-              type="radio"
-              name="tipo-publicacao"
-              checked={data.tipo === "livro"}
-              onChange={() => setData({ ...data, tipo: "livro" })}
-              className="mt-1"
-            />
-            <span>Lançamento de livro — a imagem ajusta-se ao A4 e os três livros preenchem o espaço que sobra.</span>
-          </label>
-          <label className="flex items-start gap-2 text-sm text-navy-900/80">
-            <input
-              type="radio"
-              name="tipo-publicacao"
-              checked={data.tipo === "cartaz"}
-              onChange={() => setData({ ...data, tipo: "cartaz" })}
-              className="mt-1"
-            />
-            <span>Anúncio que preenche o A4 — nada abaixo do cartaz.</span>
-          </label>
-        </fieldset>
-        <label className="block">
+        <p className="text-sm text-navy-900/70 leading-relaxed">
+          {categoria === "livro"
+            ? "A imagem ajusta-se ao A4 e os três livros preenchem o espaço que sobra."
+            : "O cartaz preenche o A4 — nada abaixo da imagem."}
+        </p>
+        <div>
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Cartaz (JPG ou PNG)</span>
           <input
+            key={`${categoria}-${fileKey}`}
             type="file"
             accept=".jpg,.jpeg,.png"
             className="esj-field-file"
             onChange={(e) => onFile(e.target.files?.[0] ?? null)}
           />
-        </label>
+          <button
+            type="button"
+            onClick={() => setGaleriaAberta(true)}
+            className="mt-2 inline-flex items-center gap-2 h-11 px-4 bg-navy-800 text-white text-xs font-semibold tracking-wide hover:bg-navy-900 transition-colors"
+          >
+            <Images size={14} />
+            BUSCAR NA GALERIA
+          </button>
+        </div>
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Título</span>
           <input
             className="esj-field"
             value={data.title}
-            onChange={(e) => setData({ ...data, title: e.target.value })}
+            onChange={(e) => guardar({ ...data, title: e.target.value })}
           />
         </label>
         <label className="block">
@@ -815,7 +845,7 @@ function Publicacoes({
           <textarea
             className="esj-field min-h-[88px]"
             value={data.authors}
-            onChange={(e) => setData({ ...data, authors: e.target.value })}
+            onChange={(e) => guardar({ ...data, authors: e.target.value })}
           />
         </label>
         <label className="block">
@@ -823,7 +853,7 @@ function Publicacoes({
           <input
             className="esj-field"
             value={data.date}
-            onChange={(e) => setData({ ...data, date: e.target.value })}
+            onChange={(e) => guardar({ ...data, date: e.target.value })}
           />
         </label>
         <label className="block">
@@ -831,7 +861,7 @@ function Publicacoes({
           <input
             className="esj-field"
             value={data.venue}
-            onChange={(e) => setData({ ...data, venue: e.target.value })}
+            onChange={(e) => guardar({ ...data, venue: e.target.value })}
           />
         </label>
         <div className="flex flex-wrap gap-3">
@@ -854,6 +884,14 @@ function Publicacoes({
         </div>
       </div>
     </div>
+    {galeriaAberta && (
+      <ImageSelector
+        initialTab="galeria"
+        onClose={() => setGaleriaAberta(false)}
+        onSelect={onGaleria}
+      />
+    )}
+    </>
   );
 }
 
@@ -895,7 +933,7 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
         Académico&rdquo;, em /#ensino.
       </p>
       {missing && <SchemaInstall />}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         {fields.map((f) => (
           <label key={f.key} className="block">
             <span className="block text-sm font-bold text-navy-900 mb-1.5">{f.label}</span>

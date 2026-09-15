@@ -129,7 +129,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
           .
         </p>
         {missing && <SchemaInstall />}
-        <div className="mt-6 grid sm:grid-cols-3 gap-4">
+        <div className="mt-6 grid md:grid-cols-3 gap-4">
           <label className="block">
             <span className="block text-sm font-bold text-navy-900 mb-1.5">Nível</span>
             <select
@@ -171,7 +171,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
 
       <form
         onSubmit={onSubmit}
-        className="bg-white border border-navy-100 p-6 md:p-8 grid sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end"
+        className="bg-white border border-navy-100 p-6 md:p-8 grid md:grid-cols-2 lg:grid-cols-6 gap-4 items-end"
       >
         <label className="block lg:col-span-1">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">Apelido</span>
