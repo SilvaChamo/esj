@@ -1,6 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
-import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
+import { comprimirBlobImagem, comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import { htmlParaParagrafos, sanitizarHtmlNoticia } from "@/lib/html-noticia";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
