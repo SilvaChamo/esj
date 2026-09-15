@@ -70,6 +70,7 @@ export default function Header() {
   const { progress, enabled, slideIndex } = useSlideProgress();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openSub, setOpenSub] = useState<string | null>(null);
+  const [openMobileItem, setOpenMobileItem] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -121,7 +122,7 @@ export default function Header() {
       {/* Top utility bar */}
       <div className="bg-navy-800 text-white text-[11px] font-medium">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 flex items-center justify-between h-10">
-          <div className="flex items-center gap-5">
+          <div className={`items-center gap-5 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
             <span className="flex items-center gap-2">
               <MapPin size={14} />
               <span className="sm:hidden">Av. 24 de Julho</span>
@@ -132,10 +133,10 @@ export default function Header() {
               <span className="hidden sm:inline">+258 21 302 721</span>
             </a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className={`items-center gap-3 ${searchOpen ? "flex w-full sm:w-auto" : "flex"}`}>
             <div
               className={`relative h-10 overflow-hidden transition-[width] duration-300 ease-out ${
-                searchOpen ? "w-[270px] sm:w-[315px]" : "w-0 sm:w-[210px]"
+                searchOpen ? "flex-1 sm:flex-none sm:w-[315px]" : "w-0 sm:w-[210px]"
               }`}
             >
               <div
@@ -302,7 +303,10 @@ export default function Header() {
             <button
               aria-label="Abrir menu"
               className="lg:hidden text-navy-900"
-              onClick={() => setMobileOpen((v) => !v)}
+              onClick={() => {
+                setMobileOpen((v) => !v);
+                setOpenMobileItem(null);
+              }}
             >
               {mobileOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
@@ -320,10 +324,26 @@ export default function Header() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-navy-100 bg-white">
+          <div className="lg:hidden border-t border-navy-100 bg-white max-h-[calc(100vh-124px)] overflow-y-auto">
             {menu.map((item) => (
               <div key={item.label} className="border-b border-navy-100">
-                {item.href ? (
+                {item.children ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenMobileItem((v) => (v === item.label ? null : item.label))
+                    }
+                    className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-navy-900"
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${
+                        openMobileItem === item.label ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                ) : item.href ? (
                   <a
                     href={item.href}
                     className="block px-5 py-3 text-sm font-semibold text-navy-900"
@@ -336,7 +356,7 @@ export default function Header() {
                     {item.label}
                   </span>
                 )}
-                {item.children && (
+                {item.children && openMobileItem === item.label && (
                   <div className="pb-2">
                     {item.children.map((child) =>
                       child.href ? (

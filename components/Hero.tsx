@@ -124,7 +124,7 @@ export default function Hero() {
             </p>
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+          <div className="mt-8 mb-10 sm:mb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
             <div className="flex gap-2 sm:gap-3">
               <a
                 href="#ensino"
