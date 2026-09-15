@@ -187,7 +187,25 @@ export default function Academics() {
   ];
 
   return (
-    <section id="ensino" className="bg-white">
+    <section id="ensino" className="relative bg-white">
+      {tab === "cursos" && (
+        <div className="hidden lg:flex fixed right-0 top-1/2 z-20 -translate-y-1/2 flex-col">
+          {NIVEIS_CURSO.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              onClick={() => setNivelCurso(n.id)}
+              className={`px-2.5 py-4 text-xs font-bold tracking-wide transition-colors [writing-mode:vertical-rl] ${
+                nivelCurso === n.id
+                  ? "bg-navy-800 text-white"
+                  : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
+              }`}
+            >
+              {n.label.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="bg-cream border-b border-navy-100">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 flex flex-wrap">
           {SECTION_TABS.map((t) => (
@@ -399,7 +417,7 @@ export default function Academics() {
                   percursos de pós-graduação em Ciências da Comunicação.
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 shrink-0 lg:hidden">
                 {NIVEIS_CURSO.map((n) => (
                   <button
                     key={n.id}
