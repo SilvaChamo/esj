@@ -135,12 +135,14 @@ export default function ContactBand() {
 
             <aside className="relative z-0 flex flex-col justify-center bg-navy-800 text-white w-full md:w-[360px] md:shrink-0 md:-mb-10">
               <div className="bg-navy-900 p-8 sm:p-10">
-                <h3 className="font-serif text-xl font-bold text-white">Nossa Localização</h3>
+                <h3 className="font-serif text-xl font-bold text-white text-center uppercase">Nossa Localização</h3>
               </div>
-              <div className="h-1.5 bg-sky-300" aria-hidden />
+              <div className="h-1.5 bg-crimson" aria-hidden />
               <dl className="p-8 sm:p-10 divide-y divide-white/20 text-[15px] leading-relaxed">
                 <div className="pb-5 flex gap-3">
-                  <MapPin size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-sky-300">
+                    <MapPin size={16} className="text-sky-300" />
+                  </span>
                   <div>
                     <dt className="font-semibold mb-1.5">Morada</dt>
                     <dd className="text-white/95">
@@ -149,7 +151,9 @@ export default function ContactBand() {
                   </div>
                 </div>
                 <div className="py-5 flex gap-3">
-                  <Phone size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-sky-300">
+                    <Phone size={16} className="text-sky-300" />
+                  </span>
                   <div>
                     <dt className="font-semibold mb-1.5">Telefone</dt>
                     <dd>
@@ -160,7 +164,9 @@ export default function ContactBand() {
                   </div>
                 </div>
                 <div className="py-5 flex gap-3">
-                  <Globe size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-sky-300">
+                    <Globe size={16} className="text-sky-300" />
+                  </span>
                   <div>
                     <dt className="font-semibold mb-1.5">Portal</dt>
                     <dd>
@@ -176,7 +182,9 @@ export default function ContactBand() {
                   </div>
                 </div>
                 <div className="pt-5 flex gap-3">
-                  <Clock size={18} className="shrink-0 mt-0.5 text-sky-300" />
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-sky-300">
+                    <Clock size={16} className="text-sky-300" />
+                  </span>
                   <div>
                     <dt className="font-semibold mb-1.5">Horário</dt>
                     <dd>
@@ -193,7 +201,7 @@ export default function ContactBand() {
       </div>
 
       <div className="relative bg-sky-600">
-        <div className="h-1.5 w-full bg-crimson" aria-hidden />
+        <div className="h-1.5 w-full bg-navy-900" aria-hidden />
         <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12 py-9 md:py-12">
           <form
             onSubmit={subscribe}
