@@ -15,6 +15,14 @@ function destinoDe(path: string) {
   if (p === "/inscricoes") return { href: "/inscricoes", label: "Voltar às admissões" };
   if (p === "/inscricao") return { href: "/inscricao", label: "Voltar à pré-inscrição" };
   if (p === "/edital") return { href: "/edital", label: "Voltar ao edital" };
+  if (p === "/calendario") return { href: "/calendario", label: "Voltar ao calendário" };
+  if (p === "/documentos") return { href: "/documentos", label: "Voltar aos documentos" };
+  if (p === "/estudantes-internacionais") {
+    return { href: "/estudantes-internacionais", label: "Voltar a estudantes internacionais" };
+  }
+  if (p === "/cursos" || p.startsWith("/cursos/")) {
+    return { href: "/#ensino", label: "Voltar ao Ensino" };
+  }
   if (p === "/resultados") return { href: "/resultados", label: "Voltar aos resultados" };
   if (p.startsWith("/resultados/")) return { href: "/resultados", label: "Voltar aos cursos" };
   if (p === "/busca") return { href: "/busca", label: "Voltar à pesquisa" };
@@ -27,6 +35,16 @@ function origemPadrao(pathname: string) {
   }
   if (pathname.startsWith("/resultados/") && pathname !== "/resultados") {
     return destinoDe("/resultados");
+  }
+  if (pathname.startsWith("/cursos/")) {
+    return { href: "/#ensino", label: "Voltar ao Ensino" };
+  }
+  if (
+    pathname === "/calendario" ||
+    pathname === "/documentos" ||
+    pathname === "/estudantes-internacionais"
+  ) {
+    return { href: "/#ensino", label: "Voltar ao Ensino" };
   }
   if (pathname === "/edital" || pathname === "/inscricao") {
     return destinoDe("/inscricoes");

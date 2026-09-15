@@ -13,9 +13,8 @@ const quickLinks: { label: string; href: string }[] = [
 const info: { label: string; href?: string }[] = [
   { label: "Edital de Admissão 2026", href: "/edital" },
   { label: "Pré-inscrição", href: "/inscricoes" },
-  { label: "Calendário Académico" },
-  { label: "Regulamentos" },
-  { label: "Minutas (Formulários)" },
+  { label: "Calendário Académico", href: "/calendario" },
+  { label: "Documentos", href: "/documentos" },
   { label: "Plano Estratégico" },
 ];
 

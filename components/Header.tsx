@@ -9,6 +9,7 @@ import {
   MapPin,
   Search,
   ChevronDown,
+  ChevronRight,
   Facebook,
   Instagram,
   LogIn,
@@ -19,37 +20,31 @@ import {
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { filtroQuery } from "@/lib/admissao";
 
-type MenuChild = { label: string; href?: string };
+type MenuChild = { label: string; href?: string; children?: MenuChild[] };
 type MenuItem = { label: string; href?: string; children?: MenuChild[] };
+
+const cursosGraduacao: MenuChild[] = [
+  { label: "Jornalismo", href: "/cursos/jornalismo" },
+  { label: "Publicidade e Marketing", href: "/cursos/publicidade-e-marketing" },
+  { label: "Relações Públicas", href: "/cursos/relacoes-publicas" },
+  {
+    label: "Biblioteconomia e Documentação",
+    href: "/cursos/biblioteconomia-e-documentacao",
+  },
+];
 
 const menu: MenuItem[] = [
   {
     label: "ENSINO",
     href: "/#ensino",
     children: [
-      {
-        label: "Jornalismo",
-        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "jornalismo" })}`,
-      },
-      {
-        label: "Publicidade e Marketing",
-        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "publicidade-e-marketing" })}`,
-      },
-      {
-        label: "Relações Públicas",
-        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "relacoes-publicas" })}`,
-      },
-      {
-        label: "Biblioteconomia e Documentação",
-        href: `/inscricao?${filtroQuery({ nivel: "Licenciatura", regime: "Diurno", curso: "biblioteconomia-e-documentacao" })}`,
-      },
-      {
-        label: "Pós-Graduação",
-        href: `/inscricao?${filtroQuery({ nivel: "Pós-Graduação", regime: "Diurno" })}`,
-      },
+      { label: "Graduação", children: cursosGraduacao },
+      { label: "Pós-Graduação", href: "/cursos/pos-graduacao" },
+      { label: "Calendário Académico", href: "/calendario" },
       { label: "Admissões", href: "/inscricoes" },
+      { label: "Documentos", href: "/documentos" },
+      { label: "Estudantes internacionais", href: "/estudantes-internacionais" },
     ],
   },
   {
@@ -87,6 +82,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openSub, setOpenSub] = useState<string | null>(null);
   const [openMobileItem, setOpenMobileItem] = useState<string | null>(null);
+  const [openMobileNested, setOpenMobileNested] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -272,9 +268,36 @@ export default function Header() {
                   </span>
                 )}
                 {item.children && openSub === item.label && (
-                  <div className="absolute left-0 top-full bg-white shadow-lg border-t-2 border-sky min-w-[260px] py-2 z-50">
+                  <div className="absolute left-0 top-full bg-white shadow-lg border-t-2 border-sky min-w-[280px] py-2 z-50">
                     {item.children.map((child) =>
-                      child.href ? (
+                      child.children?.length ? (
+                        <div key={child.label} className="relative group/sub">
+                          <span className="flex items-center justify-between gap-3 px-5 py-2.5 text-[13px] text-navy-900 hover:bg-cream hover:text-crimson cursor-default">
+                            {child.label}
+                            <ChevronRight size={14} className="shrink-0 opacity-60" />
+                          </span>
+                          <div className="invisible opacity-0 group-hover/sub:visible group-hover/sub:opacity-100 absolute left-full top-0 ml-0 bg-white shadow-lg border border-navy-100 min-w-[260px] py-2 z-50">
+                            {child.children.map((neto) =>
+                              neto.href ? (
+                                <a
+                                  key={neto.label}
+                                  href={neto.href}
+                                  className="block px-5 py-2.5 text-[13px] text-navy-900 hover:bg-cream hover:text-crimson transition-colors"
+                                >
+                                  {neto.label}
+                                </a>
+                              ) : (
+                                <span
+                                  key={neto.label}
+                                  className="block px-5 py-2.5 text-[13px] text-navy-900/50 cursor-default"
+                                >
+                                  {neto.label}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ) : child.href ? (
                         <a
                           key={child.label}
                           href={child.href}
@@ -322,6 +345,7 @@ export default function Header() {
               onClick={() => {
                 setMobileOpen((v) => !v);
                 setOpenMobileItem(null);
+                setOpenMobileNested(null);
               }}
             >
               {mobileOpen ? <X size={26} /> : <Menu size={26} />}
@@ -375,7 +399,47 @@ export default function Header() {
                 {item.children && openMobileItem === item.label && (
                   <div className="pb-2">
                     {item.children.map((child) =>
-                      child.href ? (
+                      child.children?.length ? (
+                        <div key={child.label}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenMobileNested((v) =>
+                                v === child.label ? null : child.label
+                              )
+                            }
+                            className="w-full flex items-center justify-between px-8 py-2 text-sm text-navy-900/80"
+                          >
+                            {child.label}
+                            <ChevronDown
+                              size={14}
+                              className={`transition-transform ${
+                                openMobileNested === child.label ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                          {openMobileNested === child.label &&
+                            child.children.map((neto) =>
+                              neto.href ? (
+                                <a
+                                  key={neto.label}
+                                  href={neto.href}
+                                  className="block px-12 py-1.5 text-sm text-navy-900/70"
+                                  onClick={() => setMobileOpen(false)}
+                                >
+                                  {neto.label}
+                                </a>
+                              ) : (
+                                <span
+                                  key={neto.label}
+                                  className="block px-12 py-1.5 text-sm text-navy-900/40 cursor-default"
+                                >
+                                  {neto.label}
+                                </span>
+                              )
+                            )}
+                        </div>
+                      ) : child.href ? (
                         <a
                           key={child.label}
                           href={child.href}
