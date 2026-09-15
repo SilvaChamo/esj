@@ -375,16 +375,16 @@ export default function Academics() {
                   percursos de pós-graduação em Ciências da Comunicação.
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-wrap shrink-0 border-t border-navy-100">
                 {NIVEIS_CURSO.map((n) => (
                   <button
                     key={n.id}
                     type="button"
                     onClick={() => setNivelCurso(n.id)}
-                    className={`px-4 py-2.5 text-xs font-bold tracking-wide transition-colors ${
+                    className={`relative px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
                       nivelCurso === n.id
-                        ? "bg-navy-800 text-white"
-                        : "bg-white text-navy-800 border border-navy-100 hover:border-sky"
+                        ? "z-10 -mt-px bg-white text-crimson border-b border-l border-r border-navy-100"
+                        : "bg-cream text-navy-900/45 hover:text-navy-900/70"
                     }`}
                   >
                     {n.label.toUpperCase()}
