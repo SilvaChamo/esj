@@ -18,6 +18,14 @@ function nomeDescarga(label: string, url: string) {
   return `${base || "documento"}.${ext}`;
 }
 
+/** PDFs externos passam pelo proxy (CORS / hotlink) para abrir no popup. */
+function srcDocumento(href: string) {
+  if (/^https?:\/\//i.test(href)) {
+    return `/api/documento?url=${encodeURIComponent(href)}`;
+  }
+  return href;
+}
+
 export default function DocumentosEnsino() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,8 +38,9 @@ export default function DocumentosEnsino() {
 
   const baixar = async (doc: DocLink) => {
     if (!doc.href) return;
+    const src = srcDocumento(doc.href);
     try {
-      const res = await fetch(doc.href);
+      const res = await fetch(src);
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const a = document.createElement("a");
@@ -143,11 +152,7 @@ export default function DocumentosEnsino() {
             </div>
             <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
               <iframe
-                src={
-                  /^https?:\/\//i.test(ler.href)
-                    ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(ler.href)}`
-                    : ler.href
-                }
+                src={srcDocumento(ler.href)}
                 title={ler.label}
                 className="absolute inset-0 w-full h-full border-0 bg-white"
               />
