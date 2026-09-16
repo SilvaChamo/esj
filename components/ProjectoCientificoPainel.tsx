@@ -5,8 +5,10 @@ import LeitorDocumento from "@/components/LeitorDocumento";
 
 export default function ProjectoCientificoPainel({
   projecto,
+  onClose,
 }: {
   projecto: ProjectoCientifico;
+  onClose?: () => void;
 }) {
   const ficheiro = projecto.ficheiro;
 
@@ -20,5 +22,13 @@ export default function ProjectoCientificoPainel({
     );
   }
 
-  return <LeitorDocumento url={ficheiro} title={projecto.titulo} stickyTop />;
+  return (
+    <LeitorDocumento
+      url={ficheiro}
+      title={projecto.titulo}
+      modo={onClose ? "modal" : "pagina"}
+      stickyTop={!onClose}
+      onClose={onClose}
+    />
+  );
 }

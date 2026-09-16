@@ -1,6 +1,7 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
 import { comprimirBlobImagem, comprimirImagemUpload } from "@/lib/comprimir-imagem";
+import { comprimirDocumentoUpload, MAX_DOCUMENTO_BYTES } from "@/lib/comprimir-documento";
 import { htmlParaParagrafos, sanitizarHtmlNoticia } from "@/lib/html-noticia";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
@@ -34,7 +35,15 @@ export function isMissingTable(error: unknown) {
 
 export async function uploadMedia(file: File, folder: string) {
   const supabase = createBrowserSupabase();
-  const comprimido = await comprimirImagemUpload(file);
+  const eImg = (file.type || "").startsWith("image/") && file.type !== "image/svg+xml" && file.type !== "image/gif";
+  const comprimido = eImg
+    ? await comprimirImagemUpload(file)
+    : await comprimirDocumentoUpload(file, MAX_DOCUMENTO_BYTES);
+  if (!eImg && comprimido.size > MAX_DOCUMENTO_BYTES) {
+    throw new Error(
+      `O documento excede 1 MB (${(comprimido.size / (1024 * 1024)).toFixed(2)} MB) após compressão.`
+    );
+  }
   const ext =
     (comprimido.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
@@ -658,7 +667,15 @@ export async function listMediaDocumentos(): Promise<MediaFile[]> {
 
 export async function uploadMediaDocumento(file: File) {
   const supabase = createBrowserSupabase();
-  const comprimido = await comprimirImagemUpload(file);
+  const eImg = (file.type || "").startsWith("image/") && file.type !== "image/svg+xml" && file.type !== "image/gif";
+  const comprimido = eImg
+    ? await comprimirImagemUpload(file)
+    : await comprimirDocumentoUpload(file, MAX_DOCUMENTO_BYTES);
+  if (!eImg && comprimido.size > MAX_DOCUMENTO_BYTES) {
+    throw new Error(
+      `O documento excede 1 MB (${(comprimido.size / (1024 * 1024)).toFixed(2)} MB) após compressão.`
+    );
+  }
   const path = `${DOCUMENTOS_FOLDER}/${limparNomeFicheiro(comprimido.name)}`;
   const { error } = await supabase.storage.from(GALERIA_BUCKET).upload(path, comprimido, {
     contentType: comprimido.type || undefined,

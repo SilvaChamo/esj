@@ -1,8 +1,18 @@
+import {
+  CURSOS_BIBLIOTECA,
+  PROJECTOS_CIENTIFICOS,
+  cursoBibliotecaPorCodigo,
+  labelTipo,
+  type ProjectoCientifico,
+} from "@/lib/producao-cientifica";
+
 export type SearchItem = {
   title: string;
   excerpt: string;
   href: string;
   category: string;
+  /** Texto extra para pesquisa (autor, tutor, avaliador, área, tipo, etc.). */
+  keywords?: string;
 };
 
 export const searchIndex: SearchItem[] = [
@@ -110,6 +120,24 @@ export const searchIndex: SearchItem[] = [
     href: "https://esj.edondzo.ac.mz",
     category: "Serviços",
   },
+  {
+    title: "Biblioteca virtual",
+    excerpt:
+      "Repositório científico da ESJ — monografias, projectos experimentais, relatórios de estágio e artigos por curso.",
+    href: "/biblioteca-virtual",
+    category: "Biblioteca",
+    keywords:
+      "acervo produção científica monografia projecto experimental relatório estágio artigo científico",
+  },
+  ...CURSOS_BIBLIOTECA.map(
+    (c): SearchItem => ({
+      title: `Acervo · ${c.titulo}`,
+      excerpt: c.descricao,
+      href: `/biblioteca-virtual/${c.slug}`,
+      category: "Biblioteca",
+      keywords: `${c.titulo} ${c.codigo} ${c.expectativa} produção científica monografias projectos`,
+    })
+  ),
 ];
 
 function normalize(value: string) {
@@ -120,30 +148,113 @@ function normalize(value: string) {
     .trim();
 }
 
-export function searchSite(query: string): SearchItem[] {
+/** Campos pesquisáveis de um projecto científico. */
+export function chavesProjecto(p: ProjectoCientifico): string {
+  const curso = cursoBibliotecaPorCodigo(p.curso);
+  return [
+    p.titulo,
+    p.slug.replace(/-/g, " "),
+    labelTipo(p.tipo),
+    p.tipo.replace(/-/g, " "),
+    p.ramos,
+    p.tutor,
+    p.avaliador || "",
+    p.numeroEstudante || "",
+    String(p.ano),
+    p.autores.join(" "),
+    p.resumo,
+    curso?.titulo || "",
+    curso?.slug.replace(/-/g, " ") || "",
+    p.curso,
+    "biblioteca virtual",
+    "produção científica",
+    "acervo",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function searchItemDeProjecto(p: ProjectoCientifico): SearchItem {
+  const curso = cursoBibliotecaPorCodigo(p.curso);
+  const autores = p.autores.join(", ");
+  const partes = [
+    labelTipo(p.tipo),
+    String(p.ano),
+    autores ? `Autor(es): ${autores}` : "",
+    p.tutor ? `Tutor: ${p.tutor}` : "",
+    p.avaliador ? `Avaliador: ${p.avaliador}` : "",
+    p.ramos ? `Área: ${p.ramos}` : "",
+    p.numeroEstudante ? `N.º ${p.numeroEstudante}` : "",
+  ].filter(Boolean);
+
+  return {
+    title: p.titulo,
+    excerpt: partes.join(" · "),
+    href: `/biblioteca-virtual/${curso?.slug || "jornalismo"}?p=${encodeURIComponent(p.slug)}`,
+    category: "Biblioteca",
+    keywords: chavesProjecto(p),
+  };
+}
+
+/** Junta exemplares locais com o acervo remoto (remoto ganha no mesmo slug). */
+export function fundirProjectos(remotos: ProjectoCientifico[] | null | undefined): ProjectoCientifico[] {
+  const porSlug = new Map<string, ProjectoCientifico>();
+  for (const p of PROJECTOS_CIENTIFICOS) porSlug.set(p.slug, p);
+  if (remotos) {
+    for (const p of remotos) porSlug.set(p.slug, p);
+  }
+  return Array.from(porSlug.values());
+}
+
+export function searchSite(query: string, projectosExtra: ProjectoCientifico[] = []): SearchItem[] {
   const q = normalize(query);
   if (!q) return [];
 
-  const scored = searchIndex
+  const projectos = fundirProjectos(projectosExtra);
+  const indice: SearchItem[] = [
+    ...searchIndex,
+    ...projectos.map(searchItemDeProjecto),
+  ];
+
+  const palavras = q.split(/\s+/).filter((w) => w.length >= 2);
+
+  const scored = indice
     .map((item) => {
       const title = normalize(item.title);
       const excerpt = normalize(item.excerpt);
       const category = normalize(item.category);
+      const keys = normalize(item.keywords || "");
+      const blob = `${title} ${excerpt} ${category} ${keys}`;
       let score = 0;
-      if (title === q) score += 8;
-      if (title.startsWith(q)) score += 5;
-      if (title.includes(q)) score += 4;
+
+      if (title === q) score += 10;
+      if (title.startsWith(q)) score += 6;
+      if (title.includes(q)) score += 5;
+      if (keys.includes(q)) score += 5;
       if (category.includes(q)) score += 3;
       if (excerpt.includes(q)) score += 2;
-      q.split(/\s+/).forEach((word) => {
-        if (word.length < 2) return;
-        if (title.includes(word)) score += 2;
+      if (blob.includes(q)) score += 1;
+
+      palavras.forEach((word) => {
+        if (title.includes(word)) score += 3;
+        if (keys.includes(word)) score += 3;
         if (excerpt.includes(word)) score += 1;
+        if (category.includes(word)) score += 1;
       });
+
       return { item, score };
     })
     .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title, "pt"));
 
-  return scored.map((entry) => entry.item);
+  // Evitar duplicar o mesmo href+title
+  const vistos = new Set<string>();
+  const unicos: SearchItem[] = [];
+  for (const { item } of scored) {
+    const id = `${item.href}|${item.title}`;
+    if (vistos.has(id)) continue;
+    vistos.add(id);
+    unicos.push(item);
+  }
+  return unicos;
 }

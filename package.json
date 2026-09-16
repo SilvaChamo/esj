@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.15.1",
+    "@s8fy/emf2svg": "^1.0.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "docx-preview": "^0.4.0",

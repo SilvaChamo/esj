@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import BannerInterior from "@/components/BannerInterior";
 import BibliotecaCursoClient from "@/components/BibliotecaCursoClient";
@@ -35,7 +36,9 @@ export default function BibliotecaCursoPage({ params }: { params: { curso: strin
         }
       />
       <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
-        <BibliotecaCursoClient curso={curso} />
+        <Suspense fallback={<p className="text-sm text-navy-900/55">A carregar o acervo…</p>}>
+          <BibliotecaCursoClient curso={curso} />
+        </Suspense>
       </div>
     </main>
   );

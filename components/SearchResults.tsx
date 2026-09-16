@@ -1,14 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
-import { searchSite } from "@/lib/search-index";
+import { searchSite, type SearchItem } from "@/lib/search-index";
+import { listProjectosPublicos } from "@/lib/biblioteca-cientifica-cms";
+import type { ProjectoCientifico } from "@/lib/producao-cientifica";
 
 export default function SearchResults() {
   const params = useSearchParams();
   const query = (params.get("q") ?? "").trim();
-  const results = searchSite(query);
+  const [remotos, setRemotos] = useState<ProjectoCientifico[] | null>(null);
+  const [pronto, setPronto] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    void listProjectosPublicos().then((lista) => {
+      if (cancelado) return;
+      setRemotos(lista);
+      setPronto(true);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const results: SearchItem[] = pronto ? searchSite(query, remotos ?? []) : searchSite(query, []);
 
   return (
     <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 min-h-[40vh]">
@@ -22,12 +40,12 @@ export default function SearchResults() {
         <p className="mt-3 text-navy-900/70">Escreva um termo na barra de pesquisa e prima Enter.</p>
       )}
 
-      {query && results.length === 0 && (
+      {query && results.length === 0 && pronto && (
         <div className="mt-10 border border-navy-100 bg-white p-8 text-center">
           <Search className="mx-auto text-navy-900/30" size={32} />
           <p className="mt-4 font-serif font-bold text-navy-900">Nenhum resultado encontrado</p>
           <p className="mt-2 text-sm text-navy-900/60">
-            Tente outra palavra-chave, como jornalismo, admissões ou contacto.
+            Tente autor, tutor, avaliador, título, área, tipo de projecto ou curso.
           </p>
           <Link
             href="/"
@@ -43,7 +61,7 @@ export default function SearchResults() {
           <li key={`${item.href}-${item.title}`}>
             <Link
               href={item.href}
-              className="block bg-white border border-navy-100 hover:border-crimson p-6 transition-colors"
+              className="esj-card-move block bg-white border border-navy-100 hover:border-crimson p-6"
             >
               <span className="text-[11px] font-semibold tracking-widest text-crimson">
                 {item.category.toUpperCase()}

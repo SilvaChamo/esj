@@ -63,7 +63,8 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
       margin-bottom: 25px !important;
       overflow: visible !important;
       box-sizing: border-box !important;
-      min-height: 800px !important;
+      min-height: 0 !important;
+      height: auto !important;
     }
     .docx table td,
     .docx table th {
@@ -76,6 +77,17 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
     .docx table th,
     .docx table tr:first-child td {
       background-color: #e8e8e8 !important;
+    }
+    .docx img {
+      max-width: 100% !important;
+      height: auto !important;
+      object-fit: contain !important;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .docx img[style] {
+      height: auto !important;
     }
     #documento-pagina {
       user-select: none;
@@ -144,6 +156,139 @@ function aplicarNumeracaoPaginas(doc: Document) {
 function textoPreview(el: HTMLElement | null): string {
   if (!el) return "";
   return (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+function dataUrlParaBuffer(src: string): ArrayBuffer | null {
+  const m = /^data:([^;,]+)?(;base64)?,(.*)$/i.exec(src);
+  if (!m) return null;
+  const b64 = m[2];
+  const data = m[3] || "";
+  try {
+    if (b64) {
+      const bin = atob(data);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out.buffer;
+    }
+    const texto = decodeURIComponent(data);
+    return new TextEncoder().encode(texto).buffer;
+  } catch {
+    return null;
+  }
+}
+
+function pareceMetafile(src: string) {
+  return /emf|wmf|x-msmetafile|image\/x-emf|image\/x-wmf/i.test(src);
+}
+
+/** Converte EMF/WMF (logo Word) para SVG — o browser não mostra metafiles. */
+async function corrigirImagensDocumento(doc: Document) {
+  const { emf2svg, wmf2svg, isEmf, isWmf } = await import("@s8fy/emf2svg");
+  const imgs = Array.from(doc.querySelectorAll("img")) as HTMLImageElement[];
+
+  for (const img of imgs) {
+    const src = img.currentSrc || img.getAttribute("src") || "";
+    if (!src.startsWith("data:")) continue;
+
+    const buffer = dataUrlParaBuffer(src);
+    if (!buffer) continue;
+    const bytes = new Uint8Array(buffer);
+    const forcar =
+      pareceMetafile(src) ||
+      (img.complete && img.naturalWidth === 0) ||
+      isEmf(bytes) ||
+      isWmf(bytes);
+    if (!forcar) continue;
+
+    try {
+      let svg = "";
+      if (isEmf(bytes) || /emf/i.test(src)) svg = emf2svg(bytes);
+      else if (isWmf(bytes) || /wmf/i.test(src)) svg = wmf2svg(bytes);
+      else continue;
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    } catch {
+      /* manter original */
+    }
+  }
+}
+
+function paginaTemConteudo(sec: HTMLElement) {
+  const clone = sec.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll("header, footer, .esj-num-pagina").forEach((el) => el.remove());
+  const texto = (clone.textContent || "").replace(/\s+/g, " ").trim();
+  if (texto.length > 2) return true;
+  return Boolean(clone.querySelector("img, table, svg, canvas, video"));
+}
+
+/** Remove secções vazias criadas por quebras de página do Word. */
+function removerPaginasVazias(doc: Document) {
+  listarSeccoes(doc).forEach((sec) => {
+    if (!paginaTemConteudo(sec)) sec.remove();
+  });
+}
+
+/**
+ * Corrige proporção das imagens (Word força width+height e distorce)
+ * e coloca cada imagem grande na sua própria página.
+ */
+function organizarImagensEPaginas(doc: Document) {
+  const imgs = Array.from(doc.querySelectorAll(".docx img")) as HTMLImageElement[];
+
+  for (const img of imgs) {
+    img.removeAttribute("height");
+    img.style.setProperty("height", "auto", "important");
+    img.style.setProperty("max-width", "100%", "important");
+    img.style.setProperty("object-fit", "contain", "important");
+
+    // Contentores do docx-preview com altura fixa esticam a imagem
+    let p: HTMLElement | null = img.parentElement;
+    let profundidade = 0;
+    while (p && profundidade < 6 && !p.classList.contains("docx")) {
+      const soImagem =
+        p.querySelectorAll("img").length === 1 &&
+        !(p.textContent || "").replace(/\s+/g, "").length;
+      if (soImagem) {
+        p.style.setProperty("height", "auto", "important");
+        p.style.setProperty("min-height", "0", "important");
+        p.style.setProperty("max-height", "none", "important");
+      }
+      p = p.parentElement;
+      profundidade += 1;
+    }
+  }
+
+  const secs = listarSeccoes(doc);
+  for (const sec of secs) {
+    const grandes = (Array.from(sec.querySelectorAll("img")) as HTMLImageElement[]).filter(
+      (img) => {
+        const w =
+          img.naturalWidth ||
+          img.width ||
+          parseInt(String(img.getAttribute("width") || "0"), 10) ||
+          0;
+        return w >= 320;
+      }
+    );
+    if (grandes.length <= 1) continue;
+
+    let ancora: HTMLElement = sec;
+    for (let i = 1; i < grandes.length; i++) {
+      const img = grandes[i];
+      const bloco = (img.closest("p, div, figure") as HTMLElement) || img;
+      if (!bloco.parentElement) continue;
+
+      const nova = doc.createElement("section");
+      nova.className = sec.className || "docx";
+      nova.setAttribute("style", sec.getAttribute("style") || "");
+      nova.style.setProperty("height", "auto", "important");
+      nova.style.setProperty("min-height", "0", "important");
+      nova.appendChild(bloco);
+      ancora.after(nova);
+      ancora = nova;
+    }
+  }
+
+  removerPaginasVazias(doc);
 }
 
 function gerarThumbnails(doc: Document, paginas: PaginaInfo[]): PaginaInfo[] {
@@ -249,7 +394,7 @@ export function WordLeitura({
             ignoreHeight: false,
             ignoreFonts: false,
             breakPages: true,
-            ignoreLastRenderedPageBreak: false,
+            ignoreLastRenderedPageBreak: true,
             experimental: true,
             renderHeaders: true,
             renderFooters: true,
@@ -260,6 +405,24 @@ export function WordLeitura({
           });
           if (cancelado) return;
           aplicarEstilosLeitura(doc, zoomRef.current);
+          await corrigirImagensDocumento(doc);
+          if (cancelado) return;
+          await Promise.all(
+            Array.from(doc.querySelectorAll("img")).map(
+              (el) =>
+                new Promise<void>((resolve) => {
+                  const img = el as HTMLImageElement;
+                  if (img.complete) {
+                    resolve();
+                    return;
+                  }
+                  img.onload = () => resolve();
+                  img.onerror = () => resolve();
+                })
+            )
+          );
+          if (cancelado) return;
+          organizarImagensEPaginas(doc);
           // Se ainda houver só 1 secção com conteúdo muito alto, o contador virtual cobre
           await actualizarPaginas(doc);
         } catch {
@@ -276,6 +439,9 @@ export function WordLeitura({
           );
           doc.close();
           aplicarEstilosLeitura(doc, zoomRef.current);
+          await corrigirImagensDocumento(doc);
+          if (cancelado) return;
+          organizarImagensEPaginas(doc);
           const pagina = doc.getElementById("documento-pagina");
           if (pagina) {
             pagina.style.width = "21cm";

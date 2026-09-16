@@ -25,6 +25,36 @@ const TIPOS = TIPOS_PROJECTO.filter((t) => t.id !== "todos") as {
   label: string;
 }[];
 
+function tipoAnexo(url: string): "pdf" | "word" | "excel" | "outro" {
+  const n = url.split("?")[0].toLowerCase();
+  if (/\.pdf$/i.test(n)) return "pdf";
+  if (/\.(docx?|odt)$/i.test(n)) return "word";
+  if (/\.(xlsx?|csv|ods)$/i.test(n)) return "excel";
+  return "outro";
+}
+
+function labelTipoAnexo(tipo: ReturnType<typeof tipoAnexo>) {
+  if (tipo === "pdf") return "PDF";
+  if (tipo === "word") return "Word";
+  if (tipo === "excel") return "Excel";
+  return "Ficheiro";
+}
+
+function IconeAnexo({ tipo }: { tipo: ReturnType<typeof tipoAnexo> }) {
+  const src =
+    tipo === "pdf"
+      ? "/icons/file-pdf.svg"
+      : tipo === "word"
+        ? "/icons/file-word.svg"
+        : tipo === "excel"
+          ? "/icons/file-excel.svg"
+          : "/icons/file-generic.svg";
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" width={36} height={48} className="h-12 w-9 shrink-0 object-contain" />
+  );
+}
+
 const vazio = {
   titulo: "",
   curso: "JJ" as CursoBibliotecaCodigo,
@@ -210,28 +240,32 @@ export default function BibliotecaCientificaGestao({
           publicar o primeiro.
         </p>
       ) : (
-        <div className="bg-white border border-navy-100 overflow-x-auto">
-          <table className="w-full text-left text-sm min-w-[640px]">
+        <div className="bg-white border border-navy-100 overflow-hidden">
+          <table className="w-full table-fixed text-left text-sm">
             <thead className="bg-cream text-[11px] font-bold tracking-widest text-navy-900/55">
               <tr>
                 <th className="px-3 py-2.5 text-left">Título</th>
-                <th className="px-3 py-2.5 w-[7.5rem] text-center">N.º estudante</th>
-                <th className="px-3 py-2.5 w-[10.5rem] text-center">Tipo</th>
-                <th className="px-3 py-2.5 w-[3.5rem] text-center">Ano</th>
-                <th className="px-3 py-2.5 w-[8rem] text-center">Avaliador</th>
-                <th className="px-3 py-2.5 w-[5.5rem] text-center">Acções</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[9rem]">N.º estudante</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[11rem]">Tipo</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[4rem]">Ano</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[10rem]">Avaliador</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[5.5rem]">Acções</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
               {items.map((row) => (
                 <tr key={row.id} className="align-middle">
-                  <td className="px-3 py-2.5 font-semibold text-navy-900 break-words text-left">
-                    {row.titulo}
-                    {!row.ficheiro ? (
-                      <span className="mt-0.5 block text-[11px] font-normal text-crimson">
-                        Sem PDF
+                  <td className="px-3 py-2.5 font-semibold text-navy-900 text-left">
+                    <span className="flex items-start gap-2 min-w-0">
+                      <span className="line-clamp-2 break-words" title={row.titulo}>
+                        {row.titulo}
                       </span>
-                    ) : null}
+                      {!row.ficheiro ? (
+                        <span className="text-[11px] font-normal text-crimson whitespace-nowrap shrink-0 pt-0.5">
+                          Sem PDF
+                        </span>
+                      ) : null}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center">
                     {row.numero_estudante || "—"}
@@ -240,7 +274,7 @@ export default function BibliotecaCientificaGestao({
                     {TIPOS.find((t) => t.id === row.tipo)?.label ?? row.tipo}
                   </td>
                   <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center">{row.ano}</td>
-                  <td className="px-3 py-2.5 text-navy-900/70 break-words text-center">
+                  <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center truncate" title={row.avaliador || undefined}>
                     {row.avaliador || "—"}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap text-center">
@@ -284,23 +318,11 @@ export default function BibliotecaCientificaGestao({
 
       {ler && (
         <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-5xl max-h-[92vh] overflow-y-auto bg-cream">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white border border-b-0 border-navy-100 px-4 py-3">
-              <h2 className="font-serif text-base md:text-lg font-bold text-navy-900 leading-snug break-words min-w-0">
-                {ler.titulo}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setLer(null)}
-                className="p-1.5 text-navy-900/55 hover:text-navy-900 shrink-0"
-                aria-label="Fechar"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="border border-navy-100 border-t-0">
-              <ProjectoCientificoPainel projecto={rowParaProjecto(ler)} />
-            </div>
+          <div className="w-full max-w-5xl h-[85vh] bg-white border border-navy-100 flex flex-col overflow-hidden">
+            <ProjectoCientificoPainel
+              projecto={rowParaProjecto(ler)}
+              onClose={() => setLer(null)}
+            />
           </div>
         </div>
       )}
@@ -361,10 +383,21 @@ export default function BibliotecaCientificaGestao({
                 <Campo label="N.º DE ESTUDANTE">
                   <input
                     value={form.numeroEstudante}
-                    onChange={(e) => setForm((f) => ({ ...f, numeroEstudante: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        numeroEstudante: e.target.value.replace(/\s+/g, "").toUpperCase(),
+                      }))
+                    }
                     className="esj-field"
-                    placeholder="Ex.: 2021/JJ/012"
+                    placeholder="Ex.: 2018147MP"
+                    inputMode="text"
+                    autoComplete="off"
+                    spellCheck={false}
                   />
+                  <p className="mt-1.5 text-[11px] text-navy-900/45 leading-relaxed">
+                    Formato ESJ: ano + número + MP (ex.: 2018147MP, 202601MP, 2027120MP).
+                  </p>
                 </Campo>
                 <Campo label="AUTOR(ES)">
                   <input
@@ -427,7 +460,7 @@ export default function BibliotecaCientificaGestao({
 
               <div>
                 <span className="block text-[11px] font-bold tracking-widest text-navy-900/45 whitespace-nowrap">
-                  FICHEIRO (PDF OU WORD)
+                  FICHEIRO (PDF, WORD OU EXCEL)
                 </span>
                 <div className="mt-1.5 flex flex-wrap items-center gap-3">
                   <button
@@ -438,19 +471,30 @@ export default function BibliotecaCientificaGestao({
                     <Upload size={15} />
                     {form.ficheiro ? "Substituir ficheiro" : "Escolher ficheiro"}
                   </button>
-                  {form.ficheiro ? (
-                    <a
-                      href={form.ficheiro}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-sky hover:underline break-all max-w-full"
-                    >
-                      Ver ficheiro
-                    </a>
-                  ) : (
+                  {!form.ficheiro ? (
                     <span className="text-xs text-navy-900/45">Nenhum ficheiro seleccionado</span>
-                  )}
+                  ) : null}
                 </div>
+                {form.ficheiro ? (
+                  <div className="mt-3 inline-flex items-center gap-3 border border-navy-100 bg-white px-3 py-2.5">
+                    <IconeAnexo tipo={tipoAnexo(form.ficheiro)} />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold tracking-widest text-navy-900/40">ANEXO</p>
+                      <p className="text-sm font-semibold text-navy-900">
+                        {labelTipoAnexo(tipoAnexo(form.ficheiro))}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, ficheiro: "" }))}
+                      className="shrink-0 p-1.5 text-navy-900/45 hover:text-crimson"
+                      aria-label="Remover anexo"
+                      title="Remover anexo"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -478,7 +522,7 @@ export default function BibliotecaCientificaGestao({
         <ImageSelector
           titulo="Documento do projecto"
           initialTab="upload"
-          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
           pasta="biblioteca"
           onClose={() => setSelector(false)}
           onSelect={(url) => {

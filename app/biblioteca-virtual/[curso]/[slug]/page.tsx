@@ -1,15 +1,12 @@
-import { notFound } from "next/navigation";
-import BannerInterior from "@/components/BannerInterior";
-import ProjectoCientificoPainel from "@/components/ProjectoCientificoPainel";
-import { listProjectosPublicos } from "@/lib/biblioteca-cientifica-cms";
+import { notFound, redirect } from "next/navigation";
 import {
   CURSOS_BIBLIOTECA,
   PROJECTOS_CIENTIFICOS,
   cursoBibliotecaPorSlug,
-  labelTipo,
   projectoPorSlug,
   slugsProjectosDoCurso,
 } from "@/lib/producao-cientifica";
+import { listProjectosPublicos } from "@/lib/biblioteca-cientifica-cms";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +31,7 @@ export async function generateMetadata({
   };
 }
 
+/** Leitura passa a popup no acervo; links antigos voltam ao curso. */
 export default async function ProjectoCientificoPage({
   params,
 }: {
@@ -48,17 +46,5 @@ export default async function ProjectoCientificoPage({
   const projecto = porSlug.get(params.slug) ?? null;
   if (!curso || !projecto || projecto.curso !== curso.codigo) notFound();
 
-  return (
-    <main className="bg-cream min-h-[70vh]">
-      <BannerInterior
-        kicker={curso.titulo}
-        title={labelTipo(projecto.tipo)}
-        description={`${projecto.ano}${projecto.ramos ? ` · ${projecto.ramos}` : ""}`}
-        busca={false}
-      />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-4 pb-16 md:pt-5 md:pb-24">
-        <ProjectoCientificoPainel projecto={projecto} />
-      </div>
-    </main>
-  );
+  redirect(`/biblioteca-virtual/${curso.slug}`);
 }

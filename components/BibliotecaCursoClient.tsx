@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { eWordUrl, srcDocumentoProxy } from "@/components/DocumentoLeitor";
+import { useSearchParams } from "next/navigation";
+import Header from "@/components/Header";
+import LeitorDocumento from "@/components/LeitorDocumento";
 import {
   TIPOS_PROJECTO,
   labelTipo,
@@ -23,15 +24,11 @@ function Meta({ label, valor }: { label: string; valor?: string | null }) {
   );
 }
 
-function srcPdfAba(href: string) {
-  const base = srcDocumentoProxy(href).split("#")[0];
-  return `${base}#navpanes=0&pagemode=none`;
-}
-
 export default function BibliotecaCursoClient({ curso }: { curso: CursoBiblioteca }) {
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tipo, setTipo] = useState<TipoProjecto | "todos">("todos");
   const [acervo, setAcervo] = useState<ProjectoCientifico[]>(PROJECTOS_CIENTIFICOS);
+  const [ler, setLer] = useState<ProjectoCientifico | null>(null);
 
   useEffect(() => {
     void listProjectosPublicos().then((remotos) => {
@@ -43,6 +40,23 @@ export default function BibliotecaCursoClient({ curso }: { curso: CursoBibliotec
     });
   }, []);
 
+  // Abrir projecto vindo da pesquisa do sítio (?p=slug)
+  useEffect(() => {
+    const slug = (searchParams.get("p") || "").trim();
+    if (!slug) return;
+    const projecto = acervo.find((p) => p.slug === slug && p.curso === curso.codigo);
+    if (projecto?.ficheiro) setLer(projecto);
+  }, [acervo, curso.codigo, searchParams]);
+
+  useEffect(() => {
+    if (!ler) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [ler]);
+
   const lista = useMemo(
     () =>
       acervo
@@ -53,11 +67,7 @@ export default function BibliotecaCursoClient({ curso }: { curso: CursoBibliotec
 
   const abrir = (p: ProjectoCientifico) => {
     if (!p.ficheiro) return;
-    if (eWordUrl(p.ficheiro)) {
-      router.push(`/biblioteca-virtual/${curso.slug}/${p.slug}`);
-      return;
-    }
-    window.open(srcPdfAba(p.ficheiro), "_blank", "noopener,noreferrer");
+    setLer(p);
   };
 
   return (
@@ -139,6 +149,25 @@ export default function BibliotecaCursoClient({ curso }: { curso: CursoBibliotec
           </ul>
         )}
       </div>
+
+      {ler?.ficheiro ? (
+        <div
+          className="fixed inset-0 z-[200] bg-white flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label={ler.titulo}
+        >
+          <Header />
+          <div className="flex-1 min-h-0 flex flex-col">
+            <LeitorDocumento
+              url={ler.ficheiro}
+              title={ler.titulo}
+              modo="modal"
+              onClose={() => setLer(null)}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
