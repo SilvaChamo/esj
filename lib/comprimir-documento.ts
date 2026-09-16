@@ -1,7 +1,10 @@
 import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
 
-/** Limite máximo para documentos (PDF, Word, Excel, etc.). */
+/** Limite para Word/Excel e similares. */
 export const MAX_DOCUMENTO_BYTES = 1 * 1024 * 1024;
+
+/** Limite para PDF (sem reprocessar páginas — mantém o original). */
+export const MAX_PDF_BYTES = 15 * 1024 * 1024;
 
 function eImagem(file: Blob) {
   const tipo = file.type || "";
@@ -22,6 +25,11 @@ function mb(n: number) {
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+/** Limite aplicável ao ficheiro (PDF vs outros documentos). */
+export function limiteDocumentoBytes(file: { name: string; type?: string }) {
+  return ePdf(file.name, file.type) ? MAX_PDF_BYTES : MAX_DOCUMENTO_BYTES;
+}
+
 /**
  * Comprime imagens embutidas em DOCX/XLSX e volta a empacotar com DEFLATE máximo.
  */
@@ -39,7 +47,6 @@ async function comprimirOffice(file: File, maxBytes: number): Promise<File> {
       type: dados.type || "image/jpeg",
       lastModified: Date.now(),
     });
-    // Imagens internas: alvo mais baixo para caber o documento em 1 MB
     const alvo = Math.min(80 * 1024, Math.max(30 * 1024, Math.floor(maxBytes / 8)));
     const comprimida = await comprimirImagemUpload(original, alvo);
     zip.file(path, comprimida, { binary: true });
@@ -58,10 +65,10 @@ async function comprimirOffice(file: File, maxBytes: number): Promise<File> {
 }
 
 /**
- * Compressor automático de documentos: máximo 1 MB.
- * - Imagens: usa o compressor de imagem existente
- * - Word/Excel (ZIP): comprime imagens internas + DEFLATE
- * - PDF e outros: se já ≤ 1 MB aceita; senão rejeita com mensagem clara
+ * Documentos:
+ * - Imagens: compressor de imagem
+ * - Word/Excel: imagens internas + DEFLATE (máx. 1 MB)
+ * - PDF: nunca reprocessado (mantém texto nítido); limite 15 MB
  */
 export async function comprimirDocumentoUpload(
   file: File,
@@ -73,19 +80,26 @@ export async function comprimirDocumentoUpload(
     return comprimirImagemUpload(file);
   }
 
+  if (ePdf(file.name, file.type)) {
+    const limite = MAX_PDF_BYTES;
+    if (file.size > limite) {
+      throw new Error(`O PDF tem ${mb(file.size)}. Limite: ${mb(limite)}.`);
+    }
+    return file;
+  }
+
   if (file.size <= maxBytes) return file;
 
   if (eOfficeZip(file.name, file.type)) {
     try {
       let actual = file;
-      // Até 2 passagens se ainda estiver grande
       for (let i = 0; i < 2; i += 1) {
         actual = await comprimirOffice(actual, maxBytes);
         if (actual.size <= maxBytes) return actual;
       }
       if (actual.size <= maxBytes) return actual;
       throw new Error(
-        `O documento ainda tem ${mb(actual.size)} após compressão (limite ${mb(maxBytes)}). Reduza imagens ou o número de páginas.`
+        `O documento ainda tem ${mb(actual.size)} após compressão (limite ${mb(maxBytes)}).`
       );
     } catch (err) {
       if (err instanceof Error && /limite|após compressão/i.test(err.message)) throw err;
@@ -95,13 +109,7 @@ export async function comprimirDocumentoUpload(
     }
   }
 
-  if (ePdf(file.name, file.type)) {
-    throw new Error(
-      `O PDF tem ${mb(file.size)} e o limite é ${mb(maxBytes)}. Guarde uma versão mais leve ou converta para Word antes de carregar.`
-    );
-  }
-
   throw new Error(
-    `O ficheiro tem ${mb(file.size)} e o limite é ${mb(maxBytes)}. Comprima-o antes de carregar.`
+    `O ficheiro tem ${mb(file.size)} e o limite é ${mb(maxBytes)}.`
   );
 }

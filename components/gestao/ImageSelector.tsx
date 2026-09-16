@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, FileText, ImageIcon, Upload, X } from "lucide-react";
-import { cmsError, listMediaGaleria, uploadMedia, type MediaFile } from "@/lib/cms";
+import { cmsError, listMediaBiblioteca, listMediaDocumentos, listMediaGaleria, listMediaPasta, uploadMedia, type MediaFile } from "@/lib/cms";
 
 function eImagemNome(nome: string, mime?: string | null) {
   if (mime?.startsWith("image/")) return true;
   return /\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(nome.split("?")[0]);
+}
+
+function eDocumentoNome(nome: string, mime?: string | null) {
+  if (eImagemNome(nome, mime)) return false;
+  const n = nome.toLowerCase();
+  if (/\.(pdf|docx?|xlsx?|pptx?|odt|ods|csv|zip)$/i.test(n)) return true;
+  if (mime && /pdf|officedocument|msword|ms-excel|spreadsheet|zip/i.test(mime)) return true;
+  return true;
 }
 
 interface ImageSelectorProps {
@@ -37,22 +45,47 @@ export default function ImageSelector({
   const [escolhidas, setEscolhidas] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  const soImagens = accept === "image/*";
+  const soImagens = accept === "image/*" || accept.startsWith("image/");
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loadingGaleria, setLoadingGaleria] = useState(false);
+
+  const rotuloBiblioteca =
+    pasta === "biblioteca"
+      ? "Acervo da biblioteca"
+      : pasta === "documentos"
+        ? "Documentos do sítio"
+        : soImagens
+          ? "Galeria do sítio"
+          : "Ficheiros do sítio";
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (tab !== "galeria" || files.length > 0) return;
+    if (tab !== "galeria") return;
     setLoadingGaleria(true);
-    listMediaGaleria()
+    setError("");
+    const carregar = async () => {
+      if (soImagens || pasta === "galeria") {
+        return (await listMediaGaleria()).filter((f) => eImagemNome(f.name, f.mimeType));
+      }
+      if (pasta === "biblioteca") {
+        return (await listMediaBiblioteca()).filter((f) => eDocumentoNome(f.name, f.mimeType));
+      }
+      if (pasta === "documentos") {
+        return (await listMediaDocumentos()).filter((f) => eDocumentoNome(f.name, f.mimeType));
+      }
+      const todos = await listMediaPasta(pasta);
+      return todos.filter((f) =>
+        soImagens ? eImagemNome(f.name, f.mimeType) : eDocumentoNome(f.name, f.mimeType)
+      );
+    };
+    void carregar()
       .then(setFiles)
       .catch((err) => setError(cmsError(err)))
       .finally(() => setLoadingGaleria(false));
-  }, [tab, files.length]);
+  }, [tab, pasta, soImagens]);
 
   // Enquanto carrega: não fechar com Escape
   useEffect(() => {
@@ -149,7 +182,7 @@ export default function ImageSelector({
             tab === "galeria" ? "border-b-2 border-[#2271b1] text-[#2271b1]" : "text-[#50575e] hover:text-[#2271b1]"
           }`}
         >
-          Galeria do sítio
+          {rotuloBiblioteca}
         </button>
       </div>
 
@@ -163,7 +196,7 @@ export default function ImageSelector({
                   {uploading
                     ? soImagens
                       ? "A comprimir e carregar…"
-                      : "A comprimir (máx. 1 MB) e anexar…"
+                      : "A anexar…"
                     : multiple
                       ? soImagens
                         ? "Escolha uma ou mais fotos do computador"
@@ -208,7 +241,13 @@ export default function ImageSelector({
             ) : files.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-[#8c8f94] text-center">
                 <ImageIcon className="w-10 h-10 mb-2" />
-                {soImagens ? "Ainda sem fotos na galeria do sítio." : "Ainda sem ficheiros na galeria do sítio."}
+                {soImagens
+                  ? "Ainda sem fotos na galeria do sítio."
+                  : pasta === "biblioteca"
+                    ? "Ainda sem documentos no acervo da biblioteca."
+                    : pasta === "documentos"
+                      ? "Ainda sem documentos no sítio."
+                      : "Ainda sem ficheiros nesta pasta."}
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
@@ -255,18 +294,20 @@ export default function ImageSelector({
       <div className="p-4 border-t border-[#ccd0d4] bg-[#f6f7f7] flex justify-between items-center gap-3 shrink-0">
         <div className="text-xs text-[#50575e]">
           {uploading
-            ? "Aguarde o anexo concluir. A janela fecha automaticamente."
+            ? ""
             : tab === "upload"
               ? soImagens
-                ? "A foto é comprimida automaticamente (~50 KB) e fica também na Galeria."
-                : "O documento é comprimido automaticamente (máx. 1 MB) e anexado de imediato."
+                ? "A foto é comprimida automaticamente (~50 KB) e fica na pasta de imagens."
+                : ""
               : multiple
                 ? escolhidas.length
-                  ? `${escolhidas.length} foto${escolhidas.length === 1 ? "" : "s"} seleccionada${escolhidas.length === 1 ? "" : "s"}.`
-                  : "Seleccione uma ou mais fotos já usadas no sítio."
+                  ? `${escolhidas.length} seleccionado${escolhidas.length === 1 ? "" : "s"}.`
+                  : soImagens
+                    ? "Seleccione uma ou mais fotos da galeria."
+                    : `Seleccione ficheiros em «${rotuloBiblioteca}».`
                 : soImagens
-                  ? "Escolha uma foto já usada no sítio."
-                  : "Escolha um ficheiro já usado no sítio."}
+                  ? "Escolha uma foto da galeria."
+                  : `Escolha um ficheiro em «${rotuloBiblioteca}».`}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {tab === "galeria" && multiple && (

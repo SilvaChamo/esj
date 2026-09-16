@@ -1,7 +1,10 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import type { Calendario } from "@/lib/calendario";
 import { comprimirBlobImagem, comprimirImagemUpload } from "@/lib/comprimir-imagem";
-import { comprimirDocumentoUpload, MAX_DOCUMENTO_BYTES } from "@/lib/comprimir-documento";
+import {
+  comprimirDocumentoUpload,
+  limiteDocumentoBytes,
+} from "@/lib/comprimir-documento";
 import { htmlParaParagrafos, sanitizarHtmlNoticia } from "@/lib/html-noticia";
 import type { Categoria, Publicacao } from "@/lib/publicacao";
 
@@ -38,10 +41,11 @@ export async function uploadMedia(file: File, folder: string) {
   const eImg = (file.type || "").startsWith("image/") && file.type !== "image/svg+xml" && file.type !== "image/gif";
   const comprimido = eImg
     ? await comprimirImagemUpload(file)
-    : await comprimirDocumentoUpload(file, MAX_DOCUMENTO_BYTES);
-  if (!eImg && comprimido.size > MAX_DOCUMENTO_BYTES) {
+    : await comprimirDocumentoUpload(file);
+  if (!eImg && comprimido.size > limiteDocumentoBytes(file)) {
+    const mb = (n: number) => `${(n / (1024 * 1024)).toFixed(2)} MB`;
     throw new Error(
-      `O documento excede 1 MB (${(comprimido.size / (1024 * 1024)).toFixed(2)} MB) após compressão.`
+      `O documento excede ${mb(limiteDocumentoBytes(file))} (${mb(comprimido.size)}).`
     );
   }
   const ext =
@@ -551,6 +555,8 @@ export async function deletePautaLinha(id: string) {
 
 const GALERIA_BUCKET = "media";
 const GALERIA_FOLDER = "galeria";
+const DOCUMENTOS_FOLDER = "documentos";
+const BIBLIOTECA_FOLDER = "biblioteca";
 
 export type MediaFile = {
   name: string;
@@ -560,10 +566,19 @@ export type MediaFile = {
   createdAt: string | null;
 };
 
-// O bucket "media" é partilhado por todo o sítio (notícias, publicações,
-// edital, galeria). A galeria mostra tudo o que já lá está, não só o que
-// foi carregado a partir dela — por isso percorre as subpastas todas em
-// vez de assumir que está tudo em "galeria/".
+function eImagemMedia(nome: string, mime?: string | null) {
+  if (mime?.startsWith("image/")) return true;
+  return /\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(nome.split("?")[0]);
+}
+
+function eDocumentoMedia(nome: string, mime?: string | null) {
+  if (eImagemMedia(nome, mime)) return false;
+  const n = nome.toLowerCase();
+  if (/\.(pdf|docx?|xlsx?|pptx?|odt|ods|csv|zip)$/i.test(n)) return true;
+  if (mime && /pdf|officedocument|msword|ms-excel|spreadsheet|zip/i.test(mime)) return true;
+  return !mime || !mime.startsWith("image/");
+}
+
 async function listarPastaRecursiva(
   supabase: ReturnType<typeof createBrowserSupabase>,
   prefix: string
@@ -594,9 +609,20 @@ async function listarPastaRecursiva(
   return resultados;
 }
 
+/** Só imagens da pasta galeria — não mistura documentos nem ficheiros da biblioteca. */
 export async function listMediaGaleria(): Promise<MediaFile[]> {
   const supabase = createBrowserSupabase();
-  const ficheiros = await listarPastaRecursiva(supabase, "");
+  const ficheiros = await listarPastaRecursiva(supabase, GALERIA_FOLDER);
+  return ficheiros
+    .filter((f) => eImagemMedia(f.name, f.mimeType))
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+}
+
+/** Lista ficheiros de uma pasta concreta do bucket media (ex.: biblioteca, documentos, editais). */
+export async function listMediaPasta(pasta: string): Promise<MediaFile[]> {
+  const supabase = createBrowserSupabase();
+  const prefix = pasta.replace(/^\/+|\/+$/g, "") || GALERIA_FOLDER;
+  const ficheiros = await listarPastaRecursiva(supabase, prefix);
   return ficheiros.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
@@ -641,28 +667,20 @@ export async function deleteMediaGaleria(names: string[]) {
   await supabase.from("media_details").delete().in("file_name", names);
 }
 
-const DOCUMENTOS_FOLDER = "documentos";
-
 export async function listMediaDocumentos(): Promise<MediaFile[]> {
   const supabase = createBrowserSupabase();
-  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(DOCUMENTOS_FOLDER, {
-    limit: 1000,
-    sortBy: { column: "created_at", order: "desc" },
-  });
-  if (error) throw error;
-  return (data ?? [])
-    .filter((f) => f.id)
-    .map((f) => {
-      const name = `${DOCUMENTOS_FOLDER}/${f.name}`;
-      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(name);
-      return {
-        name,
-        url: pub.publicUrl,
-        size: f.metadata?.size ?? null,
-        mimeType: f.metadata?.mimetype ?? null,
-        createdAt: f.created_at ?? null,
-      };
-    });
+  const ficheiros = await listarPastaRecursiva(supabase, DOCUMENTOS_FOLDER);
+  return ficheiros
+    .filter((f) => eDocumentoMedia(f.name, f.mimeType))
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+}
+
+export async function listMediaBiblioteca(): Promise<MediaFile[]> {
+  const supabase = createBrowserSupabase();
+  const ficheiros = await listarPastaRecursiva(supabase, BIBLIOTECA_FOLDER);
+  return ficheiros
+    .filter((f) => eDocumentoMedia(f.name, f.mimeType))
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
 export async function uploadMediaDocumento(file: File) {
@@ -670,10 +688,11 @@ export async function uploadMediaDocumento(file: File) {
   const eImg = (file.type || "").startsWith("image/") && file.type !== "image/svg+xml" && file.type !== "image/gif";
   const comprimido = eImg
     ? await comprimirImagemUpload(file)
-    : await comprimirDocumentoUpload(file, MAX_DOCUMENTO_BYTES);
-  if (!eImg && comprimido.size > MAX_DOCUMENTO_BYTES) {
+    : await comprimirDocumentoUpload(file);
+  if (!eImg && comprimido.size > limiteDocumentoBytes(file)) {
+    const mb = (n: number) => `${(n / (1024 * 1024)).toFixed(2)} MB`;
     throw new Error(
-      `O documento excede 1 MB (${(comprimido.size / (1024 * 1024)).toFixed(2)} MB) após compressão.`
+      `O documento excede ${mb(limiteDocumentoBytes(file))} (${mb(comprimido.size)}).`
     );
   }
   const path = `${DOCUMENTOS_FOLDER}/${limparNomeFicheiro(comprimido.name)}`;

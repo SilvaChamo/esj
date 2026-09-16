@@ -57,7 +57,7 @@ function IconeAnexo({ tipo }: { tipo: ReturnType<typeof tipoAnexo> }) {
 
 const vazio = {
   titulo: "",
-  curso: "JJ" as CursoBibliotecaCodigo,
+  curso: "" as CursoBibliotecaCodigo | "",
   tipo: "monografia" as TipoProjecto,
   ramos: "",
   tutor: "",
@@ -119,19 +119,22 @@ export default function BibliotecaCientificaGestao({
   const [abrir, setAbrir] = useState(false);
   const [ler, setLer] = useState<BibliotecaCientificaRow | null>(null);
   const [editar, setEditar] = useState<BibliotecaCientificaRow | null>(null);
-  const [form, setForm] = useState({ ...vazio, curso });
+  const [form, setForm] = useState({ ...vazio });
   const [selector, setSelector] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const refresh = () => {
     listBibliotecaCientifica(curso)
       .then((rows) => {
         setItems(rows);
+        setSelectedIds(new Set());
         setMissing(false);
       })
       .catch((error) => {
         if (isMissingTable(error)) setMissing(true);
         else setMissing(false);
         setItems([]);
+        setSelectedIds(new Set());
         if (!isMissingTable(error)) onAction(cmsError(error));
       });
   };
@@ -139,6 +142,20 @@ export default function BibliotecaCientificaGestao({
   useEffect(() => {
     refresh();
   }, [curso]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(items.map((r) => r.id)));
+  };
 
   const abrirNovo = () => {
     setEditar(null);
@@ -167,7 +184,7 @@ export default function BibliotecaCientificaGestao({
   const fechar = () => {
     setAbrir(false);
     setEditar(null);
-    setForm({ ...vazio, curso });
+    setForm({ ...vazio });
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -176,12 +193,16 @@ export default function BibliotecaCientificaGestao({
       onAction("Indique o título do projecto.");
       return;
     }
+    if (!form.curso) {
+      onAction("Seleccione o curso.");
+      return;
+    }
     setBusy(true);
     try {
       await guardarBibliotecaCientifica(
         {
           titulo: form.titulo,
-          curso,
+          curso: form.curso,
           tipo: form.tipo,
           ramos: form.ramos,
           tutor: form.tutor,
@@ -210,12 +231,68 @@ export default function BibliotecaCientificaGestao({
     setBusy(true);
     try {
       await eliminarBibliotecaCientifica(row.id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
       onAction("O projecto foi eliminado.");
       refresh();
     } catch (error) {
       onAction(cmsError(error));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const eliminarSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (
+      !window.confirm(
+        `Eliminar permanentemente ${selectedIds.size} projecto(s) seleccionado(s)?`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      for (const id of Array.from(selectedIds)) {
+        await eliminarBibliotecaCientifica(id);
+      }
+      if (ler && selectedIds.has(ler.id)) setLer(null);
+      setSelectedIds(new Set());
+      onAction("Os projectos seleccionados foram eliminados.");
+      refresh();
+    } catch (error) {
+      onAction(cmsError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const baixarSelected = async () => {
+    const escolhidos = items.filter((r) => selectedIds.has(r.id) && r.ficheiro);
+    if (escolhidos.length === 0) {
+      onAction("Os seleccionados não têm ficheiro para baixar.");
+      return;
+    }
+    for (const row of escolhidos) {
+      const url = row.ficheiro!;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error();
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const nome =
+          url.split("?")[0].split("/").pop() ||
+          `${row.titulo.slice(0, 40).replace(/[^\w\-]+/g, "_")}.pdf`;
+        a.download = nome;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch {
+        window.open(url, "_blank");
+      }
     }
   };
 
@@ -240,77 +317,150 @@ export default function BibliotecaCientificaGestao({
           publicar o primeiro.
         </p>
       ) : (
-        <div className="bg-white border border-navy-100 overflow-hidden">
+        <div className="bg-white border border-navy-100">
           <table className="w-full table-fixed text-left text-sm">
             <thead className="bg-cream text-[11px] font-bold tracking-widest text-navy-900/55">
               <tr>
-                <th className="px-3 py-2.5 text-left">Título</th>
+                <th className="px-2 py-2.5 w-10 text-center align-middle">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === items.length && items.length > 0}
+                    onChange={toggleSelectAll}
+                    className="h-3.5 w-3.5 cursor-pointer accent-sky"
+                    title="Seleccionar todos"
+                  />
+                </th>
+                <th className="px-3 py-2.5 text-left">
+                  <span className="inline-flex items-center gap-3 flex-wrap">
+                    <span>Título</span>
+                    {selectedIds.size > 0 && (
+                      <span className="inline-flex items-center gap-3 font-semibold tracking-normal normal-case text-[12px]">
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => !busy && void baixarSelected()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              if (!busy) void baixarSelected();
+                            }
+                          }}
+                          className={`cursor-pointer hover:underline ${busy ? "opacity-50 pointer-events-none" : "text-sky"}`}
+                        >
+                          Baixar
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => !busy && void eliminarSelected()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              if (!busy) void eliminarSelected();
+                            }
+                          }}
+                          className={`cursor-pointer hover:underline ${busy ? "opacity-50 pointer-events-none" : "text-crimson"}`}
+                        >
+                          Eliminar
+                        </span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedIds(new Set())}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setSelectedIds(new Set());
+                            }
+                          }}
+                          className="cursor-pointer text-navy-900/55 hover:underline"
+                        >
+                          Cancelar
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                </th>
                 <th className="px-3 py-2.5 text-center whitespace-nowrap w-[9rem]">N.º estudante</th>
                 <th className="px-3 py-2.5 text-center whitespace-nowrap w-[11rem]">Tipo</th>
                 <th className="px-3 py-2.5 text-center whitespace-nowrap w-[4rem]">Ano</th>
                 <th className="px-3 py-2.5 text-center whitespace-nowrap w-[10rem]">Avaliador</th>
-                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[5.5rem]">Acções</th>
+                <th className="px-3 py-2.5 text-center whitespace-nowrap w-[7.5rem]">Acções</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
-              {items.map((row) => (
-                <tr key={row.id} className="align-middle">
-                  <td className="px-3 py-2.5 font-semibold text-navy-900 text-left">
-                    <span className="flex items-start gap-2 min-w-0">
-                      <span className="line-clamp-2 break-words" title={row.titulo}>
-                        {row.titulo}
-                      </span>
-                      {!row.ficheiro ? (
-                        <span className="text-[11px] font-normal text-crimson whitespace-nowrap shrink-0 pt-0.5">
-                          Sem PDF
+                {items.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`align-top ${selectedIds.has(row.id) ? "bg-sky/5" : ""}`}
+                  >
+                    <td className="px-2 pt-3 pb-2.5 text-center align-top">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id)}
+                        onChange={() => toggleSelect(row.id)}
+                        className="mt-0.5 h-3.5 w-3.5 cursor-pointer accent-sky"
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 font-semibold text-navy-900 text-left align-top">
+                      <span className="flex items-start gap-2 min-w-0">
+                        <span className="line-clamp-2 break-words leading-snug" title={row.titulo}>
+                          {row.titulo}
                         </span>
-                      ) : null}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center">
-                    {row.numero_estudante || "—"}
-                  </td>
-                  <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center">
-                    {TIPOS.find((t) => t.id === row.tipo)?.label ?? row.tipo}
-                  </td>
-                  <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center">{row.ano}</td>
-                  <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center truncate" title={row.avaliador || undefined}>
-                    {row.avaliador || "—"}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-center">
-                    <div className="inline-flex items-center justify-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setLer(row)}
-                        title="Ler"
-                        aria-label="Ler"
-                        className="p-1 text-sky hover:text-crimson"
-                      >
-                        <Eye size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => abrirEditar(row)}
-                        title="Editar"
-                        aria-label="Editar"
-                        className="p-1 text-sky hover:text-crimson"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void eliminar(row)}
-                        title="Eliminar"
-                        aria-label="Eliminar"
-                        className="p-1 text-crimson hover:text-navy-900 disabled:opacity-50"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {!row.ficheiro ? (
+                          <span className="text-[11px] font-normal text-crimson whitespace-nowrap shrink-0 pt-0.5">
+                            Sem PDF
+                          </span>
+                        ) : null}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center align-top">
+                      {row.numero_estudante || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center align-top">
+                      {TIPOS.find((t) => t.id === row.tipo)?.label ?? row.tipo}
+                    </td>
+                    <td className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center align-top">{row.ano}</td>
+                    <td
+                      className="px-3 py-2.5 text-navy-900/70 whitespace-nowrap text-center truncate align-top"
+                      title={row.avaliador || undefined}
+                    >
+                      {row.avaliador || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap text-center align-top">
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setLer(row)}
+                          title="Ler"
+                          aria-label="Ler"
+                          className="p-1 text-sky hover:text-crimson"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => abrirEditar(row)}
+                          title="Editar"
+                          aria-label="Editar"
+                          className="p-1 text-sky hover:text-crimson"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void eliminar(row)}
+                          title="Eliminar"
+                          aria-label="Eliminar"
+                          className="p-1 text-crimson hover:text-navy-900 disabled:opacity-50"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -334,7 +484,7 @@ export default function BibliotecaCientificaGestao({
             className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-navy-100 p-6 md:p-8"
           >
             <h2 className="font-serif text-xl font-bold text-navy-900 leading-snug break-words">
-              {editar ? "Editar projecto" : `Novo projecto · ${cursoInfo?.titulo ?? curso}`}
+              {editar ? "Editar projecto" : "Novo projecto"}
             </h2>
             <p className="mt-1 text-sm text-navy-900/55 leading-relaxed">
               Preencha os dados académicos. O PDF fica disponível no acervo público do curso.
@@ -351,6 +501,26 @@ export default function BibliotecaCientificaGestao({
               </Campo>
 
               <div className="grid sm:grid-cols-2 gap-5">
+                <Campo label="CURSO">
+                  <select
+                    value={form.curso}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        curso: e.target.value as CursoBibliotecaCodigo | "",
+                      }))
+                    }
+                    className="esj-field"
+                    required
+                  >
+                    <option value="">Seleccione o curso…</option>
+                    {CURSOS_BIBLIOTECA.map((c) => (
+                      <option key={c.codigo} value={c.codigo}>
+                        {c.titulo}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
                 <Campo label="TIPO DE PROJECTO">
                   <select
                     value={form.tipo}
@@ -366,6 +536,9 @@ export default function BibliotecaCientificaGestao({
                     ))}
                   </select>
                 </Campo>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5">
                 <Campo label="ANO">
                   <input
                     type="number"
@@ -377,9 +550,6 @@ export default function BibliotecaCientificaGestao({
                     required
                   />
                 </Campo>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
                 <Campo label="N.º DE ESTUDANTE">
                   <input
                     value={form.numeroEstudante}
@@ -399,15 +569,16 @@ export default function BibliotecaCientificaGestao({
                     Formato ESJ: ano + número + MP (ex.: 2018147MP, 202601MP, 2027120MP).
                   </p>
                 </Campo>
-                <Campo label="AUTOR(ES)">
-                  <input
-                    value={form.autores}
-                    onChange={(e) => setForm((f) => ({ ...f, autores: e.target.value }))}
-                    className="esj-field"
-                    placeholder="Separados por vírgula"
-                  />
-                </Campo>
               </div>
+
+              <Campo label="AUTOR(ES)">
+                <input
+                  value={form.autores}
+                  onChange={(e) => setForm((f) => ({ ...f, autores: e.target.value }))}
+                  className="esj-field"
+                  placeholder="Separados por vírgula"
+                />
+              </Campo>
 
               <div className="grid sm:grid-cols-2 gap-5">
                 <Campo label="TUTOR">

@@ -161,9 +161,9 @@ const NAV: NavEntry[] = [
     icon: Book,
     children: [
       { id: "bib-jj", label: "Jornalismo", icon: BookOpen },
-      { id: "bib-pm", label: "Publicidade e Marketing", icon: BookOpen },
+      { id: "bib-pm", label: "P. marketing", icon: BookOpen },
       { id: "bib-rp", label: "Relações Públicas", icon: BookOpen },
-      { id: "bib-bd", label: "Biblioteconomia e Documentação", icon: BookOpen },
+      { id: "bib-bd", label: "B. Documentação", icon: BookOpen },
     ],
   },
   {

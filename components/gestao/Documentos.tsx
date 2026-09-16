@@ -86,6 +86,7 @@ export default function Documentos() {
   const [toast, setToast] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [ler, setLer] = useState<MediaFile | null>(null);
   const [aImprimir, setAImprimir] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const notify = (tipo: "ok" | "erro", texto: string) => {
     setToast({ tipo, texto });
@@ -95,12 +96,29 @@ export default function Documentos() {
   const load = () => {
     setLoading(true);
     listMediaDocumentos()
-      .then(setFiles)
+      .then((lista) => {
+        setFiles(lista);
+        setSelectedIds(new Set());
+      })
       .catch((err) => notify("erro", cmsError(err)))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
+
+  const toggleSelect = (name: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === files.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(files.map((f) => f.name)));
+  };
 
   const handleUpload = async (filesToUpload: FileList | null) => {
     if (!filesToUpload || filesToUpload.length === 0) return;
@@ -129,10 +147,40 @@ export default function Documentos() {
     try {
       await deleteMediaDocumentos([name]);
       setFiles((prev) => prev.filter((f) => f.name !== name));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(name);
+        return next;
+      });
       if (ler?.name === name) setLer(null);
       notify("ok", "Documento eliminado.");
     } catch (err) {
       notify("erro", cmsError(err));
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Eliminar permanentemente ${selectedIds.size} documento(s) seleccionado(s)?`)) return;
+    try {
+      setLoading(true);
+      const nomes = Array.from(selectedIds);
+      await deleteMediaDocumentos(nomes);
+      setFiles((prev) => prev.filter((f) => !selectedIds.has(f.name)));
+      if (ler && selectedIds.has(ler.name)) setLer(null);
+      setSelectedIds(new Set());
+      notify("ok", "Documentos eliminados.");
+    } catch (err) {
+      notify("erro", cmsError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const baixarSelected = async () => {
+    const escolhidos = files.filter((f) => selectedIds.has(f.name));
+    for (const file of escolhidos) {
+      await baixar(file);
     }
   };
 
@@ -211,6 +259,54 @@ export default function Documentos() {
         }}
       />
 
+      {!loading && files.length > 0 && (
+        <div className="sticky top-0 z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border border-[#ccd0d4] p-2 gap-2 shadow-sm mb-4">
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <label className="inline-flex items-center gap-2 text-[13px] text-[#50575e] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === files.length && files.length > 0}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 cursor-pointer"
+                title="Seleccionar todos"
+              />
+              Seleccionar todos
+            </label>
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[13px] text-[#50575e]">{selectedIds.size} seleccionado(s)</span>
+                <button
+                  type="button"
+                  onClick={() => void baixarSelected()}
+                  className="h-8 px-3 text-sm font-semibold border border-[#ccd0d4] rounded-md bg-white hover:bg-[#f6f7f7] inline-flex items-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteSelected()}
+                  className="h-8 px-3 text-sm font-semibold border border-[#d63638]/40 text-[#d63638] rounded-md bg-white hover:bg-[#fcf0f1] inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="h-8 px-3 text-sm font-semibold border border-[#ccd0d4] rounded-md bg-white hover:bg-[#f6f7f7]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="text-[13px] text-[#50575e] whitespace-nowrap">
+            {files.length} documento{files.length === 1 ? "" : "s"}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -227,6 +323,14 @@ export default function Documentos() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white text-left text-[13px] font-bold border-b border-[#ccd0d4]">
+                <th className="p-2 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === files.length && files.length > 0}
+                    onChange={toggleSelectAll}
+                    title="Seleccionar todos"
+                  />
+                </th>
                 <th className="p-3">Ficheiro</th>
                 <th className="p-3">Tipo</th>
                 <th className="p-3">Tamanho</th>
@@ -236,7 +340,19 @@ export default function Documentos() {
             </thead>
             <tbody>
               {files.map((file) => (
-                <tr key={file.name} className="border-b border-[#f0f0f1] hover:bg-[#f6f7f7] text-[13px]">
+                <tr
+                  key={file.name}
+                  className={`border-b border-[#f0f0f1] hover:bg-[#f6f7f7] text-[13px] ${
+                    selectedIds.has(file.name) ? "bg-[#f0f6fc]" : ""
+                  }`}
+                >
+                  <td className="p-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(file.name)}
+                      onChange={() => toggleSelect(file.name)}
+                    />
+                  </td>
                   <td className="p-3">
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-[#787c82] shrink-0" />
