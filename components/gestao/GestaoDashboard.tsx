@@ -132,6 +132,9 @@ function isBibSection(section: Section): section is keyof typeof BIB_SECTION {
   return section in BIB_SECTION;
 }
 
+/** Mesmo fundo da zona da conta (avatar) no fundo da barra lateral. */
+const SIDEBAR_MUTED = "bg-black/20";
+
 const NAV: NavEntry[] = [
   { id: "painel", label: "Painel", icon: LayoutDashboard },
   {
@@ -152,7 +155,7 @@ const NAV: NavEntry[] = [
       { id: "newsletter", label: "Newsletter", icon: Send },
       { id: "folha", label: "Folha académica", icon: ScrollText },
       { id: "anuncios", label: "SMS", icon: Bell },
-      { id: "eventos", label: "Colóquios e lançamento de livro", icon: CalendarDays },
+      { id: "eventos", label: "Eventos", icon: CalendarDays },
       { id: "videos", label: "Vídeos", icon: Video },
     ],
   },
@@ -389,8 +392,8 @@ export default function GestaoDashboard() {
                   </button>
                 </div>
                 {isOpen && (
-                  <div className="relative pb-1">
-                    <div className="absolute left-[26px] top-1 bottom-2 w-px bg-white/10" />
+                  <div className={`relative ${SIDEBAR_MUTED} py-0.5`}>
+                    <div className="absolute left-[26px] top-1 bottom-1 w-px bg-white/10" />
                     {entry.children.map((child) => {
                       const ChildIcon = child.icon;
                       const active = section === child.id;
@@ -399,7 +402,7 @@ export default function GestaoDashboard() {
                           key={child.id}
                           type="button"
                           onClick={() => goToLeaf(child.id)}
-                          className={`relative w-full flex items-center gap-3 pl-11 pr-5 py-2.5 text-[13px] text-left transition-colors ${
+                          className={`relative w-full flex items-center gap-3 pl-11 pr-5 py-1.5 text-[13px] text-left transition-colors ${
                             active
                               ? "text-sky-300 font-bold"
                               : "text-white/60 hover:bg-white/5 hover:text-white"
@@ -421,7 +424,7 @@ export default function GestaoDashboard() {
         </nav>
 
         <div
-          className={`border-t border-white/10 bg-black/20 flex items-center gap-2 ${
+          className={`border-t border-white/10 ${SIDEBAR_MUTED} flex items-center gap-2 ${
             isCollapsed ? "justify-center px-2 py-4" : "px-5 py-4"
           }`}
         >
