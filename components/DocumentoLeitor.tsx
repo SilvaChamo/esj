@@ -418,7 +418,8 @@ export function WordLeitura({
                         : "bg-white text-navy-900"
                     }`}
                   >
-                    Página {p.indice + 1}
+                    {p.indice + 1}
+                    {paginas.length > 1 ? ` / ${paginas.length}` : ""}
                   </span>
                 </button>
               </li>
