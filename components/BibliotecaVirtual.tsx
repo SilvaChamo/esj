@@ -32,7 +32,7 @@ export default function BibliotecaVirtual() {
                 <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
               </div>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-                Abra o acervo da ESJ onde <span className="text-sky">estiver</span>
+                Abra o acervo da ESJ <span className="text-sky">onde estiver</span>
               </h2>
               <p className="mt-5 mx-auto max-w-2xl text-navy-900/70 text-sm md:text-base leading-relaxed">
                 Consulte obras, revistas e recursos digitais em Ciências da Comunicação e da
@@ -42,7 +42,7 @@ export default function BibliotecaVirtual() {
                 href={BIBLIOTECA_VIRTUAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="esj-btn-move mt-8 inline-flex items-center justify-center rounded-full bg-navy-900 text-white hover:bg-crimson font-semibold text-[13px] tracking-wide px-8 py-3.5 transition-colors"
+                className="esj-btn-move mt-8 inline-flex items-center justify-center rounded-full bg-navy-900 text-white font-semibold text-[13px] tracking-wide px-8 py-3.5 transition-colors"
               >
                 Aceder à biblioteca virtual
               </a>

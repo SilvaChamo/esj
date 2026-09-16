@@ -66,7 +66,7 @@ export default function NewsletterSeccao() {
             <button
               type="submit"
               disabled={newsBusy}
-              className="esj-btn-move h-11 px-6 bg-navy-900 text-white text-[11px] font-bold tracking-[0.14em] shrink-0 hover:bg-crimson disabled:opacity-60"
+              className="esj-btn-move h-11 px-6 bg-navy-900 text-white text-[11px] font-bold tracking-[0.14em] shrink-0 disabled:opacity-60"
             >
               {newsBusy ? "A SUBSCREVER…" : "SUBSCREVER"}
             </button>
@@ -90,7 +90,7 @@ export default function NewsletterSeccao() {
             <button
               type="button"
               onClick={() => setNewsPopup(null)}
-              className="mt-5 h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] border border-navy-900 hover:bg-navy-900 hover:text-white"
+              className="mt-5 h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] border border-navy-900 hover:text-white"
             >
               OK
             </button>

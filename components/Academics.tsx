@@ -124,6 +124,42 @@ export default function Academics() {
     };
   }, []);
 
+  useEffect(() => {
+    const aplicarHash = () => {
+      const hash = window.location.hash;
+      if (hash === "#ensino-pos-graduacao") {
+        setTab("cursos");
+        setNivelCurso("pos-graduacao");
+      } else if (hash === "#ensino-licenciatura" || hash === "#ensino") {
+        setTab("cursos");
+        setNivelCurso("licenciatura");
+      } else {
+        return;
+      }
+      requestAnimationFrame(() => {
+        document.getElementById("ensino")?.scrollIntoView({ behavior: "smooth" });
+      });
+    };
+
+    const onNivel = (e: Event) => {
+      const nivel = (e as CustomEvent<NivelCurso>).detail;
+      if (nivel !== "licenciatura" && nivel !== "pos-graduacao") return;
+      setTab("cursos");
+      setNivelCurso(nivel);
+      requestAnimationFrame(() => {
+        document.getElementById("ensino")?.scrollIntoView({ behavior: "smooth" });
+      });
+    };
+
+    aplicarHash();
+    window.addEventListener("hashchange", aplicarHash);
+    window.addEventListener("esj:ensino-nivel", onNivel);
+    return () => {
+      window.removeEventListener("hashchange", aplicarHash);
+      window.removeEventListener("esj:ensino-nivel", onNivel);
+    };
+  }, []);
+
   const DATAS: {
     titulo: string;
     texto: string;
@@ -266,7 +302,7 @@ export default function Academics() {
               <div className="mt-10">
                 <Link
                   href="/estudantes-internacionais"
-                  className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
+                  className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5 transition-colors"
                 >
                   <Globe size={15} />
                   CANDIDATURA INTERNACIONAL
@@ -350,7 +386,7 @@ export default function Academics() {
               <div className="mt-16 flex flex-wrap gap-3 justify-center">
                 <Link
                   href="/edital"
-                  className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+                  className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
                 >
                   VER EDITAL DE ADMISSÃO
                 </Link>
@@ -417,7 +453,7 @@ export default function Academics() {
             <div className="mt-10">
               <Link
                 href={`/inscricao?${filtroQuery({ nivel: NIVEL_ADMISSAO[nivelCurso], regime: "Diurno" })}`}
-                className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+                className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
               >
                 CANDIDATAR-SE
               </Link>
@@ -460,7 +496,7 @@ export default function Academics() {
                   <div className="pt-2">
                     <Link
                       href="/minutas"
-                      className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                      className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
                     >
                       <FileText size={14} />
                       VER MINUTAS
@@ -486,7 +522,7 @@ export default function Academics() {
                   <div className="pt-2">
                     <Link
                       href="/regulamentos"
-                      className="esj-btn-move inline-flex items-center gap-2 bg-crimson hover:bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                      className="esj-btn-move inline-flex items-center gap-2 bg-crimson text-white font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
                     >
                       <Scale size={14} />
                       VER LEGISLAÇÃO

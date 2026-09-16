@@ -18,13 +18,13 @@ export default function About() {
           <div className="w-full grid md:grid-cols-2 md:items-center gap-8 md:gap-10 lg:gap-12">
             <div className="relative w-full">
               <Image
-                src="/esj-20262.jpg"
+                src="/esj-20262.webp"
                 alt="Campus e comunidade da Escola Superior de Jornalismo"
-                width={6666}
-                height={5112}
+                width={720}
+                height={552}
                 priority
                 unoptimized
-                sizes="(min-width: 768px) 50vw, 100vw"
+                sizes="(min-width: 768px) 40vw, 100vw"
                 className="h-auto w-full"
               />
             </div>
@@ -81,7 +81,7 @@ export default function About() {
                 <div className="mt-8">
                   <Link
                     href="#ensino"
-                    className="esj-btn-move inline-flex items-center gap-2 bg-navy-900 hover:bg-crimson text-white font-semibold text-[12px] tracking-wide px-5 py-3.5"
+                    className="esj-btn-move inline-flex items-center gap-2 bg-navy-900 text-white font-semibold text-[12px] tracking-wide px-5 py-3.5"
                   >
                     Saiba mais sobre a ESJ
                     <ArrowRight size={16} />

@@ -29,7 +29,7 @@ export default function CursoPage({ params }: { params: { slug: string } }) {
         actions={
           <Link
             href={`/inscricao?${curso.inscricaoQuery}`}
-            className="bg-leaf hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3 transition-colors"
+            className="bg-leaf text-white font-semibold text-xs tracking-wide px-6 py-3 transition-colors"
           >
             CANDIDATAR-SE
           </Link>
@@ -46,7 +46,7 @@ export default function CursoPage({ params }: { params: { slug: string } }) {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={`/inscricao?${curso.inscricaoQuery}`}
-              className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+              className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
             >
               CANDIDATAR-SE
             </Link>

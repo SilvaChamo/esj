@@ -129,14 +129,24 @@ export default function Hero() {
           <div className="mt-8 mb-10 sm:mb-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
             <div className="flex gap-2 sm:gap-3">
               <a
-                href="#ensino"
-                className="esj-btn-move bg-sky hover:bg-crimson text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
+                href="#ensino-licenciatura"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("esj:ensino-nivel", { detail: "licenciatura" })
+                  );
+                }}
+                className="esj-btn-move bg-sky text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
               >
                 LICENCIATURA <ChevronRight size={14} />
               </a>
               <a
-                href="#ensino"
-                className="esj-btn-move bg-crimson hover:bg-crimson/90 text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
+                href="#ensino-pos-graduacao"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("esj:ensino-nivel", { detail: "pos-graduacao" })
+                  );
+                }}
+                className="esj-btn-move esj-btn-banner-pos bg-crimson text-white font-semibold text-[10px] sm:text-xs tracking-wide px-3 sm:px-5 py-3 flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap"
               >
                 PÓS-GRADUAÇÃO <ChevronRight size={14} />
               </a>
@@ -146,7 +156,7 @@ export default function Hero() {
               <button
                 onClick={prev}
                 aria-label="Anterior"
-                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center hover:bg-white/15 shrink-0"
+                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -165,7 +175,7 @@ export default function Hero() {
               <button
                 onClick={next}
                 aria-label="Seguinte"
-                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center hover:bg-white/15 shrink-0"
+                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
               >
                 <ChevronRight size={16} />
               </button>

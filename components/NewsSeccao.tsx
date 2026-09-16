@@ -59,7 +59,7 @@ export default function NewsSeccao({
                 </h2>
                 <Link
                   href="/noticias"
-                  className="esj-btn-move inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson"
+                  className="esj-btn-move esj-btn-outline-sky inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2"
                 >
                   Ver repositorio de publicações
                 </Link>

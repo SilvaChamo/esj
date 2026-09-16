@@ -106,7 +106,7 @@ export default function ContactBand() {
                 <button
                   type="submit"
                   disabled={msgState === "busy"}
-                  className="esj-btn-move h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] hover:bg-navy-900 hover:text-white disabled:opacity-60"
+                  className="esj-btn-move h-11 px-6 bg-white text-navy-900 text-[11px] font-bold tracking-[0.14em] hover:text-white disabled:opacity-60"
                 >
                   {msgState === "busy" ? "A ENVIAR…" : "ENVIAR MENSAGEM"}
                 </button>

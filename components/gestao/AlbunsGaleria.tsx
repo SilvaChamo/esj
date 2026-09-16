@@ -178,31 +178,40 @@ export default function AlbunsGaleria() {
     return (
       <div className="bg-white border border-navy-100 p-6 md:p-8 space-y-5">
         <button id="albuns-novo" type="button" className="hidden" onClick={abrirNovo} />
-        <h2 className="font-serif text-xl font-bold text-navy-900">
-          {modo === "novo" ? "Novo álbum" : "Editar álbum"}
-        </h2>
 
-        <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
+        <div className="flex items-stretch gap-4 flex-col sm:flex-row">
           <button
             type="button"
             onClick={() => setSelector("capa")}
-            className="relative w-28 h-28 shrink-0 border-2 border-dashed border-navy-100 hover:border-sky bg-cream overflow-hidden flex items-center justify-center"
+            className="relative w-full sm:w-44 md:w-52 shrink-0 min-h-[8.5rem] sm:min-h-0 border border-navy-100 bg-cream overflow-hidden group"
           >
             {coverPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverPreview}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <span className="absolute inset-0 z-[1] flex items-center justify-center bg-navy-900/70 text-white text-[12px] font-bold tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                  Substituir capa
+                </span>
+              </>
             ) : (
-              <span className="text-center text-navy-900/40 px-2">
-                <Upload size={20} className="mx-auto" />
-                <span className="text-[10px] font-bold mt-1 block">Capa</span>
+              <span className="absolute inset-0 flex flex-col items-center justify-center text-navy-900/40 px-2">
+                <Upload size={22} />
+                <span className="text-[10px] font-bold mt-1.5 block">Capa</span>
               </span>
             )}
           </button>
           <div className="flex-1 min-w-0 flex flex-col gap-3">
+            <h2 className="font-serif text-xl font-bold text-navy-900">
+              {modo === "novo" ? "Novo álbum" : "Editar álbum"}
+            </h2>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full sm:w-1/2 border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
+              className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
               placeholder="Título do álbum"
             />
             <input
@@ -211,15 +220,6 @@ export default function AlbunsGaleria() {
               className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
               placeholder="Descrição do álbum"
             />
-            {coverPreview ? (
-              <button
-                type="button"
-                onClick={() => setSelector("capa")}
-                className="self-start text-[12px] text-sky hover:underline"
-              >
-                Substituir capa
-              </button>
-            ) : null}
           </div>
         </div>
 

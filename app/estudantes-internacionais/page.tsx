@@ -33,7 +33,7 @@ export default function EstudantesInternacionaisPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/inscricoes"
-              className="esj-btn-move inline-flex items-center bg-navy-800 hover:bg-crimson text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+              className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
             >
               VER ADMISSÕES
             </Link>

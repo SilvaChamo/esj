@@ -131,8 +131,54 @@ body {
 }
 
 .esj-btn-move {
-  transition: transform 0.4s ease-out, background-color 0.25s ease, color 0.25s ease,
-    border-color 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  background-image: linear-gradient(#d42a3a, #d42a3a);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 5px 100%;
+  transition: background-size 0.55s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease,
+    border-color 0.3s ease, transform 0.4s ease-out;
+}
+
+/* Botões vermelhos: linha azul-escura; no hover o slide preenche azul escuro */
+.esj-btn-move.bg-crimson {
+  background-image: linear-gradient(#0c1d3b, #0c1d3b), linear-gradient(#0c1d3b, #0c1d3b);
+  background-repeat: no-repeat, no-repeat;
+  background-position: left center, left center;
+  background-size: 0 100%, 5px 100%;
+}
+
+/* Banner: botão vermelho — linha azul escuro (visível no fundo), slide para azul escuro */
+.esj-btn-move.esj-btn-banner-pos {
+  background-image: linear-gradient(#0c1d3b, #0c1d3b), linear-gradient(#122a55, #122a55);
+  background-repeat: no-repeat, no-repeat;
+  background-position: left center, left center;
+  background-size: 0 100%, 5px 100%;
+}
+
+.esj-btn-move.esj-btn-outline-sky {
+  color: #159bdb;
+  border-color: #159bdb;
+}
+
+@media (hover: hover) {
+  .esj-btn-move:hover {
+    background-size: 100% 100%;
+    color: #fff !important;
+    border-color: #d42a3a;
+  }
+
+  .esj-btn-move.bg-crimson:hover {
+    background-size: 100% 100%, 5px 100%;
+    border-color: #0c1d3b;
+  }
+
+  .esj-btn-move.esj-btn-banner-pos:hover {
+    background-size: 100% 100%, 5px 100%;
+    border-color: #0c1d3b;
+  }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
