@@ -73,11 +73,14 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
 }
 
 function listarSeccoes(doc: Document) {
-  return Array.from(doc.querySelectorAll("section.docx")) as HTMLElement[];
+  return Array.from(doc.querySelectorAll(".docx-wrapper > section.docx, section.docx")) as HTMLElement[];
 }
 
 function montarPaginas(doc: Document): PaginaInfo[] {
-  const secs = listarSeccoes(doc);
+  const secs = listarSeccoes(doc).filter((s) => {
+    // Ignorar wrappers vazios
+    return (s.textContent || "").trim().length > 0 || s.querySelector("img,table,svg");
+  });
   if (secs.length > 1) {
     return secs.map((_, i) => ({ indice: i, tipo: "section" as const }));
   }
@@ -86,6 +89,43 @@ function montarPaginas(doc: Document): PaginaInfo[] {
   const altura = Math.max(alvo.scrollHeight, alvo.offsetHeight, 1);
   const n = Math.max(1, Math.ceil(altura / ALTURA_PAGINA_A4));
   return Array.from({ length: n }, (_, i) => ({ indice: i, tipo: "virtual" as const }));
+}
+
+/** Coloca 1, 2, 3… no rodapé de cada página (o Word no browser não calcula o campo PAGE). */
+function aplicarNumeracaoPaginas(doc: Document) {
+  const secs = listarSeccoes(doc);
+  if (secs.length <= 1) return;
+
+  secs.forEach((sec, i) => {
+    const n = i + 1;
+    sec.setAttribute("data-esj-pagina", String(n));
+
+    let footer = sec.querySelector(":scope > footer") as HTMLElement | null;
+    if (!footer) {
+      footer = doc.createElement("footer");
+      footer.style.cssText = "margin-top:auto;width:100%;padding-top:6px;box-sizing:border-box;";
+      sec.appendChild(footer);
+    }
+
+    // Esconder números estáticos errados (muitas vezes o mesmo «1» em todas as páginas)
+    footer.querySelectorAll("p, span").forEach((el) => {
+      if ((el as HTMLElement).closest(".esj-num-pagina")) return;
+      const t = (el.textContent || "").trim();
+      if (/^\d{1,4}$/.test(t)) {
+        (el as HTMLElement).style.visibility = "hidden";
+      }
+    });
+
+    let box = footer.querySelector(".esj-num-pagina") as HTMLElement | null;
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = "esj-num-pagina";
+      box.style.cssText =
+        "width:100%;text-align:center;font-size:11pt;line-height:1.2;color:#222;font-family:Times New Roman,Times,serif;";
+      footer.appendChild(box);
+    }
+    box.textContent = String(n);
+  });
 }
 
 async function capturarElemento(el: HTMLElement): Promise<HTMLCanvasElement | null> {
@@ -185,6 +225,7 @@ export function WordLeitura({
     // Esperar layout (fontes / imagens) antes de contar e capturar
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     await new Promise((r) => setTimeout(r, 400));
+    aplicarNumeracaoPaginas(doc);
     const base = montarPaginas(doc);
     setPaginas(base);
     setPaginaActiva(0);
