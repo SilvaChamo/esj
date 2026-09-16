@@ -1,5 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
+import { gestorSessao } from "@/lib/gestao-auth";
 
 const BUCKET = "media";
 const ALBUNS_ROOT = "galeria/albuns";
@@ -12,6 +13,9 @@ export type AlbumGaleria = {
   coverUrl: string | null;
   photoCount: number;
   path: string;
+  createdAt: string | null;
+  createdBy: string | null;
+  createdById: string | null;
 };
 
 export type FotoAlbum = {
@@ -25,7 +29,29 @@ type AlbumMeta = {
   subtitle: string;
   cover?: string | null;
   photos?: string[];
+  createdAt?: string | null;
+  createdBy?: string | null;
+  createdById?: string | null;
+  createdByAdmin?: boolean;
 };
+
+/** Rótulo no card: admin → Administrador; legado sem dono → Administrador. */
+export function rotuloAutorAlbum(meta: {
+  createdBy?: string | null;
+  createdById?: string | null;
+  createdByAdmin?: boolean;
+}): string {
+  if (meta.createdByAdmin) return "Administrador";
+  if (meta.createdBy?.trim()) return meta.createdBy.trim();
+  // Álbuns criados antes de gravar o autor → conta admin
+  return "Administrador";
+}
+
+/** Rótulo automático do autor da sessão (Administrador ou nome do gestor). */
+export async function nomeGestorAtual(): Promise<string | null> {
+  const g = await gestorSessao();
+  return g?.autor ?? null;
+}
 
 export function slugifyAlbum(text: string) {
   return text
@@ -94,6 +120,10 @@ async function lerMeta(slug: string): Promise<AlbumMeta | null> {
       subtitle: json.subtitle || "",
       cover: json.cover || null,
       photos: Array.isArray(json.photos) ? json.photos.filter(Boolean) : [],
+      createdAt: typeof json.createdAt === "string" ? json.createdAt : null,
+      createdBy: typeof json.createdBy === "string" ? json.createdBy : null,
+      createdById: typeof json.createdById === "string" ? json.createdById : null,
+      createdByAdmin: Boolean(json.createdByAdmin),
     };
   } catch {
     return null;
@@ -110,6 +140,10 @@ async function gravarMeta(slug: string, meta: AlbumMeta) {
           subtitle: meta.subtitle,
           cover: meta.cover || null,
           photos: dedupeUrls(meta.photos || []),
+          createdAt: meta.createdAt || null,
+          createdBy: meta.createdBy || null,
+          createdById: meta.createdById || null,
+          createdByAdmin: Boolean(meta.createdByAdmin),
         },
         null,
         2
@@ -176,6 +210,10 @@ export async function listAlbunsGaleria(): Promise<AlbumGaleria[]> {
         subtitle: "",
         cover: null,
         photos: [],
+        createdAt: null,
+        createdBy: null,
+        createdById: null,
+        createdByAdmin: true,
       } satisfies AlbumMeta);
 
     const refs = dedupeUrls(meta.photos || []);
@@ -189,6 +227,16 @@ export async function listAlbunsGaleria(): Promise<AlbumGaleria[]> {
       todas[0] ||
       null;
 
+    let createdAt = meta.createdAt || null;
+    if (!createdAt) {
+      const { data: ficheirosPasta } = await supabase.storage.from(BUCKET).list(path, {
+        limit: 50,
+        sortBy: { column: "created_at", order: "asc" },
+      });
+      const metaFile = (ficheirosPasta ?? []).find((f) => f.name === "meta.json");
+      createdAt = metaFile?.created_at ?? (pasta as { created_at?: string }).created_at ?? null;
+    }
+
     albuns.push({
       slug,
       title: meta.title,
@@ -196,6 +244,9 @@ export async function listAlbunsGaleria(): Promise<AlbumGaleria[]> {
       coverUrl,
       photoCount: todas.length || (coverUrl ? 1 : 0),
       path,
+      createdAt,
+      createdBy: rotuloAutorAlbum(meta),
+      createdById: meta.createdById || null,
     });
   }
 
@@ -258,11 +309,16 @@ export async function criarAlbumGaleria(opts: {
     photos.push(await resolverFonte(foto));
   }
 
+  const gestor = await gestorSessao();
   await gravarMeta(slug, {
     title,
     subtitle: opts.subtitle.trim(),
     cover: coverUrl,
     photos: dedupeUrls(photos),
+    createdAt: new Date().toISOString(),
+    createdBy: gestor?.autor || "Administrador",
+    createdById: gestor?.id || null,
+    createdByAdmin: gestor?.superAdmin ?? true,
   });
 
   return getAlbumGaleria(slug);
@@ -286,6 +342,10 @@ export async function actualizarAlbumGaleria(
     subtitle: "",
     cover: null as string | null,
     photos: [] as string[],
+    createdAt: null as string | null,
+    createdBy: null as string | null,
+    createdById: null as string | null,
+    createdByAdmin: true,
   };
 
   let cover = atual.cover || null;
@@ -316,6 +376,10 @@ export async function actualizarAlbumGaleria(
     subtitle: opts.subtitle.trim(),
     cover,
     photos,
+    createdAt: atual.createdAt || new Date().toISOString(),
+    createdBy: atual.createdBy || rotuloAutorAlbum(atual),
+    createdById: atual.createdById || null,
+    createdByAdmin: atual.createdByAdmin ?? !atual.createdById,
   });
 
   return getAlbumGaleria(slug);

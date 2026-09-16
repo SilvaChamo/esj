@@ -118,6 +118,76 @@ body {
   }
 }
 
+/* Álbum: cantos L — movimento suave fora → dentro no hover */
+@keyframes album-canto-tl {
+  0%,
+  100% {
+    transform: translate(-4px, -4px);
+  }
+  50% {
+    transform: translate(1px, 1px);
+  }
+}
+@keyframes album-canto-tr {
+  0%,
+  100% {
+    transform: translate(4px, -4px);
+  }
+  50% {
+    transform: translate(-1px, 1px);
+  }
+}
+@keyframes album-canto-bl {
+  0%,
+  100% {
+    transform: translate(-4px, 4px);
+  }
+  50% {
+    transform: translate(1px, -1px);
+  }
+}
+@keyframes album-canto-br {
+  0%,
+  100% {
+    transform: translate(4px, 4px);
+  }
+  50% {
+    transform: translate(-1px, -1px);
+  }
+}
+
+.group:hover .album-canto-tl {
+  animation: album-canto-tl 2.2s ease-in-out infinite;
+}
+.group:hover .album-canto-tr {
+  animation: album-canto-tr 2.2s ease-in-out infinite;
+}
+.group:hover .album-canto-bl {
+  animation: album-canto-bl 2.2s ease-in-out infinite;
+}
+.group:hover .album-canto-br {
+  animation: album-canto-br 2.2s ease-in-out infinite;
+}
+
+.album-explorar-texto {
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(12, 29, 59, 0.65), 0 0 16px rgba(12, 29, 59, 0.4);
+}
+
+/* Hover álbum: bordas escuras; meio com véu suave para ler o texto e ainda ver a foto */
+.album-hover-vinheta {
+  background:
+    linear-gradient(to bottom, #0c1d3b 0%, rgba(12, 29, 59, 0.5) 30%, transparent 52%),
+    linear-gradient(to right, #0c1d3b 0%, rgba(12, 29, 59, 0.5) 26%, transparent 46%),
+    linear-gradient(to left, #0c1d3b 0%, rgba(12, 29, 59, 0.5) 26%, transparent 46%),
+    linear-gradient(to top, #0c1d3b 0%, rgba(12, 29, 59, 0.5) 30%, transparent 52%),
+    radial-gradient(ellipse 50% 44% at 50% 50%, rgba(12, 29, 59, 0.48) 0%, rgba(12, 29, 59, 0.28) 50%, transparent 72%);
+}
+
 .esj-card-move {
   transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease;
 }
@@ -139,6 +209,14 @@ body {
     animation: none;
     transition: none;
     box-shadow: none;
+  }
+
+  .group:hover .album-canto-tl,
+  .group:hover .album-canto-tr,
+  .group:hover .album-canto-bl,
+  .group:hover .album-canto-br {
+    animation: none;
+    transform: none;
   }
 }
 

@@ -12,6 +12,7 @@ import {
   type FotoAlbum,
 } from "@/lib/galeria-albuns";
 import { cmsError } from "@/lib/cms";
+import AlbumCard from "@/components/AlbumCard";
 import ImageSelector from "@/components/gestao/ImageSelector";
 
 type Modo = "lista" | "novo" | "editar";
@@ -388,52 +389,45 @@ export default function AlbunsGaleria() {
           Ainda sem álbuns. Clique em «Adicionar álbum» na barra para criar o primeiro.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {albuns.map((album) => (
-            <article
+            <AlbumCard
               key={album.slug}
-              className="group bg-white border border-navy-100 overflow-hidden flex flex-col"
-            >
-              <div className="relative aspect-[16/10] bg-cream overflow-hidden">
-                {album.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={album.coverUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : null}
-                <div className="absolute inset-0 bg-navy-900/45 group-hover:bg-navy-900/55 transition-colors flex flex-col justify-end p-3">
-                  <h3 className="font-serif font-bold text-white text-sm leading-snug line-clamp-2">
-                    {album.title}
-                  </h3>
-                  {album.subtitle ? (
-                    <p className="mt-1 text-[11px] text-white/80 line-clamp-2">{album.subtitle}</p>
-                  ) : null}
-                  <p className="mt-2 text-[10px] font-bold tracking-wide text-white/70 uppercase">
-                    {album.photoCount} foto{album.photoCount === 1 ? "" : "s"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-t border-navy-100">
-                <button
-                  type="button"
-                  onClick={() => void abrirEditar(album)}
-                  className="text-[12px] text-sky hover:underline inline-flex items-center gap-1 font-semibold"
-                >
-                  <Pencil size={12} /> Editar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void eliminar(album)}
-                  title="Eliminar álbum"
-                  aria-label={`Eliminar ${album.title}`}
-                  className="p-1.5 text-crimson hover:bg-crimson/10 transition-colors"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            </article>
+              album={album}
+              href={`/galeria/${album.slug}`}
+              imagemNativa
+              tituloPainel
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void abrirEditar(album);
+                    }}
+                    title="Editar álbum"
+                    aria-label={`Editar ${album.title}`}
+                    className="p-2 bg-white/95 text-sky hover:bg-white shadow-sm transition-colors"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void eliminar(album);
+                    }}
+                    title="Eliminar álbum"
+                    aria-label={`Eliminar ${album.title}`}
+                    className="p-2 bg-white/95 text-crimson hover:bg-white shadow-sm transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </>
+              }
+            />
           ))}
         </div>
       )}
