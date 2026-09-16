@@ -20,7 +20,7 @@ export default function ResultadosLista() {
               <Link
                 key={curso.slug}
                 href={`/resultados/${curso.slug}?${query}`}
-                className="bg-white border border-navy-100 p-6 hover:border-sky transition-colors flex flex-col"
+                className="esj-card-move bg-white border border-navy-100 p-6 hover:border-sky flex flex-col"
               >
                 <Award size={20} className="text-sky" />
                 <h2 className="font-serif text-lg font-bold text-navy-900 mt-3">

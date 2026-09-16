@@ -52,7 +52,7 @@ const menu: MenuItem[] = [
     children: [
       { label: "Linhas de Pesquisa" },
       { label: "Projectos" },
-      { label: "Biblioteca", href: "/#biblioteca-virtual" },
+      { label: "Biblioteca", href: "/biblioteca-virtual" },
     ],
   },
   {

@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<symbol id="phone" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12l8-4 4 9-5 3c2 5 6 9 11 11l3-5 9 4-4 8c-2 4-7 5-11 3-11-5-19-13-24-24-2-4-1-9 3-11z"/>
+  </g>
+</symbol>
+<symbol id="email" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7" y="13" width="50" height="38" rx="4"/><path d="M9 16l23 19 23-19"/><path d="M9 48l17-15M55 48L38 33"/>
+  </g>
+</symbol>
+<symbol id="location-pin" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 58s18-17 18-31A18 18 0 1 0 14 27c0 14 18 31 18 31z"/><circle cx="32" cy="26" r="6"/>
+  </g>
+</symbol>
+<symbol id="search" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="28" cy="28" r="15"/><path d="M39 39l15 15"/>
+  </g>
+</symbol>
+<symbol id="arrow-left" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M39 16L23 32l16 16"/><path d="M24 32h28"/>
+  </g>
+</symbol>
+<symbol id="arrow-right" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 16l16 16-16 16"/><path d="M40 32H12"/>
+  </g>
+</symbol>
+<symbol id="laptop" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="14" y="12" width="36" height="28" rx="2"/><path d="M8 48h48l-4 5H12z"/><path d="M21 46h22"/>
+  </g>
+</symbol>
+<symbol id="people" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="20" cy="22" r="6"/><circle cx="44" cy="22" r="6"/><circle cx="32" cy="18" r="7"/><path d="M8 48c1-8 6-12 12-12s11 4 12 12"/><path d="M32 48c1-9 7-14 12-14s11 5 12 14"/><path d="M18 35c2-6 7-9 14-9s12 3 14 9"/>
+  </g>
+</symbol>
+<symbol id="bus" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="12" y="15" width="40" height="35" rx="5"/><path d="M12 38h40M18 22h12M34 22h12"/><circle cx="21" cy="50" r="5"/><circle cx="43" cy="50" r="5"/>
+  </g>
+</symbol>
+<symbol id="lotus" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 51c-11 0-21-5-25-14 8-2 16 0 21 6-3-9-1-18 4-25 5 7 7 16 4 25 5-6 13-8 21-6-4 9-14 14-25 14z"/><path d="M32 18v31"/>
+  </g>
+</symbol>
+<symbol id="flask" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 9h14M29 9v16L15 49c-2 4 1 7 5 7h24c4 0 7-3 5-7L35 25V9"/><path d="M20 43h24M23 36h18"/>
+  </g>
+</symbol>
+<symbol id="school-board" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 24l22-11 22 11-22 11z"/><path d="M17 29v15c7 5 23 5 30 0V29M54 25v17"/><path d="M27 48h10"/>
+  </g>
+</symbol>
+<symbol id="ratio" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="19" r="8"/><circle cx="16" cy="45" r="7"/><circle cx="48" cy="45" r="7"/><path d="M26 25L20 39M38 25l6 14M23 45h18"/>
+  </g>
+</symbol>
+<symbol id="years" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="13" width="46" height="42" rx="4"/><path d="M9 25h46M20 8v10M44 8v10"/><path d="M20 36h24M20 44h16"/>
+  </g>
+</symbol>
+<symbol id="commitment" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="21"/><path d="M20 32l8 8 16-18"/>
+  </g>
+</symbol>
+<symbol id="open-book" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 15c8-3 16-1 24 4v31c-8-5-16-7-24-4z"/><path d="M56 15c-8-3-16-1-24 4v31c8-5 16-7 24-4z"/><path d="M16 24c4-1 8 0 12 2M48 24c-4-1-8 0-12 2"/>
+  </g>
+</symbol>
+<symbol id="graduation-cap" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 25l25-12 25 12-25 12z"/><path d="M17 31v13c9 7 21 7 30 0V31M57 27v16"/><path d="M25 51h14"/>
+  </g>
+</symbol>
+<symbol id="lightbulb" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 38c-5-4-7-9-6-15 1-8 8-14 17-14s16 6 17 14c1 6-1 11-6 15-3 2-4 5-4 8H25c0-3-1-6-4-8z"/><path d="M25 52h14M27 57h10M25 29c2-4 4-6 7-6s5 2 7 6"/>
+  </g>
+</symbol>
+<symbol id="trophy" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 12h24v12c0 10-5 16-12 16s-12-6-12-16z"/><path d="M20 17H9c0 8 4 13 11 13M44 17h11c0 8-4 13-11 13M32 40v10M23 55h18"/>
+  </g>
+</symbol>
+<symbol id="classroom" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="10" y="12" width="44" height="30" rx="2"/><path d="M7 48h50M23 48v6M41 48v6M20 54h24"/>
+  </g>
+</symbol>
+<symbol id="science-lab" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 8h14M29 8v18L14 50c-2 4 1 7 5 7h26c4 0 7-3 5-7L35 26V8"/><path d="M19 43h26M23 36h18"/>
+  </g>
+</symbol>
+<symbol id="library" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 15h44v35H10z"/><path d="M18 15v35M46 15v35M24 24h16M24 31h16M24 38h12"/>
+  </g>
+</symbol>
+<symbol id="transport" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="12" y="15" width="40" height="35" rx="5"/><path d="M12 38h40M18 22h12M34 22h12"/><circle cx="21" cy="50" r="5"/><circle cx="43" cy="50" r="5"/>
+  </g>
+</symbol>
+<symbol id="facebook" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M37 11h8V3h-8c-9 0-15 6-15 16v6h-8v9h8v27h10V34h10l2-9H32v-5c0-5 1-9 5-9z"/>
+  </g>
+</symbol>
+<symbol id="instagram" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="10" y="10" width="44" height="44" rx="12"/><circle cx="32" cy="32" r="10"/><circle cx="45" cy="19" r="2"/>
+  </g>
+</symbol>
+<symbol id="x-twitter" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 10l17 20L11 54h8l14-18 14 18h9L38 32 53 10h-8L33 25 20 10z"/>
+  </g>
+</symbol>
+<symbol id="youtube" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 20c-1-5-4-8-9-9-10-1-20-1-30 0-5 1-8 4-9 9-1 8-1 16 0 24 1 5 4 8 9 9 10 1 20 1 30 0 5-1 8-4 9-9 1-8 1-16 0-24z"/><path d="M27 24l15 8-15 8z"/>
+  </g>
+</symbol>
+<symbol id="linkedin" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="9" width="46" height="46" rx="4"/><path d="M18 27v18M18 19v1M29 45V27M29 36c0-7 13-10 13 2v7"/>
+  </g>
+</symbol>
+<symbol id="clock" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="22"/><path d="M32 19v14l9 6"/>
+  </g>
+</symbol>
+<symbol id="send" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 32l50-22-16 44-10-18z"/><path d="M57 10L31 36"/>
+  </g>
+</symbol>
+<symbol id="check" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="23"/><path d="M20 32l8 8 17-19"/>
+  </g>
+</symbol>
+<symbol id="school-logo-mark" viewBox="0 0 64 64">
+  <g fill="none" stroke="#0B4F3F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 5l18 7v17c0 13-8 24-18 30C22 53 14 42 14 29V12z" fill="#0B4F3F"/><path d="M32 13l10 4v12c0 8-4 15-10 19-6-4-10-11-10-19V17z" fill="#D8A52B"/><path d="M32 18v22M24 26h16" stroke="#fff" stroke-width="3"/>
+  </g>
+</symbol>
+</svg>

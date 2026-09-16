@@ -28,7 +28,7 @@ export default async function NoticiasPage() {
             <Link
               key={item.slug}
               href={`/noticias/${item.slug}`}
-              className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col"
+              className="esj-card-move group bg-white border border-navy-100 hover:border-crimson flex flex-col"
             >
               <div className="relative h-48 overflow-hidden">
                 <FotoACarregar

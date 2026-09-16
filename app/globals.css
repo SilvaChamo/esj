@@ -118,15 +118,27 @@ body {
   }
 }
 
+.esj-card-move {
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease;
+}
+
+.esj-card-move:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px -12px rgba(12, 29, 59, 0.28);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .esj-entrada,
   .esj-entrada-on,
   .esj-entrada-hero,
   .esj-btn-move,
-  .esj-btn-move:hover {
+  .esj-btn-move:hover,
+  .esj-card-move,
+  .esj-card-move:hover {
     transform: none;
     animation: none;
     transition: none;
+    box-shadow: none;
   }
 }
 
@@ -158,9 +170,43 @@ body {
   background-size: 0 100%, 5px 100%;
 }
 
-.esj-btn-move.esj-btn-outline-sky {
-  color: #159bdb;
-  border-color: #159bdb;
+.esj-btn-move.esj-btn-outline-navy {
+  color: #0c1d3b !important;
+  border-color: #0c1d3b;
+  border-left-color: #d42a3a;
+}
+
+/* Controlo de slide: sem linha à esquerda, mantém hover vermelho */
+.esj-btn-move.esj-btn-no-line {
+  background-image: linear-gradient(#d42a3a, #d42a3a);
+  background-size: 0 100%;
+}
+
+/* Botões 100% redondos: linha segue a curva do botão */
+.esj-btn-move.rounded-full {
+  background-image: none;
+  isolation: isolate;
+}
+
+.esj-btn-move.rounded-full::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #d42a3a;
+  border-radius: inherit;
+  clip-path: inset(0 calc(100% - 5px) 0 0);
+  transition: clip-path 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.esj-btn-move.rounded-full > * {
+  position: relative;
+  z-index: 1;
+}
+
+.esj-btn-move.rounded-full.esj-btn-no-line::before {
+  clip-path: inset(0 100% 0 0);
 }
 
 @media (hover: hover) {
@@ -178,6 +224,22 @@ body {
   .esj-btn-move.esj-btn-banner-pos:hover {
     background-size: 100% 100%, 5px 100%;
     border-color: #0c1d3b;
+  }
+
+  .esj-btn-move.esj-btn-outline-navy:hover {
+    border-color: #d42a3a;
+  }
+
+  .esj-btn-move.esj-btn-no-line:hover {
+    background-size: 100% 100%;
+  }
+
+  .esj-btn-move.rounded-full:hover::before {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .esj-btn-move.rounded-full.esj-btn-no-line:hover::before {
+    clip-path: inset(0 0 0 0);
   }
 }
 

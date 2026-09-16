@@ -59,9 +59,9 @@ export default function NewsSeccao({
                 </h2>
                 <Link
                   href="/noticias"
-                  className="esj-btn-move esj-btn-outline-sky inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2"
+                  className="esj-btn-move esj-btn-outline-navy inline-flex items-center border bg-transparent text-sm font-semibold px-4 py-2"
                 >
-                  Ver repositorio de publicações
+                  Ver repositorio de publicações →
                 </Link>
               </div>
             </EntradaHome>
@@ -70,7 +70,7 @@ export default function NewsSeccao({
                 <EntradaHome key={item.slug} atraso={i * 0.05}>
                   <Link
                     href={`/noticias/${item.slug}`}
-                    className="group bg-white border border-navy-100 hover:border-crimson transition-colors flex flex-col h-full"
+                    className="esj-card-move group bg-white border border-navy-100 hover:border-crimson flex flex-col h-full"
                   >
                     <div className="relative overflow-hidden h-44">
                       <FotoACarregar
@@ -108,7 +108,7 @@ export default function NewsSeccao({
                 </h2>
                 <Link
                   href="/videos"
-                  className="esj-btn-move inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson"
+                  className="esj-btn-move esj-btn-outline-navy inline-flex items-center border bg-transparent text-sm font-semibold px-4 py-2"
                 >
                   Ver mais vídeos →
                 </Link>

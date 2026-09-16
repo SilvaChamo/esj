@@ -1,0 +1,264 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: Av. 24 de Julho, Maputo
+      - link "+258 21 302 721" [ref=e10] [cursor=pointer]:
+        - /url: tel:+25821302721
+    - generic [ref=e14]:
+      - generic:
+        - generic:
+          - searchbox "Pesquisar..."
+      - generic [ref=e15]:
+        - button "Pesquisar" [ref=e16] [cursor=pointer]
+        - link "YouTube da ESJ" [ref=e20] [cursor=pointer]:
+          - /url: https://www.youtube.com/@EscolaSuperiordeJornalismo
+        - link "Facebook da ESJ" [ref=e24] [cursor=pointer]:
+          - /url: https://www.facebook.com/ESJ.mz
+        - generic "Instagram da ESJ (brevemente)" [ref=e27]
+  - banner [ref=e31]:
+    - generic [ref=e32]:
+      - link [ref=e33] [cursor=pointer]:
+        - /url: /
+        - img "ESJ" [ref=e34]
+      - navigation [ref=e35]:
+        - link "ENSINO" [ref=e37] [cursor=pointer]:
+          - /url: /#ensino
+        - generic [ref=e40]: INVESTIGAÇÃO
+        - generic [ref=e44]: EVENTOS
+        - link "NOTÍCIAS" [ref=e49] [cursor=pointer]:
+          - /url: /noticias
+        - generic [ref=e50]: GOVERNAÇÃO
+        - link "CONTACTO" [ref=e55] [cursor=pointer]:
+          - /url: /#contacto
+      - link "ENTRAR" [ref=e57] [cursor=pointer]:
+        - /url: /entrar
+  - main [ref=e62]:
+    - generic [ref=e69]:
+      - generic [ref=e70]:
+        - paragraph [ref=e71]: INSTITUIÇÃO PÚBLICA DESDE 2008
+        - heading "Formando Profissionais Para o Futuro da Comunicação" [level=1] [ref=e72]:
+          - generic [ref=e73]: Formando Profissionais
+          - generic [ref=e74]: Para o Futuro da
+          - generic [ref=e75]: Comunicação
+        - paragraph [ref=e76]: A ESJ forma profissionais críticos, éticos e competentes nas Ciências da Comunicação e da Informação, ao serviço de Moçambique.
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - link "LICENCIATURA" [ref=e79] [cursor=pointer]:
+            - /url: "#ensino"
+          - link "PÓS-GRADUAÇÃO" [ref=e82] [cursor=pointer]:
+            - /url: "#ensino"
+        - generic [ref=e85]:
+          - button "Anterior" [ref=e86] [cursor=pointer]
+          - generic [ref=e89]:
+            - button "Slide 1" [ref=e90] [cursor=pointer]
+            - button "Slide 2" [ref=e91] [cursor=pointer]
+            - button "Slide 3" [ref=e92] [cursor=pointer]
+          - button "Seguinte" [ref=e93] [cursor=pointer]
+    - generic [ref=e98]:
+      - generic [ref=e99]:
+        - generic [ref=e102]: Ensino Superior Público
+        - generic [ref=e103]: Instituição pública de ensino, fundada em 2008.
+      - generic [ref=e104]:
+        - generic [ref=e110]: Corpo Docente Qualificado
+        - generic [ref=e111]: Docentes experientes nas Ciências da Comunicação.
+      - generic [ref=e112]:
+        - generic [ref=e117]: Duas Delegações
+        - generic [ref=e118]: Sede em Maputo e delegação académica em Manica.
+      - generic [ref=e119]:
+        - generic [ref=e126]: Estúdios e Redação
+        - generic [ref=e127]: Prática em televisão, rádio e imprensa na ESJ.
+    - generic [ref=e129]:
+      - generic [ref=e133]:
+        - generic [ref=e134]: A carregar a fotografia…
+        - img "Estudantes finalistas da ESJ na cerimónia de graduação" [ref=e135]
+      - generic [ref=e138]:
+        - paragraph [ref=e139]: BEM-VINDA À
+        - heading "Escola Superior de Jornalismo" [level=2] [ref=e140]
+        - paragraph [ref=e141]: A ESJ é uma instituição pública de ensino superior, vocacionada para a formação de quadros nas áreas do Jornalismo, Publicidade e Marketing, Relações Públicas e Biblioteconomia e Documentação.
+        - paragraph [ref=e142]: Com sede em Maputo e delegação académica em Manica, forma profissionais críticos, éticos e capazes de responder aos desafios da comunicação em Moçambique.
+        - link "Saiba mais sobre a ESJ" [ref=e144] [cursor=pointer]:
+          - /url: "#ensino"
+    - generic [ref=e145]:
+      - generic [ref=e146]:
+        - button "LICENCIATURA" [ref=e147] [cursor=pointer]
+        - button "PÓS-GRADUAÇÃO" [ref=e148] [cursor=pointer]
+      - generic [ref=e150]:
+        - button "Áreas de Formação" [ref=e151] [cursor=pointer]
+        - button "Calendário Académico" [ref=e152] [cursor=pointer]
+        - button "Estudantes Internacionais" [ref=e153] [cursor=pointer]
+        - button "Minutas" [ref=e154] [cursor=pointer]
+      - generic [ref=e157]:
+        - generic [ref=e161]:
+          - paragraph [ref=e162]: ÁREAS DE FORMAÇÃO
+          - heading "O que se estuda na ESJ" [level=2] [ref=e163]
+          - paragraph [ref=e164]: Licenciaturas em Maputo e na delegação académica de Manica, com percursos de pós-graduação em Ciências da Comunicação.
+        - generic [ref=e165]:
+          - generic [ref=e172]:
+            - heading "Jornalismo" [level=3] [ref=e173]
+            - paragraph [ref=e174]: Formação em técnicas e ética do jornalismo, para os media impressos, digitais, rádio e televisão.
+          - generic [ref=e181]:
+            - heading "Publicidade e Marketing" [level=3] [ref=e182]
+            - paragraph [ref=e183]: Estratégia, criação e comunicação de marcas para organizações e mercados.
+          - generic [ref=e192]:
+            - heading "Relações Públicas" [level=3] [ref=e193]
+            - paragraph [ref=e194]: Gestão da comunicação institucional e da relação com os públicos.
+          - generic [ref=e200]:
+            - heading "Biblioteconomia e Documentação" [level=3] [ref=e201]
+            - paragraph [ref=e202]: Organização, gestão e mediação da informação e do conhecimento.
+          - generic [ref=e209]:
+            - heading "Pós-Graduação" [level=3] [ref=e210]
+            - paragraph [ref=e211]: Percursos de especialização e investigação avançada em Ciências da Comunicação.
+          - generic [ref=e220]:
+            - heading "Serviços Sociais" [level=3] [ref=e221]
+            - paragraph [ref=e222]: "Apoio à vida académica dos estudantes: alojamento, alimentação, saúde e apoio social."
+        - link "CANDIDATAR-SE" [ref=e226] [cursor=pointer]:
+          - /url: /inscricao?nivel=Licenciatura&regime=Diurno
+    - generic [ref=e227]:
+      - generic [ref=e229]:
+        - button "Notícias" [ref=e230] [cursor=pointer]
+        - button "Vídeos" [ref=e231] [cursor=pointer]
+        - button "Ensino e História" [ref=e232] [cursor=pointer]
+      - generic [ref=e233]:
+        - generic [ref=e234]:
+          - heading "Publicações" [level=2] [ref=e235]
+          - link "Ver todas as notícias →" [ref=e236] [cursor=pointer]:
+            - /url: /noticias
+        - generic [ref=e237]:
+          - link "A carregar a imagem da notícia… ESJ apresenta o Barómetro da Comunicação Social 4 de Setembro de 2026 ESJ apresenta o Barómetro da Comunicação Social O GABINFO apresentou o Barómetro da Comunicação Social, projecto da ESJ para reforçar a transparência e o pluralismo informativo no país." [ref=e240] [cursor=pointer]:
+            - /url: /noticias/barometro-comunicacao-social
+            - generic [ref=e241]:
+              - generic [ref=e242]: A carregar a imagem da notícia…
+              - img "ESJ apresenta o Barómetro da Comunicação Social" [ref=e243]
+            - generic [ref=e244]:
+              - paragraph [ref=e245]: 4 de Setembro de 2026
+              - heading "ESJ apresenta o Barómetro da Comunicação Social" [level=3] [ref=e246]
+              - paragraph [ref=e247]: O GABINFO apresentou o Barómetro da Comunicação Social, projecto da ESJ para reforçar a transparência e o pluralismo informativo no país.
+          - link "A carregar a imagem da notícia… Em breve | Lançamento de Conhecimento que conecta Setembro 2026 Em breve | Lançamento de Conhecimento que conecta A ESJ anuncia o lançamento da obra Experiências Metodológicas em Comunicação — conhecimento que conecta pessoas, ideias e realidades." [ref=e250] [cursor=pointer]:
+            - /url: /noticias/conhecimento-que-conecta
+            - generic [ref=e251]:
+              - generic [ref=e252]: A carregar a imagem da notícia…
+              - img "Em breve | Lançamento de Conhecimento que conecta" [ref=e253]
+            - generic [ref=e254]:
+              - paragraph [ref=e255]: Setembro 2026
+              - heading "Em breve | Lançamento de Conhecimento que conecta" [level=3] [ref=e256]
+              - paragraph [ref=e257]: A ESJ anuncia o lançamento da obra Experiências Metodológicas em Comunicação — conhecimento que conecta pessoas, ideias e realidades.
+          - link "A carregar a imagem da notícia… Lançamento do livro Infovula 24 de Junho de 2026 Lançamento do livro Infovula Sérgio Langa e Joana Machuza apresentam Infovula na Galeria Porto de Maputo, numa sessão aberta à comunidade académica e ao público." [ref=e260] [cursor=pointer]:
+            - /url: /noticias/lancamento-infovula
+            - generic [ref=e261]:
+              - generic [ref=e262]: A carregar a imagem da notícia…
+              - img "Lançamento do livro Infovula" [ref=e263]
+            - generic [ref=e264]:
+              - paragraph [ref=e265]: 24 de Junho de 2026
+              - heading "Lançamento do livro Infovula" [level=3] [ref=e266]
+              - paragraph [ref=e267]: Sérgio Langa e Joana Machuza apresentam Infovula na Galeria Porto de Maputo, numa sessão aberta à comunidade académica e ao público.
+          - link "A carregar a imagem da notícia… Lançamento de As Noivas do Homem Maduro 25 de Maio de 2026 Lançamento de As Noivas do Homem Maduro Isaías Carlos Fuel apresenta As Noivas do Homem Maduro na sala de conferências da ESJ, com apresentação de Alexandre Dinis Zavala." [ref=e270] [cursor=pointer]:
+            - /url: /noticias/noivas-do-homem-maduro
+            - generic [ref=e271]:
+              - generic [ref=e272]: A carregar a imagem da notícia…
+              - img "Lançamento de As Noivas do Homem Maduro" [ref=e273]
+            - generic [ref=e274]:
+              - paragraph [ref=e275]: 25 de Maio de 2026
+              - heading "Lançamento de As Noivas do Homem Maduro" [level=3] [ref=e276]
+              - paragraph [ref=e277]: Isaías Carlos Fuel apresenta As Noivas do Homem Maduro na sala de conferências da ESJ, com apresentação de Alexandre Dinis Zavala.
+    - generic [ref=e278]:
+      - generic [ref=e281]:
+        - generic [ref=e284]:
+          - paragraph [ref=e288]: CONTACTO
+          - heading "Fale connosco" [level=2] [ref=e289]
+          - paragraph [ref=e290]: A Escola Superior de Jornalismo está disponível para esclarecer dúvidas sobre admissões, cursos e parcerias. Contacte a Secretaria Académica pelos meios ao lado ou preencha o formulário abaixo e responderemos o mais breve possível.
+          - generic [ref=e291]:
+            - textbox "Nome" [ref=e292]
+            - textbox "Correio" [ref=e293]
+            - textbox "Mensagem" [ref=e294]
+          - button "ENVIAR MENSAGEM" [ref=e296] [cursor=pointer]
+        - complementary [ref=e299]:
+          - heading "Nossa Localização" [level=3] [ref=e301]
+          - generic [ref=e303]:
+            - generic [ref=e309]:
+              - term [ref=e310]: Morada
+              - definition [ref=e311]: Av. 24 de Julho, antiga Escola Industrial, Maputo
+            - generic [ref=e316]:
+              - term [ref=e317]: Telefone
+              - definition [ref=e318]:
+                - link "+258 21 302 721" [ref=e319] [cursor=pointer]:
+                  - /url: tel:+25821302721
+            - generic [ref=e325]:
+              - term [ref=e326]: Portal
+              - definition [ref=e327]:
+                - link "esj.edondzo.ac.mz" [ref=e328] [cursor=pointer]:
+                  - /url: https://esj.edondzo.ac.mz
+            - generic [ref=e334]:
+              - term [ref=e335]: Horário
+              - definition [ref=e336]: "Seg–Sex: 8h00–15h30Sáb–Dom: encerrado"
+      - generic [ref=e340]:
+        - heading "A nossa newsletter" [level=2] [ref=e341]
+        - textbox "E-mail" [ref=e342]
+        - textbox "Contacto" [ref=e343]
+        - button "SUBSCREVER" [ref=e344] [cursor=pointer]
+  - contentinfo [ref=e345]:
+    - generic [ref=e346]:
+      - generic [ref=e347]:
+        - link [ref=e348] [cursor=pointer]:
+          - /url: /
+          - img "Escola Superior de Jornalismo" [ref=e349]
+        - paragraph [ref=e350]: Escola Superior de Jornalismo — instituição pública de ensino superior em Moçambique, a formar profissionais de Comunicação desde 2008.
+        - link "Portal eDondzo →" [ref=e351] [cursor=pointer]:
+          - /url: https://esj.edondzo.ac.mz
+      - generic [ref=e352]:
+        - heading "LIGAÇÕES RÁPIDAS" [level=4] [ref=e353]
+        - list [ref=e354]:
+          - listitem [ref=e355]:
+            - link "Início" [ref=e356] [cursor=pointer]:
+              - /url: /#inicio
+          - listitem [ref=e357]:
+            - link "Ensino" [ref=e358] [cursor=pointer]:
+              - /url: /#ensino
+          - listitem [ref=e359]:
+            - link "Notícias" [ref=e360] [cursor=pointer]:
+              - /url: /noticias
+          - listitem [ref=e361]:
+            - link "Contacto" [ref=e362] [cursor=pointer]:
+              - /url: /#contacto
+          - listitem [ref=e363]:
+            - link "Eventos" [ref=e364] [cursor=pointer]:
+              - /url: /#ensino
+          - listitem [ref=e365]:
+            - link "Entrar" [ref=e366] [cursor=pointer]:
+              - /url: /entrar
+      - generic [ref=e367]:
+        - heading "INFORMAÇÃO" [level=4] [ref=e368]
+        - list [ref=e369]:
+          - listitem [ref=e370]:
+            - link "Edital de Admissão 2026" [ref=e371] [cursor=pointer]:
+              - /url: /edital
+          - listitem [ref=e372]:
+            - link "Pré-inscrição" [ref=e373] [cursor=pointer]:
+              - /url: /inscricoes
+          - listitem [ref=e374]:
+            - link "Calendário Académico" [ref=e375] [cursor=pointer]:
+              - /url: /calendario
+          - listitem [ref=e376]:
+            - link "Documentos" [ref=e377] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=e378]: Plano Estratégico
+      - generic [ref=e379]:
+        - heading "CONTACTO" [level=4] [ref=e380]
+        - list [ref=e381]:
+          - listitem [ref=e382]:
+            - generic [ref=e386]:
+              - strong [ref=e387]: Sede
+              - text: Av. 24 de Julho, antiga Escola Industrial, Maputo
+          - listitem [ref=e388]:
+            - link "+258 21 302 721" [ref=e391] [cursor=pointer]:
+              - /url: tel:+25821302721
+        - generic [ref=e392]:
+          - link "YouTube da ESJ" [ref=e393] [cursor=pointer]:
+            - /url: https://www.youtube.com/@EscolaSuperiordeJornalismo
+          - link "Facebook da ESJ" [ref=e397] [cursor=pointer]:
+            - /url: https://www.facebook.com/ESJ.mz
+          - generic "Instagram da ESJ (brevemente)" [ref=e400]
+    - generic [ref=e405]:
+      - paragraph [ref=e406]: © 2026 Escola Superior de Jornalismo (ESJ). Todos os direitos reservados.
+      - generic [ref=e407]:
+        - generic [ref=e408]: Política de Privacidade
+        - generic [ref=e409]: Termos de Uso

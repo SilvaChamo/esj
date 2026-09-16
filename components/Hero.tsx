@@ -156,7 +156,7 @@ export default function Hero() {
               <button
                 onClick={prev}
                 aria-label="Anterior"
-                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
+                className="esj-btn-move esj-btn-no-line w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -175,7 +175,7 @@ export default function Hero() {
               <button
                 onClick={next}
                 aria-label="Seguinte"
-                className="esj-btn-move w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
+                className="esj-btn-move esj-btn-no-line w-9 h-9 rounded-full border-2 border-white text-white flex items-center justify-center shrink-0"
               >
                 <ChevronRight size={16} />
               </button>
