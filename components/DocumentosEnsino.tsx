@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, FileText, X } from "lucide-react";
 import BannerInterior from "@/components/BannerInterior";
+import LeitorDocumento from "@/components/LeitorDocumento";
+import { eWordUrl } from "@/components/DocumentoLeitor";
 import { DOC_SECOES, secaoPorId, type DocLink } from "@/lib/ensino-docs";
 
 function nomeDescarga(label: string, url: string) {
@@ -24,6 +26,12 @@ function srcDocumento(href: string) {
     return `/api/documento?url=${encodeURIComponent(href)}`;
   }
   return href;
+}
+
+function srcLeitura(href: string) {
+  const base = srcDocumento(href);
+  if (base.includes("#")) return base;
+  return `${base}#navpanes=0&pagemode=none`;
 }
 
 export default function DocumentosEnsino() {
@@ -126,37 +134,48 @@ export default function DocumentosEnsino() {
 
       {ler?.href && (
         <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-5xl h-[85vh] bg-white border border-navy-100 flex flex-col">
-            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-navy-100 shrink-0">
-              <h2 className="text-[15px] font-semibold text-navy-900 truncate min-w-0">
-                {ler.label}
-              </h2>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => void baixar(ler)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-sky hover:bg-cream"
-                >
-                  <Download className="w-4 h-4" />
-                  Baixar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLer(null)}
-                  className="p-1.5 text-navy-900/60 hover:text-navy-900"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
-              <iframe
-                src={srcDocumento(ler.href)}
+          <div className="w-full max-w-5xl h-[85vh] bg-white border border-navy-100 flex flex-col overflow-hidden">
+            {eWordUrl(ler.href) ? (
+              <LeitorDocumento
+                url={ler.href}
                 title={ler.label}
-                className="absolute inset-0 w-full h-full border-0 bg-white"
+                modo="modal"
+                onClose={() => setLer(null)}
               />
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-navy-100 shrink-0">
+                  <h2 className="text-[15px] font-semibold text-navy-900 truncate min-w-0">
+                    {ler.label}
+                  </h2>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void baixar(ler)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-sky hover:bg-cream"
+                    >
+                      <Download className="w-4 h-4" />
+                      Baixar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLer(null)}
+                      className="p-1.5 text-navy-900/60 hover:text-navy-900"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
+                  <iframe
+                    src={srcLeitura(ler.href)}
+                    title={ler.label}
+                    className="absolute inset-0 w-full h-full border-0 bg-white"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

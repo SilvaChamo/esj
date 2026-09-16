@@ -2,80 +2,100 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { cursoBibliotecaPorSlug } from "@/lib/producao-cientifica";
 
-function destinoDe(path: string) {
-  const p = path.split("?")[0].replace(/\/$/, "") || "/";
-  if (p === "/") return { href: "/", label: "Voltar à página inicial" };
-  if (p === "/noticias" || p.startsWith("/noticias/")) {
-    return { href: "/noticias", label: "Voltar às notícias" };
-  }
-  if (p === "/videos") return { href: "/videos", label: "Voltar aos vídeos" };
-  if (p === "/inscricoes") return { href: "/inscricoes", label: "Voltar às admissões" };
-  if (p === "/inscricao") return { href: "/inscricao", label: "Voltar à pré-inscrição" };
-  if (p === "/edital") return { href: "/edital", label: "Voltar ao edital" };
-  if (p === "/calendario") return { href: "/calendario", label: "Voltar ao calendário" };
-  if (p === "/documentos") return { href: "/documentos", label: "Voltar aos documentos" };
-  if (p === "/estudantes-internacionais") {
-    return { href: "/estudantes-internacionais", label: "Voltar a estudantes internacionais" };
-  }
-  if (p === "/cursos" || p.startsWith("/cursos/")) {
-    return { href: "/#ensino", label: "Voltar ao Ensino" };
-  }
-  if (p === "/galeria" || p.startsWith("/galeria/")) {
-    return { href: "/galeria", label: "Voltar à galeria" };
-  }
-  if (p === "/contacto") return { href: "/contacto", label: "Voltar ao contacto" };
-  if (p === "/resultados") return { href: "/resultados", label: "Voltar aos resultados" };
-  if (p.startsWith("/resultados/")) return { href: "/resultados", label: "Voltar aos cursos" };
-  if (p === "/busca") return { href: "/busca", label: "Voltar à pesquisa" };
-  return { href: path || "/", label: "Voltar à página anterior" };
+function normalizar(path: string) {
+  return path.split("?")[0].replace(/\/$/, "") || "/";
 }
 
-function origemPadrao(pathname: string) {
-  if (pathname.startsWith("/noticias/") && pathname !== "/noticias") {
-    return destinoDe("/noticias");
+function voltar(artigo: "a" | "à" | "ao" | "às" | "aos", nome: string) {
+  return `Voltar ${artigo} ${nome}`;
+}
+
+/**
+ * Hierarquia a partir da Home.
+ * Ex.: Home > acervo > Jornalismo > projecto — ao voltar sobe um nível.
+ */
+function destinoHierarquico(pathname: string) {
+  const p = normalizar(pathname);
+
+  if (p.startsWith("/biblioteca-virtual/")) {
+    const partes = p.split("/").filter(Boolean);
+    if (partes.length >= 3) {
+      const curso = cursoBibliotecaPorSlug(partes[1] ?? "");
+      return {
+        href: `/biblioteca-virtual/${partes[1]}`,
+        label: voltar("a", curso?.titulo ?? "curso"),
+      };
+    }
+    return { href: "/biblioteca-virtual", label: voltar("ao", "acervo") };
   }
-  if (pathname.startsWith("/resultados/") && pathname !== "/resultados") {
-    return destinoDe("/resultados");
+
+  if (p === "/biblioteca-virtual") {
+    return { href: "/", label: voltar("à", "Home") };
   }
-  if (pathname.startsWith("/cursos/")) {
-    return { href: "/#ensino", label: "Voltar ao Ensino" };
+
+  if (p.startsWith("/noticias/") && p !== "/noticias") {
+    return { href: "/noticias", label: voltar("às", "notícias") };
   }
+  if (p === "/noticias") {
+    return { href: "/", label: voltar("à", "Home") };
+  }
+
+  if (p.startsWith("/galeria/") && p !== "/galeria") {
+    return { href: "/galeria", label: voltar("à", "galeria") };
+  }
+  if (p === "/galeria") {
+    return { href: "/", label: voltar("à", "Home") };
+  }
+
+  if (p.startsWith("/resultados/") && p !== "/resultados") {
+    return { href: "/resultados", label: voltar("aos", "resultados") };
+  }
+  if (p === "/resultados") {
+    return { href: "/inscricoes", label: voltar("às", "admissões") };
+  }
+
+  if (p.startsWith("/cursos/")) {
+    return { href: "/#ensino", label: voltar("ao", "Ensino") };
+  }
+
+  if (p === "/edital" || p === "/inscricao") {
+    return { href: "/inscricoes", label: voltar("às", "admissões") };
+  }
+  if (p === "/inscricoes") {
+    return { href: "/", label: voltar("à", "Home") };
+  }
+
   if (
-    pathname === "/calendario" ||
-    pathname === "/documentos" ||
-    pathname === "/estudantes-internacionais"
+    p === "/calendario" ||
+    p === "/documentos" ||
+    p === "/estudantes-internacionais"
   ) {
-    return { href: "/#ensino", label: "Voltar ao Ensino" };
+    return { href: "/#ensino", label: voltar("ao", "Ensino") };
   }
-  if (pathname === "/edital" || pathname === "/inscricao") {
-    return destinoDe("/inscricoes");
+
+  if (p === "/videos" || p === "/contacto" || p === "/busca") {
+    return { href: "/", label: voltar("à", "Home") };
   }
-  if (pathname === "/resultados") {
-    return { href: "/#ensino", label: "Voltar ao calendário académico" };
-  }
-  return destinoDe("/");
+
+  return { href: "/", label: voltar("à", "Home") };
 }
 
-export default function VoltarBanner() {
+export default function VoltarBanner({ className }: { className?: string }) {
   const pathname = usePathname();
-  const [dest, setDest] = useState(() => origemPadrao(pathname));
-
-  useEffect(() => {
-    const origem = sessionStorage.getItem("esj-origem");
-    const mesmoSitio = origem && origem.split("?")[0] !== pathname;
-    setDest(mesmoSitio ? destinoDe(origem) : origemPadrao(pathname));
-  }, [pathname]);
+  const dest = destinoHierarquico(pathname);
 
   return (
     <Link
       href={dest.href}
-      className="group mt-4 inline-flex items-center gap-2 text-leaf font-semibold text-sm hover:text-crimson transition-colors"
+      className={`group inline-flex items-center gap-2 text-sky font-semibold text-sm hover:text-crimson transition-colors ${
+        className ?? "mt-4"
+      }`}
     >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/40 group-hover:border-crimson transition-colors">
-        <ArrowLeft size={14} className="text-white group-hover:text-crimson transition-colors" />
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky group-hover:border-crimson transition-colors">
+        <ArrowLeft size={14} className="text-sky group-hover:text-crimson transition-colors" />
       </span>
       {dest.label}
     </Link>

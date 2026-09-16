@@ -84,7 +84,9 @@ import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
+import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
 import { textoDeHtml } from "@/lib/html-noticia";
+import type { CursoBibliotecaCodigo } from "@/lib/producao-cientifica";
 
 type Section =
   | "painel"
@@ -97,12 +99,15 @@ type Section =
   | "newsletter"
   | "folha"
   | "eventos"
-  | "livros"
   | "galeria"
   | "albuns"
   | "videos"
   | "documentos"
-  | "subscritores";
+  | "subscritores"
+  | "bib-jj"
+  | "bib-pm"
+  | "bib-rp"
+  | "bib-bd";
 
 type NavIcon = typeof LayoutDashboard;
 type NavLeaf = { id: Section; label: string; icon: NavIcon };
@@ -111,6 +116,20 @@ type NavEntry = NavLeaf | NavGroup;
 
 function isNavGroup(entry: NavEntry): entry is NavGroup {
   return "children" in entry;
+}
+
+const BIB_SECTION: Record<
+  "bib-jj" | "bib-pm" | "bib-rp" | "bib-bd",
+  CursoBibliotecaCodigo
+> = {
+  "bib-jj": "JJ",
+  "bib-pm": "PM",
+  "bib-rp": "RP",
+  "bib-bd": "BD",
+};
+
+function isBibSection(section: Section): section is keyof typeof BIB_SECTION {
+  return section in BIB_SECTION;
 }
 
 const NAV: NavEntry[] = [
@@ -133,9 +152,18 @@ const NAV: NavEntry[] = [
       { id: "newsletter", label: "Newsletter", icon: Send },
       { id: "folha", label: "Folha académica", icon: ScrollText },
       { id: "anuncios", label: "SMS", icon: Bell },
-      { id: "eventos", label: "Eventos", icon: CalendarDays },
-      { id: "livros", label: "Livros", icon: Book },
+      { id: "eventos", label: "Colóquios e lançamento de livro", icon: CalendarDays },
       { id: "videos", label: "Vídeos", icon: Video },
+    ],
+  },
+  {
+    label: "Biblioteca",
+    icon: Book,
+    children: [
+      { id: "bib-jj", label: "Jornalismo", icon: BookOpen },
+      { id: "bib-pm", label: "Publicidade e Marketing", icon: BookOpen },
+      { id: "bib-rp", label: "Relações Públicas", icon: BookOpen },
+      { id: "bib-bd", label: "Biblioteconomia e Documentação", icon: BookOpen },
     ],
   },
   {
@@ -177,6 +205,7 @@ export default function GestaoDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [smsBloqueado, setSmsBloqueado] = useState<{ telefones: string[] } | null>(null);
+  const [eventosTab, setEventosTab] = useState<"coloquio" | "livro">("coloquio");
 
   useEffect(() => {
     const active = groupOf(section);
@@ -221,7 +250,8 @@ export default function GestaoDashboard() {
   }, []);
 
   const showNote = (msg: string) => {
-    setNote(msg);
+    const limpo = msg.replace(/\s+/g, " ").trim();
+    setNote(limpo.length > 180 ? `${limpo.slice(0, 177)}…` : limpo);
     window.setTimeout(() => setNote(""), 4200);
   };
 
@@ -456,22 +486,30 @@ export default function GestaoDashboard() {
                 Adicionar álbum
               </button>
             )}
-            {section === "livros" && (
-              <button
-                type="button"
-                onClick={() => document.getElementById("livros-adicionar")?.click()}
-                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
-              >
-                Adicionar livro
-              </button>
-            )}
             {section === "eventos" && (
               <button
                 type="button"
-                onClick={() => document.getElementById("eventos-adicionar")?.click()}
+                onClick={() =>
+                  document
+                    .getElementById(
+                      eventosTab === "livro" ? "livros-adicionar" : "eventos-adicionar"
+                    )
+                    ?.click()
+                }
                 className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
               >
-                Adicionar cartaz
+                {eventosTab === "livro" ? "Adicionar livro" : "Adicionar cartaz"}
+              </button>
+            )}
+            {isBibSection(section) && (
+              <button
+                type="button"
+                onClick={() =>
+                  document.getElementById(`biblioteca-adicionar-${BIB_SECTION[section]}`)?.click()
+                }
+                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Adicionar projecto
               </button>
             )}
             {section === "videos" && (
@@ -512,6 +550,32 @@ export default function GestaoDashboard() {
           </div>
         </header>
 
+        {section === "eventos" && (
+          <div className="bg-white border-b border-navy-100 px-4 sm:px-8">
+            <div className="flex">
+              {(
+                [
+                  { id: "coloquio" as const, label: "Colóquios" },
+                  { id: "livro" as const, label: "Lançamento de livro" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setEventosTab(t.id)}
+                  className={`relative -mb-px px-5 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+                    eventosTab === t.id
+                      ? "z-10 text-navy-900 border-b-2 border-sky"
+                      : "text-navy-900/55 hover:text-navy-900"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <main className="flex-1 px-4 sm:px-8 py-8">
           {needsSchema && <SchemaInstall />}
           {section === "painel" && (
@@ -524,11 +588,19 @@ export default function GestaoDashboard() {
             />
           )}
           {section === "edital" && <Edital onAction={showNote} />}
-          {section === "livros" && (
-            <Publicacoes key="livro" onAction={showNote} categoria="livro" />
-          )}
           {section === "eventos" && (
-            <Publicacoes key="evento" onAction={showNote} categoria="evento" />
+            <Publicacoes
+              key={eventosTab}
+              onAction={showNote}
+              categoria={eventosTab === "livro" ? "livro" : "evento"}
+            />
+          )}
+          {isBibSection(section) && (
+            <BibliotecaCientificaGestao
+              key={section}
+              curso={BIB_SECTION[section]}
+              onAction={showNote}
+            />
           )}
           {section === "galeria" && <Galeria />}
           {section === "albuns" && <AlbunsGaleria />}

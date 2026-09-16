@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Download, FileText, Printer, Trash2, X } from "lucide-react";
 import {
   cmsError,
@@ -9,6 +9,8 @@ import {
   uploadMediaDocumento,
   type MediaFile,
 } from "@/lib/cms";
+import DocumentoLeitor, { eWordUrl } from "@/components/DocumentoLeitor";
+import LeitorDocumento from "@/components/LeitorDocumento";
 
 function formatSize(bytes: number) {
   if (!bytes) return "0 B";
@@ -41,92 +43,6 @@ function tipoDocumento(file: MediaFile) {
   if (mime.includes("spreadsheet") || mime.includes("excel") || /\.(xls|xlsx|ods)$/.test(nome)) return "excel";
   if (mime.includes("presentation") || mime.includes("powerpoint") || /\.(ppt|pptx|odp)$/.test(nome)) return "office";
   return "outro";
-}
-
-const ESTILO_LEITURA = `<style>
-  html, body { margin: 0; background: #d9d9d9; }
-  .docx-wrapper { background: #d9d9d9 !important; padding: 16px 8px !important; align-items: stretch !important; }
-  .docx-wrapper > section.docx { width: 100% !important; max-width: none !important; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
-</style>`;
-
-function WordLeitura({ url }: { url: string }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [status, setStatus] = useState("Carregando ficheiro…");
-
-  useEffect(() => {
-    let cancelado = false;
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    setStatus("Carregando ficheiro…");
-
-    void (async () => {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error();
-        const arrayBuffer = await res.arrayBuffer();
-        if (cancelado) return;
-        const doc = iframe.contentDocument;
-        if (!doc) throw new Error();
-
-        try {
-          const { renderAsync } = await import("docx-preview");
-          doc.open();
-          doc.write(
-            `<!doctype html><html><head><meta charset="utf-8">${ESTILO_LEITURA}</head><body><div id="documento-pagina"></div></body></html>`
-          );
-          doc.close();
-          const alvo = doc.getElementById("documento-pagina");
-          if (!alvo) throw new Error();
-          await renderAsync(arrayBuffer, alvo, doc.head, {
-            ignoreWidth: true,
-            ignoreHeight: true,
-            breakPages: true,
-            ignoreLastRenderedPageBreak: true,
-            experimental: true,
-            renderHeaders: true,
-            renderFooters: true,
-            useBase64URL: true,
-          });
-        } catch {
-          const mammoth = await import("mammoth");
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-          if (cancelado) return;
-          doc.open();
-          doc.write(
-            `<!doctype html><html><head><meta charset="utf-8">${ESTILO_LEITURA}
-            <style>
-              #documento-pagina { background: #fff; min-height: 100vh; padding: 2.54cm 2cm; box-sizing: border-box; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
-              img { max-width: 100%; }
-            </style></head><body><div id="documento-pagina">${result.value || "<p>Documento vazio.</p>"}</div></body></html>`
-          );
-          doc.close();
-        }
-        if (!cancelado) setStatus("");
-      } catch {
-        if (!cancelado) setStatus("Não foi possível mostrar este documento neste ecrã.");
-      }
-    })();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [url]);
-
-  return (
-    <div className="absolute inset-0 bg-[#d9d9d9]">
-      {status ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-[#50575e]">{status}</p>
-        </div>
-      ) : null}
-      <iframe
-        id="documento-leitura-frame"
-        ref={iframeRef}
-        title="Documento"
-        className="absolute inset-0 w-full h-full border-0 bg-[#d9d9d9]"
-      />
-    </div>
-  );
 }
 
 function imprimirNumIframe(src?: string, srcdoc?: string) {
@@ -358,73 +274,103 @@ export default function Documentos() {
 
       {ler && (
         <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-5xl h-[85vh] bg-white border border-[#ccd0d4] flex flex-col">
-            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-[#ccd0d4] shrink-0">
-              <h2 className="text-[15px] font-semibold text-[#1d2327] truncate min-w-0">
-                {nomeFicheiro(ler)}
-              </h2>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  disabled={aImprimir}
-                  onClick={() => void imprimir(ler)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7] disabled:opacity-60"
-                >
-                  <Printer className="w-4 h-4" />
-                  {aImprimir ? "Carregando ficheiro…" : "Imprimir"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void baixar(ler)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7]"
-                >
-                  <Download className="w-4 h-4" />
-                  Baixar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void copiarLigacao(ler.url)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7]"
-                >
-                  <Copy className="w-4 h-4" />
-                  Copiar ligação
-                </button>
-                <button type="button" onClick={() => setLer(null)} className="p-1.5 text-[#50575e] hover:text-[#1d2327]">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
-              {tipoDocumento(ler) === "imagem" ? (
-                <div className="absolute inset-0 overflow-auto py-4 px-2">
-                  <div
-                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full flex justify-center"
-                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
-                  >
-                    <img src={ler.url} alt="" className="max-w-full h-auto" />
+          <div className="w-full max-w-5xl h-[85vh] bg-white border border-[#ccd0d4] flex flex-col overflow-hidden">
+            {tipoDocumento(ler) === "word" || eWordUrl(ler.url) ? (
+              <LeitorDocumento
+                url={ler.url}
+                title={nomeFicheiro(ler)}
+                modo="modal"
+                onClose={() => setLer(null)}
+                accoesExtra={
+                  <>
+                    <button
+                      type="button"
+                      disabled={aImprimir}
+                      onClick={() => void imprimir(ler)}
+                      className="inline-flex items-center gap-1.5 font-semibold text-xs tracking-wide text-sky hover:text-crimson disabled:opacity-60"
+                    >
+                      <Printer className="w-4 h-4" />
+                      {aImprimir ? "…" : "Imprimir"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copiarLigacao(ler.url)}
+                      className="inline-flex items-center gap-1.5 font-semibold text-xs tracking-wide text-sky hover:text-crimson"
+                    >
+                      <Copy className="w-4 h-4" />
+                      Copiar
+                    </button>
+                  </>
+                }
+              />
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-[#ccd0d4] shrink-0">
+                  <h2 className="text-[15px] font-semibold text-[#1d2327] truncate min-w-0">
+                    {nomeFicheiro(ler)}
+                  </h2>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      disabled={aImprimir}
+                      onClick={() => void imprimir(ler)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7] disabled:opacity-60"
+                    >
+                      <Printer className="w-4 h-4" />
+                      {aImprimir ? "Carregando ficheiro…" : "Imprimir"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void baixar(ler)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7]"
+                    >
+                      <Download className="w-4 h-4" />
+                      Baixar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copiarLigacao(ler.url)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-[#2271b1] hover:bg-[#f6f7f7]"
+                    >
+                      <Copy className="w-4 h-4" />
+                      Copiar ligação
+                    </button>
+                    <button type="button" onClick={() => setLer(null)} className="p-1.5 text-[#50575e] hover:text-[#1d2327]">
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-              ) : tipoDocumento(ler) === "pdf" ? (
-                <iframe src={ler.url} title={ler.name} className="absolute inset-0 w-full h-full bg-white" />
-              ) : tipoDocumento(ler) === "word" ? (
-                <WordLeitura url={ler.url} />
-              ) : tipoDocumento(ler) === "excel" || tipoDocumento(ler) === "office" ? (
-                <iframe
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(ler.url)}`}
-                  title={ler.name}
-                  className="absolute inset-0 w-full h-full bg-white"
-                />
-              ) : (
-                <div className="absolute inset-0 overflow-auto py-4 px-2">
-                  <div
-                    className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full"
-                    style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
-                  >
-                    <p className="text-sm text-[#50575e]">Este ficheiro não tem pré-visualização neste ecrã.</p>
-                  </div>
+                <div className="relative flex-1 min-h-0 bg-[#d9d9d9]">
+                  {tipoDocumento(ler) === "imagem" ? (
+                    <div className="absolute inset-0 overflow-auto py-4 px-2">
+                      <div
+                        className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full flex justify-center"
+                        style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
+                      >
+                        <img src={ler.url} alt="" className="max-w-full h-auto" />
+                      </div>
+                    </div>
+                  ) : tipoDocumento(ler) === "pdf" ? (
+                    <DocumentoLeitor url={ler.url} title={ler.name} />
+                  ) : tipoDocumento(ler) === "excel" || tipoDocumento(ler) === "office" ? (
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(ler.url)}`}
+                      title={ler.name}
+                      className="absolute inset-0 w-full h-full bg-white"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 overflow-auto py-4 px-2">
+                      <div
+                        className="mx-auto bg-white shadow-[0_2px_10px_rgba(0,0,0,0.18)] w-full min-h-full"
+                        style={{ backgroundColor: "#ffffff", padding: "2.54cm 2cm" }}
+                      >
+                        <p className="text-sm text-[#50575e]">Este ficheiro não tem pré-visualização neste ecrã.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -1,10 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import EntradaHome from "@/components/EntradaHome";
-
-/** Actualize este endereço quando a biblioteca virtual tiver URL própria. */
-const BIBLIOTECA_VIRTUAL_URL = "https://esj.edondzo.ac.mz";
 
 export default function BibliotecaVirtual() {
   return (
@@ -12,9 +10,10 @@ export default function BibliotecaVirtual() {
       <div className="relative isolate min-h-[420px] md:min-h-[520px] lg:min-h-[600px]">
         <div className="absolute inset-0 -z-10">
           <Image
-            src="/Biblioteca.jpeg"
+            src="/Biblioteca.webp"
             alt=""
             fill
+            unoptimized
             sizes="100vw"
             className="object-cover object-center"
             priority={false}
@@ -38,14 +37,12 @@ export default function BibliotecaVirtual() {
                 Consulte obras, revistas e recursos digitais em Ciências da Comunicação e da
                 Informação — um clique e está dentro.
               </p>
-              <a
-                href={BIBLIOTECA_VIRTUAL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/biblioteca-virtual"
                 className="esj-btn-move mt-8 inline-flex items-center justify-center rounded-full bg-navy-900 text-white font-semibold text-[13px] tracking-wide px-8 py-3.5 transition-colors"
               >
-                Aceder à biblioteca virtual
-              </a>
+                <span className="relative z-[1]">Aceder à biblioteca virtual</span>
+              </Link>
             </div>
           </EntradaHome>
         </div>

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import VoltarBanner from "@/components/VoltarBanner";
+import BannerInteriorRodape from "@/components/BannerInteriorRodape";
 
 export default function BannerInterior({
   kicker,
@@ -16,14 +16,17 @@ export default function BannerInterior({
   compact?: boolean;
   printHidden?: boolean;
 }) {
-  const bloco = (
+  const conteudo = (
     <>
       {kicker ? (
-        <p className="text-sky font-semibold tracking-[0.2em] text-[11px] mb-3">{kicker}</p>
+        <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3 uppercase">
+          <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
+          {kicker}
+        </p>
       ) : null}
       <h1
-        className={`font-serif font-bold leading-tight ${
-          compact ? "text-2xl md:text-3xl max-w-lg" : "text-3xl md:text-4xl"
+        className={`font-serif font-bold leading-tight text-[36px] ${
+          compact ? "max-w-lg" : ""
         }`}
       >
         {title}
@@ -37,20 +40,12 @@ export default function BannerInterior({
           {description}
         </div>
       ) : null}
-      <VoltarBanner />
     </>
   );
 
   return (
-    <section className={`bg-navy-900 text-white${printHidden ? " print:hidden" : ""}`}>
-      <div
-        className={`mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12${
-          actions ? " flex flex-col md:flex-row md:items-end justify-between gap-6" : ""
-        }`}
-      >
-        {actions ? <div>{bloco}</div> : bloco}
-        {actions ? <div className="flex flex-wrap gap-3 shrink-0">{actions}</div> : null}
-      </div>
-    </section>
+    <div className={printHidden ? "print:hidden" : undefined}>
+      <BannerInteriorRodape actions={actions}>{conteudo}</BannerInteriorRodape>
+    </div>
   );
 }

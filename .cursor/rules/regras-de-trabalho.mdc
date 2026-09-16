@@ -1,0 +1,33 @@
+---
+description: Regras de trabalho ESJ — âmbito, checklist, dúvidas, commit/push e relatório
+alwaysApply: true
+---
+
+# Regras de trabalho (ESJ)
+
+## 1. Só o que foi pedido
+- Nunca mexer no que não foi mencionado no prompt/mensagem.
+- Nunca tocar numa área que não é a que se está a trabalhar.
+- Não “aproveitar” para limpar, refatorar ou alterar ecrãs/menus/componentes fora do pedido.
+- A Galeria não se altera a menos que o pedido seja explicitamente sobre a Galeria.
+
+## 2. Checklist do pedido
+- Ler atentamente todas as recomendações do utilizador.
+- Listar os pontos **um a um** antes/durante a implementação, para controlar o que falta e o que já está feito.
+- Implementar na ordem dessa lista; só marcar concluído o que foi efectivamente feito.
+
+## 3. Se não entender — perguntar
+- Se uma questão ou pedido for ambíguo, **não concluir sozinho**.
+- Perguntar ao utilizador antes de avançar.
+
+## 4. Commit e push ao fechar uma secção
+- Quando uma secção de trabalho terminar e se passar para outra (ex.: página de leitura de documento concluída), fazer **commit e push** sem o utilizador ter de pedir.
+- Informar o utilizador depois do push (com o que entrou e, se possível, o link/estado).
+- Continua a valer: mensagens de commit claras; não fazer push forçado; não alterar git config.
+
+## 5. Relatório no fim de cada acção
+- Ao terminar uma acção, dar um relatório curto do que foi feito.
+- Apresentar o **diff das alterações em linguagem simples**, sem jargão técnico excessivo (o que mudou na prática para o utilizador/site).
+
+## 6. Regras novas
+- Quando o utilizador estiver a escrever ou convidar a rever regras, **rever com ele** antes de gravar como definitivas (não assumir sozinho o texto final).
