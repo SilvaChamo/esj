@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function SiteChrome({ children }: { children: React.ReactNode }) {
+export default function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {

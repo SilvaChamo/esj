@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 export const AUTOPLAY_MS = 10000;
 
@@ -15,7 +15,7 @@ type SlideProgressContextValue = {
 
 const SlideProgressContext = createContext<SlideProgressContextValue | null>(null);
 
-export function SlideProgressProvider({ children }: { children: React.ReactNode }) {
+export function SlideProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [enabled, setEnabled] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);

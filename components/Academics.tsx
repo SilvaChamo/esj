@@ -176,7 +176,7 @@ export default function Academics() {
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`relative px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+              className={`relative px-4 py-2.5 text-sm font-bold tracking-wide transition-colors ${
                 tab === t.id
                   ? "z-10 -mb-px bg-white text-crimson border-t border-l border-r border-navy-100"
                   : "bg-cream text-navy-900/45 hover:text-navy-900/70"
@@ -193,9 +193,12 @@ export default function Academics() {
         {tab === "internacional" && (
           <EntradaHome>
             <div>
-              <p className="text-sky font-bold tracking-widest text-sm mb-3">ESTUDANTES INTERNACIONAIS</p>
+              <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3">
+                <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
+                ESTUDANTES INTERNACIONAIS
+              </p>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-3">
-                Estuda na ESJ
+                Estuda na <span className="text-sky">ESJ</span>
               </h2>
               <p className="mt-2 max-w-2xl text-navy-900/70 leading-relaxed">
                 A ESJ acolhe estudantes de todo o mundo. Descobre os programas de intercâmbio
@@ -204,7 +207,7 @@ export default function Academics() {
 
               <div className="mt-10 grid sm:grid-cols-2 gap-6">
                 {/* Card 1 — Estudar Internacionalmente */}
-                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5">
+                <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5">
                   <span className="inline-flex items-center justify-center w-12 h-12 bg-sky/10 text-sky">
                     <Globe size={24} />
                   </span>
@@ -232,7 +235,7 @@ export default function Academics() {
                 </div>
 
                 {/* Card 2 — Intercâmbio / Mobilidade */}
-                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5">
+                <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5">
                   <span className="inline-flex items-center justify-center w-12 h-12 bg-crimson/10 text-crimson">
                     <Plane size={24} />
                   </span>
@@ -277,9 +280,12 @@ export default function Academics() {
           <div>
             <EntradaHome>
               <div>
-                <p className="text-sky font-bold tracking-widest text-sm mb-3">CALENDÁRIO ACADÉMICO</p>
+                <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3">
+                  <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
+                  CALENDÁRIO ACADÉMICO
+                </p>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-                  Datas do ano lectivo
+                  Datas do ano <span className="text-sky">lectivo</span>
                 </h2>
                 <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
                   Início do ano lectivo, inscrições, exames de admissão e publicação de
@@ -364,9 +370,12 @@ export default function Academics() {
             <EntradaHome>
             <div className="flex flex-wrap items-center justify-between gap-5">
               <div>
-                <p className="text-sky font-bold tracking-widest text-sm mb-3">ÁREAS DE FORMAÇÃO</p>
+                <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3">
+                  <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
+                  ÁREAS DE FORMAÇÃO
+                </p>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-                  O que se estuda na ESJ
+                  O que se estuda na <span className="text-sky">ESJ</span>
                 </h2>
                 <p className="mt-5 max-w-2xl text-navy-900 leading-relaxed">
                   Licenciaturas em Maputo e na delegação académica de Manica, com
@@ -420,9 +429,12 @@ export default function Academics() {
         {tab === "minutas" && (
           <EntradaHome>
             <div>
-              <p className="text-sky font-bold tracking-widest text-sm mb-3">DOCUMENTAÇÃO INSTITUCIONAL</p>
+              <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3">
+                <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
+                DOCUMENTAÇÃO INSTITUCIONAL
+              </p>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-3">
-                Minutas e Legislação
+                Minutas e <span className="text-sky">Legislação</span>
               </h2>
               <p className="mt-2 max-w-2xl text-navy-900/70 leading-relaxed">
                 Acede aos documentos oficiais da ESJ — minutas das reuniões dos órgãos
@@ -431,7 +443,7 @@ export default function Academics() {
 
               <div className="mt-10 grid sm:grid-cols-2 gap-6">
                 {/* Card Minutas */}
-                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5 h-full">
+                <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5 h-full">
                   <div className="flex items-center gap-4">
                     <span className="inline-flex items-center justify-center w-12 h-12 bg-sky/10 text-sky shrink-0">
                       <FileText size={24} />
@@ -457,7 +469,7 @@ export default function Academics() {
                 </div>
 
                 {/* Card Legislação */}
-                <div className="bg-white border border-navy-100 p-8 flex flex-col gap-5 h-full">
+                <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5 h-full">
                   <div className="flex items-center gap-4">
                     <span className="inline-flex items-center justify-center w-12 h-12 bg-crimson/10 text-crimson shrink-0">
                       <Scale size={24} />

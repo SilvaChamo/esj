@@ -25,6 +25,7 @@ const config: Config = {
           DEFAULT: "#D42A3A",
         },
         cream: "#F7F7F5",
+        mark: "#A4CAE8",
       },
       fontFamily: {
         serif: ["var(--font-libre-baskerville)", "Georgia", "serif"],

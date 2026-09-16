@@ -36,6 +36,18 @@ function limparNome(nome: string) {
     .replace(/[^\w.-]/g, "_")}`;
 }
 
+async function ficheiroDeFonte(fonte: File | string, nomePadrao = "foto.jpg"): Promise<File> {
+  if (fonte instanceof File) return fonte;
+  const res = await fetch(fonte);
+  if (!res.ok) throw new Error("Não foi possível obter a imagem seleccionada.");
+  const blob = await res.blob();
+  const tipo = blob.type || "image/jpeg";
+  const ext = tipo.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const nomeUrl = fonte.split("/").pop()?.split("?")[0] || nomePadrao;
+  const nome = /\.(jpe?g|png|gif|webp|avif)$/i.test(nomeUrl) ? nomeUrl : `foto.${ext}`;
+  return new File([blob], nome, { type: tipo });
+}
+
 function urlPublica(path: string) {
   const supabase = createBrowserSupabase();
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
@@ -137,8 +149,8 @@ export async function getAlbumGaleria(slug: string): Promise<AlbumGaleria | null
 export async function criarAlbumGaleria(opts: {
   title: string;
   subtitle: string;
-  cover: File;
-  photos?: File[];
+  cover: File | string;
+  photos?: (File | string)[];
 }) {
   const title = opts.title.trim();
   if (!title) throw new Error("Indique o título do álbum.");
@@ -154,7 +166,8 @@ export async function criarAlbumGaleria(opts: {
 
   await gravarMeta(slug, title, opts.subtitle.trim());
 
-  const capa = await comprimirImagemUpload(opts.cover);
+  const capaOrig = await ficheiroDeFonte(opts.cover, "cover.jpg");
+  const capa = await comprimirImagemUpload(capaOrig);
   const ext = capa.name.split(".").pop() || "jpg";
   const capaPath = `${ALBUNS_ROOT}/${slug}/cover.${ext}`;
   const { error: errCapa } = await supabase.storage.from(BUCKET).upload(capaPath, capa, {
@@ -164,7 +177,8 @@ export async function criarAlbumGaleria(opts: {
   if (errCapa) throw errCapa;
 
   for (const foto of opts.photos || []) {
-    const comprimido = await comprimirImagemUpload(foto);
+    const origem = await ficheiroDeFonte(foto);
+    const comprimido = await comprimirImagemUpload(origem);
     const path = `${ALBUNS_ROOT}/${slug}/${limparNome(comprimido.name)}`;
     const { error } = await supabase.storage.from(BUCKET).upload(path, comprimido, {
       contentType: comprimido.type || undefined,
@@ -181,8 +195,8 @@ export async function actualizarAlbumGaleria(
   opts: {
     title: string;
     subtitle: string;
-    cover?: File | null;
-    photos?: File[];
+    cover?: File | string | null;
+    photos?: (File | string)[];
     apagar?: string[];
   }
 ) {
@@ -201,7 +215,8 @@ export async function actualizarAlbumGaleria(
   }
 
   if (opts.cover) {
-    const capa = await comprimirImagemUpload(opts.cover);
+    const capaOrig = await ficheiroDeFonte(opts.cover, "cover.jpg");
+    const capa = await comprimirImagemUpload(capaOrig);
     const ext = capa.name.split(".").pop() || "jpg";
     const { data: ficheiros } = await supabase.storage.from(BUCKET).list(`${ALBUNS_ROOT}/${slug}`, {
       limit: 100,
@@ -219,7 +234,8 @@ export async function actualizarAlbumGaleria(
   }
 
   for (const foto of opts.photos || []) {
-    const comprimido = await comprimirImagemUpload(foto);
+    const origem = await ficheiroDeFonte(foto);
+    const comprimido = await comprimirImagemUpload(origem);
     const path = `${ALBUNS_ROOT}/${slug}/${limparNome(comprimido.name)}`;
     const { error } = await supabase.storage.from(BUCKET).upload(path, comprimido, {
       contentType: comprimido.type || undefined,

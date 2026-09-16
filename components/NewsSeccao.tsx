@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import VideoPlaylist from "@/components/VideoPlaylist";
 import GaleriaHomeTab from "@/components/GaleriaHomeTab";
+import EnsinoHistoria from "@/components/EnsinoHistoria";
 import { FotoACarregar } from "@/components/Carregando";
 import EntradaHome from "@/components/EntradaHome";
 import type { Noticia } from "@/lib/noticias";
 import type { VideoItem } from "@/lib/videos";
 
-type Tab = "noticias" | "videos" | "galeria";
+type Tab = "noticias" | "videos" | "eventos" | "galeria";
 
 export default function NewsSeccao({
   noticias,
@@ -23,11 +24,12 @@ export default function NewsSeccao({
   const tabs: { id: Tab; label: string }[] = [
     { id: "noticias", label: "Notícias" },
     { id: "videos", label: "Vídeos" },
+    { id: "eventos", label: "Eventos" },
     { id: "galeria", label: "Galeria" },
   ];
 
   return (
-    <section id="noticias" className="bg-cream scroll-mt-24">
+    <section id="noticias" className="bg-white scroll-mt-24">
       <div className="border-t border-navy-100">
         <div className="mx-auto max-w-7xl px-4 lg:px-8 flex justify-end">
           {tabs.map((t) => (
@@ -37,8 +39,8 @@ export default function NewsSeccao({
               onClick={() => setTab(t.id)}
               className={`relative -mt-px px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
                 tab === t.id
-                  ? "z-10 bg-white text-navy-900 border-l border-r border-b border-navy-100"
-                  : "bg-cream text-navy-900/60 hover:text-navy-900"
+                  ? "z-10 bg-cream text-navy-900 border-l border-r border-b border-navy-100"
+                  : "bg-white text-navy-900/60 hover:text-navy-900 border-t border-navy-100"
               }`}
             >
               {t.label}
@@ -59,7 +61,7 @@ export default function NewsSeccao({
                   href="/noticias"
                   className="esj-btn-move inline-flex items-center border border-sky bg-transparent text-sm font-semibold text-sky px-4 py-2 hover:text-crimson hover:border-crimson"
                 >
-                  Ver todas as notícias →
+                  Ver repositorio de publicações
                 </Link>
               </div>
             </EntradaHome>
@@ -117,6 +119,8 @@ export default function NewsSeccao({
             </EntradaHome>
           </>
         )}
+
+        {tab === "eventos" && <EnsinoHistoria embedded />}
 
         {tab === "galeria" && <GaleriaHomeTab />}
       </div>

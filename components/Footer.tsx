@@ -25,11 +25,11 @@ export default function Footer() {
         <div>
           <Link href="/" className="inline-block mb-5">
             <Image
-              src="/esj-logo.png"
+              src="/esj-logo-mark.png"
               alt="Escola Superior de Jornalismo"
-              width={160}
-              height={160}
-              className="h-20 w-20 object-contain rounded-sm bg-white/95 p-1"
+              width={72}
+              height={72}
+              className="h-16 w-16 object-contain rounded-sm"
             />
           </Link>
           <p className="text-xs leading-relaxed">

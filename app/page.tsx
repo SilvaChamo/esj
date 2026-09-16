@@ -5,7 +5,7 @@ import About from "@/components/About";
 import Academics from "@/components/Academics";
 import BibliotecaVirtual from "@/components/BibliotecaVirtual";
 import News from "@/components/News";
-import EnsinoHistoria from "@/components/EnsinoHistoria";
+import NewsletterSeccao from "@/components/NewsletterSeccao";
 import { CarregandoTexto } from "@/components/Carregando";
 
 export default function Home() {
@@ -29,7 +29,7 @@ export default function Home() {
       >
         <News />
       </Suspense>
-      <EnsinoHistoria />
+      <NewsletterSeccao />
     </main>
   );
 }

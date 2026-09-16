@@ -117,7 +117,9 @@ export default function Hero() {
             <h1 className="font-serif text-[2.125rem] md:text-[2.625rem] font-bold tracking-wide leading-none [text-shadow:0.4px_0_0_currentColor,-0.4px_0_0_currentColor,0_0.4px_0_currentColor,0_-0.4px_0_currentColor]">
               <span className="block">{slides[active].titleLine1}</span>
               <span className="block mt-2.5">{slides[active].titleLine2}</span>
-              <span className="block mt-2.5 text-sky">{slides[active].titleLine3}</span>
+              <span className="block mt-2.5 text-sky">
+                {slides[active].titleLine3}
+              </span>
             </h1>
             <p className="mt-5 text-white/85 text-base leading-relaxed max-w-lg">
               {slides[active].text}

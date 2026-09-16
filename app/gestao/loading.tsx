@@ -1,5 +1,7 @@
-import Carregando from "@/components/Carregando";
-
 export default function Loading() {
-  return <Carregando texto="A carregar o painel…" />;
+  return (
+    <main className="min-h-[70vh] bg-cream flex items-center justify-center p-6">
+      <p className="text-sm text-navy-900/60">A carregar o painel…</p>
+    </main>
+  );
 }
