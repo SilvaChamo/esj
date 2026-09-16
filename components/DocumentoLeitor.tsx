@@ -31,7 +31,7 @@ type PaginaInfo = {
   indice: number;
   /** secção real do docx-preview, ou virtual por scroll */
   tipo: "section" | "virtual";
-  thumb?: string;
+  preview?: string;
 };
 
 function aplicarEstilosLeitura(doc: Document, zoom: number) {
@@ -141,79 +141,21 @@ function aplicarNumeracaoPaginas(doc: Document) {
   });
 }
 
-async function capturarElemento(el: HTMLElement): Promise<HTMLCanvasElement | null> {
-  try {
-    const html2canvas = (await import("html2canvas")).default;
-    // Clonar para o documento principal — html2canvas falha com frequência dentro do iframe
-    const host = document.createElement("div");
-    host.setAttribute("aria-hidden", "true");
-    host.style.cssText =
-      "position:fixed;left:-10000px;top:0;width:794px;background:#fff;pointer-events:none;z-index:-1;overflow:hidden;";
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.style.margin = "0";
-    clone.style.boxShadow = "none";
-    clone.style.transform = "none";
-    clone.style.zoom = "1";
-    host.appendChild(clone);
-    document.body.appendChild(host);
-    try {
-      return await html2canvas(clone, {
-        backgroundColor: "#ffffff",
-        scale: 0.35,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        foreignObjectRendering: false,
-        width: Math.min(clone.scrollWidth || 794, 900),
-        windowWidth: Math.min(clone.scrollWidth || 794, 900),
-      });
-    } finally {
-      host.remove();
-    }
-  } catch {
-    return null;
-  }
+function textoPreview(el: HTMLElement | null): string {
+  if (!el) return "";
+  return (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
-async function gerarThumbnails(doc: Document, paginas: PaginaInfo[]): Promise<PaginaInfo[]> {
+function gerarThumbnails(doc: Document, paginas: PaginaInfo[]): PaginaInfo[] {
   const secs = listarSeccoes(doc);
-  const limite = Math.min(paginas.length, 40);
+  const unico = secs[0] || (doc.getElementById("documento-pagina") as HTMLElement | null);
 
-  if (paginas[0]?.tipo === "section") {
-    const out: PaginaInfo[] = [];
-    for (let i = 0; i < limite; i++) {
-      const p = paginas[i];
-      const el = secs[p.indice];
-      if (!el) {
-        out.push(p);
-        continue;
-      }
-      const canvas = await capturarElemento(el);
-      out.push(canvas ? { ...p, thumb: canvas.toDataURL("image/jpeg", 0.75) } : p);
-    }
-    for (let i = limite; i < paginas.length; i++) out.push(paginas[i]);
-    return out;
-  }
-
-  // Fluxo contínuo: uma captura, depois fatias por página
-  const el = secs[0] || (doc.getElementById("documento-pagina") as HTMLElement | null);
-  if (!el) return paginas;
-  const full = await capturarElemento(el);
-  if (!full) return paginas;
-
-  const sliceH = Math.max(1, Math.round(full.height / Math.max(paginas.length, 1)));
   return paginas.map((p) => {
-    if (p.indice >= limite) return p;
-    const y = p.indice * sliceH;
-    const h = Math.min(sliceH, full.height - y);
-    if (h <= 0) return p;
-    const corte = document.createElement("canvas");
-    corte.width = full.width;
-    corte.height = h;
-    const ctx = corte.getContext("2d");
-    if (!ctx) return p;
-    ctx.drawImage(full, 0, y, full.width, h, 0, 0, full.width, h);
-    return { ...p, thumb: corte.toDataURL("image/jpeg", 0.75) };
+    if (p.tipo === "section") {
+      return { ...p, preview: textoPreview(secs[p.indice] || null) };
+    }
+    // Página virtual: usar o início do documento como referência visual
+    return { ...p, preview: textoPreview(unico) };
   });
 }
 
@@ -235,23 +177,21 @@ export function WordLeitura({
   zoomRef.current = zoom;
 
   const actualizarPaginas = async (doc: Document) => {
-    // Esperar layout (fontes / imagens) antes de contar e capturar
+    // Esperar layout (fontes / imagens) antes de contar
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 200));
     aplicarNumeracaoPaginas(doc);
     const base = montarPaginas(doc);
-    setPaginas(base);
+    setPaginas(gerarThumbnails(doc, base));
     setPaginaActiva(0);
-    const comThumbs = await gerarThumbnails(doc, base);
-    setPaginas(comThumbs);
   };
 
-  // Se abrir «Páginas» sem miniaturas ainda, tentar gerar de novo
+  // Se abrir «Páginas» sem pré-visualizações ainda, tentar gerar de novo
   useEffect(() => {
     if (!paginasAbertas) return;
     const doc = iframeRef.current?.contentDocument;
     if (!doc || status) return;
-    if (paginas.length > 0 && paginas.every((p) => p.thumb)) return;
+    if (paginas.length > 0 && paginas.every((p) => p.preview)) return;
     void actualizarPaginas(doc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paginasAbertas, status]);
@@ -410,14 +350,11 @@ export function WordLeitura({
                       : "border-navy-100 hover:border-sky/50"
                   }`}
                 >
-                  <div className="aspect-[210/297] bg-[#f3f3f3] relative overflow-hidden">
-                    {p.thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.thumb}
-                        alt={`Página ${p.indice + 1}`}
-                        className="absolute inset-0 w-full h-full object-cover object-top"
-                      />
+                  <div className="aspect-[210/297] bg-white relative overflow-hidden p-1.5">
+                    {p.preview ? (
+                      <p className="text-[7px] leading-[1.25] text-navy-900/70 line-clamp-[14] break-words">
+                        {p.preview}
+                      </p>
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-[11px] text-navy-900/35">{p.indice + 1}</span>
