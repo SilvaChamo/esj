@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import BannerInterior from "@/components/BannerInterior";
 import EntradaHome from "@/components/EntradaHome";
 import { FotoACarregar, ImgACarregar } from "@/components/Carregando";
 import {
@@ -48,19 +47,8 @@ export default function GaleriaAlbumClient({ slug }: { slug: string }) {
     };
   }, [ver]);
 
-  const tituloBanner = loading
-    ? "Álbum"
-    : album?.title || "Álbum não encontrado";
-  const descricaoBanner = loading
-    ? undefined
-    : album
-      ? album.subtitle || undefined
-      : "Este álbum não existe ou foi removido.";
-
   return (
     <main className="bg-cream min-h-[70vh]">
-      <BannerInterior kicker="GALERIA" title={tituloBanner} description={descricaoBanner} />
-
       {!loading && album && fotos.length > 0 && (
         <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
