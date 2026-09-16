@@ -77,6 +77,13 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
     .docx table tr:first-child td {
       background-color: #e8e8e8 !important;
     }
+    #documento-pagina {
+      user-select: none;
+      -webkit-user-select: none;
+      zoom: ${zoom};
+    }
+  `;
+}
 
 function listarSeccoes(doc: Document) {
   return Array.from(doc.querySelectorAll(".docx-wrapper > section.docx, section.docx")) as HTMLElement[];
