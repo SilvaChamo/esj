@@ -555,6 +555,8 @@ export async function deletePautaLinha(id: string) {
 
 const GALERIA_BUCKET = "media";
 const GALERIA_FOLDER = "galeria";
+const LIXEIRA_FOLDER = "galeria/lixeira";
+const ALBUNS_PREFIX = "galeria/albuns";
 const DOCUMENTOS_FOLDER = "documentos";
 const BIBLIOTECA_FOLDER = "biblioteca";
 
@@ -564,6 +566,17 @@ export type MediaFile = {
   size: number | null;
   mimeType: string | null;
   createdAt: string | null;
+};
+
+export type LixeiraItem = {
+  id: string;
+  trashFile: string;
+  trashMeta: string;
+  originalPath: string;
+  displayName: string;
+  url: string;
+  deletedAt: string;
+  size: number | null;
 };
 
 function eImagemMedia(nome: string, mime?: string | null) {
@@ -609,12 +622,14 @@ async function listarPastaRecursiva(
   return resultados;
 }
 
-/** Só imagens da pasta galeria — não mistura documentos nem ficheiros da biblioteca. */
+/** Só imagens da pasta galeria — exclui álbuns e lixeira. */
 export async function listMediaGaleria(): Promise<MediaFile[]> {
   const supabase = createBrowserSupabase();
   const ficheiros = await listarPastaRecursiva(supabase, GALERIA_FOLDER);
   return ficheiros
     .filter((f) => eImagemMedia(f.name, f.mimeType))
+    .filter((f) => !f.name.startsWith(`${LIXEIRA_FOLDER}/`))
+    .filter((f) => !f.name.startsWith(`${ALBUNS_PREFIX}/`))
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 }
 
@@ -655,16 +670,236 @@ export async function uploadMediaGaleriaBlob(blob: Blob, filename: string) {
   if (error) throw error;
 }
 
-export async function deleteMediaGaleria(names: string[]) {
+/** Fotos estáticas do sítio (pasta public) — exclui logótipos e ícones. */
+export const FOTOS_SITE_PUBLICAS = [
+  "/Graduacao-ESJ.jpg",
+  "/Graduacao-ESJ-II.webp",
+  "/Graduacao-ESJ-III.jpg",
+  "/ESJ-background.jpg",
+  "/Biblioteca.jpeg",
+  "/Biblioteca.webp",
+  "/Confefencias.jpg",
+  "/Cnderencias.jpg",
+  "/Curso-Publicidade-e-Marketing-ESJ.jpg",
+  "/Estudio.jpg",
+  "/Sala de conferencias.jpg",
+  "/JornalistaII.jpg",
+  "/esj-2026.jpg",
+  "/esj-2026.webp",
+  "/esj-20262.jpg",
+  "/esj-20262.webp",
+  "/studentes.jpg",
+  "/televisao.jpeg",
+  "/Twelevisão.jpeg",
+  "/woman-records-conversation-audience.jpg",
+  "/group-five-african-college-students-spending-time-together-campus-university-yard-black-afro-friends-sitting-grass-studying-with-laptops.jpg",
+  "/group-five-african-college-students-spending-time-together-campus-university-yard-black-afro-friends-sitting-grass-studying-with-laptops.jpeg",
+  "/grupo-do-campo.jpg",
+  "/groupo do campo.jpg",
+  "/fundo.jpg",
+  "/Banner-website-ESJ-Final4-3-1.jpg",
+  "/Livro.jpg",
+  "/Livro 2.jpg",
+  "/Livro 3.jpg",
+  "/livro-experiencias.jpg",
+  "/livro-infovula.jpg",
+  "/livro-noivas.jpg",
+  "/480829697740103441.jpeg",
+];
+
+/** Importa fotos da pasta public do sítio para a galeria (sem duplicar pelo nome). */
+export async function importarFotosSiteParaGaleria() {
+  const existentes = await listMediaGaleria();
+  const nomes = new Set(
+    existentes.map((f) => (f.name.split("/").pop() || "").toLowerCase())
+  );
+
+  let ok = 0;
+  let skip = 0;
+  let erro = 0;
+
+  for (const caminho of FOTOS_SITE_PUBLICAS) {
+    const base = decodeURIComponent(caminho.split("/").pop() || "").toLowerCase();
+    if (!base) {
+      erro += 1;
+      continue;
+    }
+    if (nomes.has(base)) {
+      skip += 1;
+      continue;
+    }
+    try {
+      const res = await fetch(encodeURI(caminho));
+      if (!res.ok) {
+        erro += 1;
+        continue;
+      }
+      const blob = await res.blob();
+      if (!blob.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif)$/i.test(base)) {
+        erro += 1;
+        continue;
+      }
+      await uploadMediaGaleriaBlob(blob, base);
+      nomes.add(base);
+      ok += 1;
+    } catch {
+      erro += 1;
+    }
+  }
+
+  return { ok, skip, erro };
+}
+
+/** Move fotos para a lixeira (recuperáveis). */
+export async function moverMediaParaLixeira(names: string[]) {
   const supabase = createBrowserSupabase();
-  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).remove(names);
+  const unicos = [...new Set(names.filter(Boolean))];
+  if (!unicos.length) return;
+
+  for (const originalPath of unicos) {
+    if (originalPath.startsWith(`${LIXEIRA_FOLDER}/`)) continue;
+    if (originalPath.endsWith(".json")) continue;
+
+    const id = crypto.randomUUID();
+    const base = originalPath.split("/").pop() || "foto.jpg";
+    const ext = (base.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const trashFile = `${LIXEIRA_FOLDER}/${id}.${ext}`;
+    const trashMeta = `${LIXEIRA_FOLDER}/${id}.json`;
+
+    const { error: moveErr } = await supabase.storage.from(GALERIA_BUCKET).move(originalPath, trashFile);
+    if (moveErr) {
+      // Fallback: copiar + remover (alguns buckets não permitem move entre pastas)
+      const { data: blob, error: dlErr } = await supabase.storage.from(GALERIA_BUCKET).download(originalPath);
+      if (dlErr || !blob) throw moveErr;
+      const { error: upErr } = await supabase.storage.from(GALERIA_BUCKET).upload(trashFile, blob, {
+        upsert: false,
+        contentType: blob.type || undefined,
+      });
+      if (upErr) throw upErr;
+      const { error: rmErr } = await supabase.storage.from(GALERIA_BUCKET).remove([originalPath]);
+      if (rmErr) throw rmErr;
+    }
+
+    const meta = {
+      id,
+      originalPath,
+      displayName: base,
+      deletedAt: new Date().toISOString(),
+    };
+    const { error: metaErr } = await supabase.storage.from(GALERIA_BUCKET).upload(
+      trashMeta,
+      new Blob([JSON.stringify(meta, null, 2)], { type: "application/json" }),
+      { contentType: "application/json", upsert: true }
+    );
+    if (metaErr) throw metaErr;
+  }
+}
+
+export async function listMediaLixeira(): Promise<LixeiraItem[]> {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).list(LIXEIRA_FOLDER, {
+    limit: 1000,
+    sortBy: { column: "created_at", order: "desc" },
+  });
   if (error) throw error;
-  if (!data || data.length < names.length) {
+
+  const metas = (data ?? []).filter((f) => f.id && f.name.endsWith(".json"));
+  const items: LixeiraItem[] = [];
+
+  for (const m of metas) {
+    const trashMeta = `${LIXEIRA_FOLDER}/${m.name}`;
+    const { data: blob, error: dlErr } = await supabase.storage.from(GALERIA_BUCKET).download(trashMeta);
+    if (dlErr || !blob) continue;
+    try {
+      const json = JSON.parse(await blob.text()) as {
+        id?: string;
+        originalPath?: string;
+        displayName?: string;
+        deletedAt?: string;
+      };
+      const id = json.id || m.name.replace(/\.json$/i, "");
+      const candidatos = (data ?? []).filter(
+        (f) => f.id && f.name.startsWith(`${id}.`) && !f.name.endsWith(".json")
+      );
+      const ficheiro = candidatos[0];
+      if (!ficheiro) continue;
+      const trashFile = `${LIXEIRA_FOLDER}/${ficheiro.name}`;
+      const { data: pub } = supabase.storage.from(GALERIA_BUCKET).getPublicUrl(trashFile);
+      items.push({
+        id,
+        trashFile,
+        trashMeta,
+        originalPath: json.originalPath || "",
+        displayName: json.displayName || ficheiro.name,
+        url: pub.publicUrl,
+        deletedAt: json.deletedAt || ficheiro.created_at || "",
+        size: ficheiro.metadata?.size ?? null,
+      });
+    } catch {
+      /* meta inválida */
+    }
+  }
+
+  return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
+}
+
+export async function restaurarMediaLixeira(ids: string[]) {
+  const supabase = createBrowserSupabase();
+  const lixeira = await listMediaLixeira();
+  const alvo = lixeira.filter((i) => ids.includes(i.id));
+
+  for (const item of alvo) {
+    let destino = item.originalPath;
+    if (!destino || destino.startsWith(`${LIXEIRA_FOLDER}/`)) {
+      destino = `${GALERIA_FOLDER}/${limparNomeFicheiro(item.displayName)}`;
+    } else {
+      const pasta = destino.split("/").slice(0, -1).join("/");
+      const nome = destino.split("/").pop() || item.displayName;
+      const { data: vizinhos } = await supabase.storage.from(GALERIA_BUCKET).list(pasta || GALERIA_FOLDER, {
+        limit: 1000,
+      });
+      if ((vizinhos ?? []).some((f) => f.name === nome)) {
+        destino = `${GALERIA_FOLDER}/${limparNomeFicheiro(item.displayName)}`;
+      }
+    }
+
+    const { error: moveErr } = await supabase.storage.from(GALERIA_BUCKET).move(item.trashFile, destino);
+    if (moveErr) {
+      const { data: blob, error: dlErr } = await supabase.storage.from(GALERIA_BUCKET).download(item.trashFile);
+      if (dlErr || !blob) throw moveErr;
+      const { error: upErr } = await supabase.storage.from(GALERIA_BUCKET).upload(destino, blob, {
+        upsert: false,
+        contentType: blob.type || undefined,
+      });
+      if (upErr) throw upErr;
+      await supabase.storage.from(GALERIA_BUCKET).remove([item.trashFile]);
+    }
+    await supabase.storage.from(GALERIA_BUCKET).remove([item.trashMeta]);
+  }
+}
+
+export async function apagarDefinitivoLixeira(ids: string[]) {
+  const supabase = createBrowserSupabase();
+  const lixeira = await listMediaLixeira();
+  const alvo = lixeira.filter((i) => ids.includes(i.id));
+  const paths = alvo.flatMap((i) => [i.trashFile, i.trashMeta]);
+  if (!paths.length) return;
+  const { data, error } = await supabase.storage.from(GALERIA_BUCKET).remove(paths);
+  if (error) throw error;
+  if (!data || data.length < paths.length) {
     throw new Error(
-      "O Storage não removeu o(s) ficheiro(s) — falta a política de eliminação no Supabase. Corra o SQL do painel outra vez."
+      "O Storage não removeu o(s) ficheiro(s) — falta a política de eliminação no Supabase."
     );
   }
-  await supabase.from("media_details").delete().in("file_name", names);
+  const originais = alvo.map((i) => i.originalPath).filter(Boolean);
+  if (originais.length) {
+    await supabase.from("media_details").delete().in("file_name", originais);
+  }
+}
+
+/** @deprecated Preferir moverMediaParaLixeira — mantido para apagar definitivo da lixeira. */
+export async function deleteMediaGaleria(names: string[]) {
+  await moverMediaParaLixeira(names);
 }
 
 export async function listMediaDocumentos(): Promise<MediaFile[]> {

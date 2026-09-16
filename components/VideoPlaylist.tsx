@@ -35,6 +35,7 @@ export default function VideoPlaylist({ videos }: { videos: VideoItem[] }) {
                 >
                   <span className="relative w-[108px] aspect-video shrink-0 bg-black/40 overflow-hidden">
                     {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <span className="absolute inset-0 flex items-center justify-center">
@@ -42,7 +43,11 @@ export default function VideoPlaylist({ videos }: { videos: VideoItem[] }) {
                       </span>
                     )}
                   </span>
-                  <span className={`text-[13px] leading-snug line-clamp-3 ${ligado ? "text-white font-semibold" : "text-white/75"}`}>
+                  <span
+                    className={`text-[13px] leading-snug line-clamp-3 ${
+                      ligado ? "text-white font-semibold" : "text-white/75"
+                    }`}
+                  >
                     {v.title}
                   </span>
                 </button>

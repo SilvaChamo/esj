@@ -31,30 +31,30 @@ export default function GaleriaPageClient() {
         ) : albuns.length === 0 ? (
           <p className="text-sm text-navy-900/55">Ainda sem álbuns publicados.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {albuns.map((album, i) => (
               <EntradaHome key={album.slug} atraso={i * 0.04}>
                 <Link
                   href={`/galeria/${album.slug}`}
-                  className="group relative block aspect-[16/10] overflow-hidden border border-navy-100 bg-navy-100/40"
+                  className="group relative block aspect-[3/2] min-h-[220px] overflow-hidden border border-navy-100 bg-navy-100/40"
                 >
                   {album.coverUrl ? (
                     <FotoACarregar
                       src={album.coverUrl}
                       alt=""
                       fill
-                      sizes="(min-width: 1024px) 25vw, 50vw"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : null}
-                  <div className="absolute inset-0 bg-navy-900/45 group-hover:bg-navy-900/55 transition-colors flex flex-col justify-end p-4">
-                    <h2 className="font-serif font-bold text-white text-lg leading-snug">
+                  <div className="absolute inset-0 bg-navy-900/45 group-hover:bg-navy-900/55 transition-colors flex flex-col justify-end p-5 md:p-6">
+                    <h2 className="font-serif font-bold text-white text-xl md:text-2xl leading-snug">
                       {album.title}
                     </h2>
                     {album.subtitle ? (
-                      <p className="mt-1 text-xs text-white/80 line-clamp-2">{album.subtitle}</p>
+                      <p className="mt-2 text-sm text-white/80 line-clamp-2">{album.subtitle}</p>
                     ) : null}
-                    <span className="mt-3 text-[11px] font-bold tracking-wide text-white">
+                    <span className="mt-4 text-xs font-bold tracking-wide text-white">
                       VER ÁLBUM
                     </span>
                   </div>

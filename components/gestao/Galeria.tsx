@@ -8,19 +8,26 @@ import {
   ImageIcon,
   LayoutGrid,
   List as ListIcon,
+  RotateCcw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
+  apagarDefinitivoLixeira,
   cmsError,
-  deleteMediaGaleria,
+  importarFotosSiteParaGaleria,
   isMissingTable,
   listMediaGaleria,
+  listMediaLixeira,
   loadMediaDetails,
+  moverMediaParaLixeira,
+  restaurarMediaLixeira,
   saveMediaDetails,
   uploadMediaGaleria,
   uploadMediaGaleriaBlob,
+  type LixeiraItem,
   type MediaDetails,
   type MediaFile,
 } from "@/lib/cms";
@@ -43,7 +50,9 @@ function formatSize(bytes: number) {
 }
 
 export default function Galeria() {
+  const [vista, setVista] = useState<"galeria" | "lixeira">("galeria");
   const [files, setFiles] = useState<MediaFile[]>([]);
+  const [lixeira, setLixeira] = useState<LixeiraItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
@@ -73,6 +82,7 @@ export default function Galeria() {
   const [savingMetadata, setSavingMetadata] = useState(false);
 
   const [toast, setToast] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [importando, setImportando] = useState(false);
   const notify = (tipo: "ok" | "erro", texto: string) => {
     setToast({ tipo, texto });
     window.setTimeout(() => setToast(null), 3600);
@@ -92,7 +102,26 @@ export default function Galeria() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadImages, []);
+  const loadLixeira = () => {
+    setLoading(true);
+    listMediaLixeira()
+      .then(setLixeira)
+      .catch((err) => notify("erro", cmsError(err)))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setCurrentPage(1);
+    if (vista === "galeria") loadImages();
+    else loadLixeira();
+  }, [vista]);
+
+  useEffect(() => {
+    listMediaLixeira()
+      .then(setLixeira)
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -139,18 +168,18 @@ export default function Galeria() {
   };
 
   const deleteFiles = async (names: string[]) => {
-    await deleteMediaGaleria(names);
+    await moverMediaParaLixeira(names);
   };
 
   const deleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`Eliminar permanentemente ${selectedIds.size} foto(s) seleccionada(s)?`)) return;
+    if (!window.confirm(`Enviar ${selectedIds.size} foto(s) para a lixeira?`)) return;
     try {
       setLoading(true);
       await deleteFiles(Array.from(selectedIds));
       setSelectedIds(new Set());
       loadImages();
-      notify("ok", "Fotos eliminadas.");
+      notify("ok", "Fotos enviadas para a lixeira.");
     } catch (err) {
       notify("erro", cmsError(err));
       setLoading(false);
@@ -158,14 +187,49 @@ export default function Galeria() {
   };
 
   const deleteSingle = async (name: string) => {
-    if (!window.confirm(`Eliminar "${name.split("/").pop()}"?`)) return;
+    if (!window.confirm(`Enviar "${name.split("/").pop()}" para a lixeira?`)) return;
     try {
       await deleteFiles([name]);
       setFiles((prev) => prev.filter((f) => f.name !== name));
       if (selectedFile?.name === name) setSelectedFile(null);
-      notify("ok", "Foto eliminada.");
+      notify("ok", "Foto enviada para a lixeira.");
     } catch (err) {
       notify("erro", cmsError(err));
+    }
+  };
+
+  const restaurarSelected = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      setLoading(true);
+      await restaurarMediaLixeira(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      loadLixeira();
+      notify("ok", "Fotos restauradas na galeria.");
+    } catch (err) {
+      notify("erro", cmsError(err));
+      setLoading(false);
+    }
+  };
+
+  const apagarDefinitivoSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (
+      !window.confirm(
+        `Apagar definitivamente ${selectedIds.size} foto(s)? Esta acção não pode ser desfeita.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setLoading(true);
+      await apagarDefinitivoLixeira(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      loadLixeira();
+      notify("ok", "Fotos apagadas definitivamente.");
+    } catch (err) {
+      notify("erro", cmsError(err));
+      setLoading(false);
     }
   };
 
@@ -282,6 +346,23 @@ export default function Galeria() {
     setUploading(false);
   };
 
+  const handleImportarSite = async () => {
+    if (importando) return;
+    setImportando(true);
+    try {
+      const r = await importarFotosSiteParaGaleria();
+      notify(
+        "ok",
+        `Importação: ${r.ok} nova(s), ${r.skip} já existia(m)${r.erro ? `, ${r.erro} falhou/aram` : ""}.`
+      );
+      if (r.ok > 0) loadImages();
+    } catch (err) {
+      notify("erro", cmsError(err));
+    } finally {
+      setImportando(false);
+    }
+  };
+
   return (
     <div className="text-[#2c3338]">
       <input
@@ -296,65 +377,144 @@ export default function Galeria() {
           e.target.value = "";
         }}
       />
+      <button
+        id="galeria-importar-site-btn"
+        type="button"
+        className="hidden"
+        disabled={importando}
+        onClick={() => void handleImportarSite()}
+      />
+      {importando ? (
+        <p className="mb-3 text-sm text-[#2271b1] font-semibold">A importar fotos do site…</p>
+      ) : null}
 
       {missing && <SchemaInstall />}
+
+      <div className="mb-3 flex items-center gap-1 border-b border-[#ccd0d4]">
+        <button
+          type="button"
+          onClick={() => setVista("galeria")}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+            vista === "galeria"
+              ? "border-[#2271b1] text-[#2271b1]"
+              : "border-transparent text-[#50575e] hover:text-[#1d2327]"
+          }`}
+        >
+          Galeria
+        </button>
+        <button
+          type="button"
+          onClick={() => setVista("lixeira")}
+          className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+            vista === "lixeira"
+              ? "border-[#2271b1] text-[#2271b1]"
+              : "border-transparent text-[#50575e] hover:text-[#1d2327]"
+          }`}
+        >
+          <Trash2 className="w-4 h-4" />
+          Lixeira
+          {lixeira.length > 0 ? (
+            <span className="text-[11px] font-bold text-[#d63638]">({lixeira.length})</span>
+          ) : null}
+        </button>
+      </div>
 
       <div className="sticky top-0 z-10 flex flex-col md:flex-row items-center justify-between bg-white border border-[#ccd0d4] p-2 gap-2 shadow-sm mb-4">
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto md:flex-1 min-w-0">
           <input
             type="checkbox"
-            checked={selectedIds.size === paginatedFiles.length && paginatedFiles.length > 0}
+            checked={
+              vista === "galeria"
+                ? selectedIds.size === paginatedFiles.length && paginatedFiles.length > 0
+                : selectedIds.size === lixeira.length && lixeira.length > 0
+            }
             onChange={() => {
-              if (selectedIds.size === paginatedFiles.length) setSelectedIds(new Set());
-              else setSelectedIds(new Set(paginatedFiles.map((f) => f.name)));
+              if (vista === "galeria") {
+                if (selectedIds.size === paginatedFiles.length) setSelectedIds(new Set());
+                else setSelectedIds(new Set(paginatedFiles.map((f) => f.name)));
+              } else {
+                if (selectedIds.size === lixeira.length) setSelectedIds(new Set());
+                else setSelectedIds(new Set(lixeira.map((f) => f.id)));
+              }
             }}
             className="w-4 h-4 cursor-pointer"
-            title="Seleccionar todos nesta página"
+            title="Seleccionar todos"
           />
 
-          <button
-            type="button"
-            onClick={() => setViewMode("list")}
-            className={`p-1.5 rounded-md ${viewMode === "list" ? "bg-[#f0f0f1] text-[#2271b1]" : "text-[#50575e] hover:text-[#2271b1]"}`}
-          >
-            <ListIcon className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-md ${viewMode === "grid" ? "bg-[#f0f0f1] text-[#2271b1]" : "text-[#50575e] hover:text-[#2271b1]"}`}
-          >
-            <LayoutGrid className="w-5 h-5" />
-          </button>
+          {vista === "galeria" && (
+            <>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md ${viewMode === "list" ? "bg-[#f0f0f1] text-[#2271b1]" : "text-[#50575e] hover:text-[#2271b1]"}`}
+              >
+                <ListIcon className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md ${viewMode === "grid" ? "bg-[#f0f0f1] text-[#2271b1]" : "text-[#50575e] hover:text-[#2271b1]"}`}
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
 
-          <div className="relative flex-1 min-w-[180px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c8f94]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Procurar itens multimédia…"
-              className="w-full h-8 pl-9 pr-3 bg-white text-[#2c3338] border border-[#ccd0d4] rounded-md text-sm outline-none focus:border-[#2271b1]"
-            />
-          </div>
+              <div className="relative flex-1 min-w-[180px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c8f94]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Procurar itens multimédia…"
+                  className="w-full h-8 pl-9 pr-3 bg-white text-[#2c3338] border border-[#ccd0d4] rounded-md text-sm outline-none focus:border-[#2271b1]"
+                />
+              </div>
 
-          <select
-            className="h-8 text-sm border border-[#ccd0d4] rounded-md bg-white px-2"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          >
-            <option value="todas">Todas as datas</option>
-            {years.map((year) => (
-              <option key={year} value={year.toString()}>
-                {year}
-              </option>
-            ))}
-          </select>
+              <select
+                className="h-8 text-sm border border-[#ccd0d4] rounded-md bg-white px-2"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              >
+                <option value="todas">Todas as datas</option>
+                {years.map((year) => (
+                  <option key={year} value={year.toString()}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && vista === "galeria" && (
             <div className="flex items-center gap-3 ml-2 flex-nowrap">
-              <span onClick={deleteSelected} className="text-sm whitespace-nowrap text-[#d63638] cursor-pointer hover:underline">
-                Eliminar {selectedIds.size} seleccionada(s)
+              <span
+                onClick={deleteSelected}
+                className="text-sm whitespace-nowrap text-[#d63638] cursor-pointer hover:underline"
+              >
+                Lixeira ({selectedIds.size})
+              </span>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="h-8 px-4 text-sm font-semibold border border-[#ccd0d4] rounded-md bg-white hover:bg-[#f6f7f7] whitespace-nowrap"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {selectedIds.size > 0 && vista === "lixeira" && (
+            <div className="flex items-center gap-3 ml-2 flex-nowrap">
+              <span
+                onClick={() => void restaurarSelected()}
+                className="text-sm whitespace-nowrap text-[#2271b1] cursor-pointer hover:underline inline-flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Restaurar {selectedIds.size}
+              </span>
+              <span
+                onClick={() => void apagarDefinitivoSelected()}
+                className="text-sm whitespace-nowrap text-[#d63638] cursor-pointer hover:underline"
+              >
+                Apagar definitivo
               </span>
               <button
                 onClick={() => setSelectedIds(new Set())}
@@ -368,31 +528,113 @@ export default function Galeria() {
 
         <div className="flex items-center gap-4 flex-nowrap">
           <div className="flex items-center gap-2 text-[13px] text-[#50575e] whitespace-nowrap">
-            <span>{filteredFiles.length} fotos</span>
-            <div className="flex items-center gap-1 ml-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1 border border-[#ccd0d4] bg-white rounded-md disabled:opacity-30"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-2 font-medium">
-                {currentPage} <span className="font-normal text-gray-400">de</span> {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1 border border-[#ccd0d4] bg-white rounded-md disabled:opacity-30"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <span>
+              {vista === "galeria"
+                ? `${filteredFiles.length} fotos`
+                : `${lixeira.length} na lixeira`}
+            </span>
+            {vista === "galeria" && (
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-1 border border-[#ccd0d4] bg-white rounded-md disabled:opacity-30"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-2 font-medium">
+                  {currentPage} <span className="font-normal text-gray-400">de</span> {totalPages}
+                </span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1 border border-[#ccd0d4] bg-white rounded-md disabled:opacity-30"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {loading ? (
+      {vista === "lixeira" ? (
+        loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <div key={i} className="aspect-square bg-gray-200 animate-pulse" />
+            ))}
+          </div>
+        ) : lixeira.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-[#8c8f94] text-center bg-white border border-[#ccd0d4]">
+            <Trash2 className="w-10 h-10 mb-2" />
+            A lixeira está vazia.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            {lixeira.map((item) => (
+              <div
+                key={item.id}
+                className={`aspect-square relative bg-white border overflow-hidden group ${
+                  selectedIds.has(item.id) ? "ring-[3px] ring-[#2271b1] ring-inset" : "border-[#ccd0d4]"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.url} className="w-full h-full object-cover" alt="" />
+                <button
+                  type="button"
+                  onClick={() => toggleSelect(item.id)}
+                  title="Seleccionar"
+                  className={`absolute top-1 right-1 w-5 h-5 rounded-sm border flex items-center justify-center transition-opacity ${
+                    selectedIds.has(item.id)
+                      ? "bg-[#2271b1] border-[#2271b1] opacity-100"
+                      : "bg-white/90 border-[#ccd0d4] opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  {selectedIds.has(item.id) && <Check className="w-3.5 h-3.5 text-white" />}
+                </button>
+                <div className="absolute inset-x-0 bottom-0 bg-navy-900/70 px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-[10px] text-white truncate">{item.displayName}</p>
+                  <div className="flex gap-2 mt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedIds(new Set([item.id]));
+                        void restaurarMediaLixeira([item.id])
+                          .then(() => {
+                            setSelectedIds(new Set());
+                            loadLixeira();
+                            notify("ok", "Foto restaurada.");
+                          })
+                          .catch((err) => notify("erro", cmsError(err)));
+                      }}
+                      className="text-[10px] text-sky-300 hover:underline"
+                    >
+                      Restaurar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!window.confirm("Apagar definitivamente esta foto?")) return;
+                        void apagarDefinitivoLixeira([item.id])
+                          .then(() => {
+                            setSelectedIds(new Set());
+                            loadLixeira();
+                            notify("ok", "Foto apagada definitivamente.");
+                          })
+                          .catch((err) => notify("erro", cmsError(err)));
+                      }}
+                      className="text-[10px] text-red-300 hover:underline"
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
           {Array.from({ length: 14 }).map((_, i) => (
             <div key={i} className="aspect-square bg-gray-200 animate-pulse" />
@@ -497,7 +739,7 @@ export default function Galeria() {
                       </button>
                       <span className="text-[#ccd0d4]">|</span>
                       <button onClick={() => deleteSingle(file.name)} className="text-[#d63638] hover:underline">
-                        Eliminar
+                        Lixeira
                       </button>
                       <span className="text-[#ccd0d4]">|</span>
                       <button onClick={() => copyUrl(file)} className="text-[#2271b1] hover:underline">
@@ -727,7 +969,7 @@ export default function Galeria() {
 
               <div className="pt-4 border-t border-[#ccd0d4] flex justify-between items-center">
                 <button onClick={() => deleteSingle(selectedFile.name)} className="text-[12px] text-[#d63638] hover:underline">
-                  Eliminar permanentemente
+                  Enviar para a lixeira
                 </button>
                 <button
                   onClick={saveMetadata}

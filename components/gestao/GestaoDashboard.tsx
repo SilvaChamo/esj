@@ -469,12 +469,22 @@ export default function GestaoDashboard() {
               </button>
             )}
             {section === "galeria" && (
-              <label
-                htmlFor="galeria-upload"
-                className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] cursor-pointer whitespace-nowrap"
-              >
-                Adicionar ficheiros multimédia
-              </label>
+              <>
+                <button
+                  type="button"
+                  id="galeria-importar-site"
+                  onClick={() => document.getElementById("galeria-importar-site-btn")?.click()}
+                  className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
+                >
+                  Importar fotos do site
+                </button>
+                <label
+                  htmlFor="galeria-upload"
+                  className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] cursor-pointer whitespace-nowrap"
+                >
+                  Adicionar ficheiros multimédia
+                </label>
+              </>
             )}
             {section === "albuns" && (
               <button

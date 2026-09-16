@@ -22,6 +22,30 @@ type FotoPendente = {
   preview: string;
 };
 
+const TITULO_MAX_PALAVRAS = 5;
+const TITULO_MAX_CHARS = 30;
+const DESC_MAX_PALAVRAS = 12;
+const DESC_MAX_CHARS = 83;
+
+function contarPalavras(texto: string) {
+  const t = texto.trim();
+  if (!t) return 0;
+  return t.split(/\s+/).filter(Boolean).length;
+}
+
+/** Limita por caracteres e por número de palavras (não corta a meio da última palavra permitida). */
+function limitarTexto(valor: string, maxPalavras: number, maxChars: number) {
+  let texto = valor.slice(0, maxChars);
+  const partes = texto.trimStart().length ? texto.trimStart().split(/\s+/) : [];
+  if (partes.length > maxPalavras) {
+    const cortado = partes.slice(0, maxPalavras).join(" ");
+    // Preserva um espaço final se o utilizador estiver a tentar escrever a palavra seguinte
+    texto = valor.endsWith(" ") && contarPalavras(cortado) >= maxPalavras ? `${cortado} ` : cortado;
+    if (texto.length > maxChars) texto = texto.slice(0, maxChars);
+  }
+  return texto;
+}
+
 export default function AlbunsGaleria() {
   const [albuns, setAlbuns] = useState<AlbumGaleria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,8 +115,8 @@ export default function AlbunsGaleria() {
 
   const abrirEditar = async (album: AlbumGaleria) => {
     setEditar(album);
-    setTitle(album.title);
-    setSubtitle(album.subtitle);
+    setTitle(limitarTexto(album.title, TITULO_MAX_PALAVRAS, TITULO_MAX_CHARS));
+    setSubtitle(limitarTexto(album.subtitle, DESC_MAX_PALAVRAS, DESC_MAX_CHARS));
     setCover(null);
     setCoverPreview(album.coverUrl);
     setCoverMudou(false);
@@ -134,19 +158,21 @@ export default function AlbunsGaleria() {
     setToast(null);
     try {
       if (!title.trim()) throw new Error("Indique o título do álbum.");
+      const tituloOk = limitarTexto(title.trim(), TITULO_MAX_PALAVRAS, TITULO_MAX_CHARS);
+      const descOk = limitarTexto(subtitle.trim(), DESC_MAX_PALAVRAS, DESC_MAX_CHARS);
       const novas = photos.map((p) => p.preview);
       if (modo === "novo") {
         if (!cover) throw new Error("Escolha uma imagem de capa.");
         await criarAlbumGaleria({
-          title: title.trim(),
-          subtitle: subtitle.trim(),
+          title: tituloOk,
+          subtitle: descOk,
           cover,
           photos: novas,
         });
       } else if (editar) {
         await actualizarAlbumGaleria(editar.slug, {
-          title: title.trim(),
-          subtitle: subtitle.trim(),
+          title: tituloOk,
+          subtitle: descOk,
           cover: coverMudou ? cover : null,
           photos: novas,
           apagar,
@@ -163,7 +189,7 @@ export default function AlbunsGaleria() {
   };
 
   const eliminar = async (album: AlbumGaleria) => {
-    if (!window.confirm(`Eliminar o álbum «${album.title}» e todas as fotos?`)) return;
+    if (!window.confirm(`Eliminar o álbum «${album.title}»? As fotos da galeria mantêm-se; só cópias do álbum vão para a lixeira.`)) return;
     try {
       await apagarAlbumGaleria(album.slug);
       carregar();
@@ -208,18 +234,36 @@ export default function AlbunsGaleria() {
             <h2 className="font-serif text-xl font-bold text-navy-900">
               {modo === "novo" ? "Novo álbum" : "Editar álbum"}
             </h2>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
-              placeholder="Título do álbum"
-            />
-            <input
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
-              placeholder="Descrição do álbum"
-            />
+            <div>
+              <input
+                value={title}
+                onChange={(e) =>
+                  setTitle(limitarTexto(e.target.value, TITULO_MAX_PALAVRAS, TITULO_MAX_CHARS))
+                }
+                maxLength={TITULO_MAX_CHARS}
+                className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
+                placeholder="Título do álbum"
+              />
+              <p className="mt-1 text-[11px] text-navy-900/45">
+                {contarPalavras(title)}/{TITULO_MAX_PALAVRAS} palavras · {title.length}/
+                {TITULO_MAX_CHARS} caracteres
+              </p>
+            </div>
+            <div>
+              <input
+                value={subtitle}
+                onChange={(e) =>
+                  setSubtitle(limitarTexto(e.target.value, DESC_MAX_PALAVRAS, DESC_MAX_CHARS))
+                }
+                maxLength={DESC_MAX_CHARS}
+                className="w-full border border-navy-100 px-3 h-11 text-sm outline-none focus:border-sky"
+                placeholder="Descrição do álbum"
+              />
+              <p className="mt-1 text-[11px] text-navy-900/45">
+                {contarPalavras(subtitle)}/{DESC_MAX_PALAVRAS} palavras · {subtitle.length}/
+                {DESC_MAX_CHARS} caracteres
+              </p>
+            </div>
           </div>
         </div>
 
