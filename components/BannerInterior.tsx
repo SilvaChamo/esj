@@ -8,6 +8,7 @@ export default function BannerInterior({
   actions,
   compact,
   printHidden,
+  busca = true,
 }: {
   kicker?: ReactNode;
   title: ReactNode;
@@ -15,6 +16,8 @@ export default function BannerInterior({
   actions?: ReactNode;
   compact?: boolean;
   printHidden?: boolean;
+  /** Mostrar pesquisa no banner. Desligar em páginas só de leitura. */
+  busca?: boolean;
 }) {
   const conteudo = (
     <>
@@ -45,7 +48,9 @@ export default function BannerInterior({
 
   return (
     <div className={printHidden ? "print:hidden" : undefined}>
-      <BannerInteriorRodape actions={actions}>{conteudo}</BannerInteriorRodape>
+      <BannerInteriorRodape actions={actions} busca={busca}>
+        {conteudo}
+      </BannerInteriorRodape>
     </div>
   );
 }

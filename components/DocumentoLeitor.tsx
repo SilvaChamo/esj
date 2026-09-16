@@ -24,8 +24,8 @@ function srcPdf(href: string, paginasAbertas: boolean) {
     : `${base}#navpanes=0&pagemode=none`;
 }
 
-/** Altura aproximada A4 em px (96 dpi). */
-const ALTURA_PAGINA_A4 = Math.round(29.7 * (96 / 2.54));
+/** Altura do conteúdo/borda da página no leitor (px). */
+const ALTURA_PAGINA = 800;
 
 type PaginaInfo = {
   indice: number;
@@ -63,14 +63,20 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
       margin-bottom: 25px !important;
       overflow: visible !important;
       box-sizing: border-box !important;
+      min-height: 800px !important;
     }
-    #documento-pagina {
-      user-select: none;
-      -webkit-user-select: none;
-      zoom: ${zoom};
+    .docx table td,
+    .docx table th {
+      color: #111 !important;
+      border-color: #bbb !important;
     }
-  `;
-}
+    .docx table td {
+      background-color: #fff !important;
+    }
+    .docx table th,
+    .docx table tr:first-child td {
+      background-color: #e8e8e8 !important;
+    }
 
 function listarSeccoes(doc: Document) {
   return Array.from(doc.querySelectorAll(".docx-wrapper > section.docx, section.docx")) as HTMLElement[];
@@ -87,7 +93,7 @@ function montarPaginas(doc: Document): PaginaInfo[] {
   const alvo = secs[0] || (doc.getElementById("documento-pagina") as HTMLElement | null);
   if (!alvo) return [{ indice: 0, tipo: "virtual" }];
   const altura = Math.max(alvo.scrollHeight, alvo.offsetHeight, 1);
-  const n = Math.max(1, Math.ceil(altura / ALTURA_PAGINA_A4));
+  const n = Math.max(1, Math.ceil(altura / ALTURA_PAGINA));
   return Array.from({ length: n }, (_, i) => ({ indice: i, tipo: "virtual" as const }));
 }
 
@@ -256,7 +262,7 @@ export function WordLeitura({
       const el = secs[0] || doc.getElementById("documento-pagina");
       const win = iframeRef.current?.contentWindow;
       if (el && win) {
-        const top = el.offsetTop + indice * ALTURA_PAGINA_A4;
+        const top = el.offsetTop + indice * ALTURA_PAGINA;
         win.scrollTo({ top, behavior: "smooth" });
       }
     }
@@ -370,7 +376,7 @@ export function WordLeitura({
       const el = secs[0] || doc.getElementById("documento-pagina");
       if (!el) return;
       const relativa = Math.max(0, win.scrollY - el.offsetTop);
-      const i = Math.min(paginas.length - 1, Math.floor(relativa / ALTURA_PAGINA_A4));
+      const i = Math.min(paginas.length - 1, Math.floor(relativa / ALTURA_PAGINA));
       setPaginaActiva(i);
     };
 

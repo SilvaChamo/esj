@@ -21,6 +21,7 @@ export default async function EditalPage() {
         kicker="ADMISSÕES — ANO LECTIVO 2026"
         title="Edital de Admissão"
         description="Leia o documento completo antes de se inscrever. Os exames de admissão cobrem Português e História para os cursos de licenciatura da ESJ."
+        busca={false}
         actions={
           <>
             <Link

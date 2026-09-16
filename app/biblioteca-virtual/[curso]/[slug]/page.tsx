@@ -54,6 +54,7 @@ export default async function ProjectoCientificoPage({
         kicker={curso.titulo}
         title={labelTipo(projecto.tipo)}
         description={`${projecto.ano}${projecto.ramos ? ` · ${projecto.ramos}` : ""}`}
+        busca={false}
       />
       <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8 md:py-10">
         <ProjectoCientificoPainel projecto={projecto} />
