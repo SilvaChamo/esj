@@ -147,7 +147,7 @@ export default function LeitorDocumento({
 
       <div
         className={`relative flex-1 min-h-0 bg-[#d9d9d9] overflow-hidden ${
-          modo === "pagina" ? "h-[calc(100vh-84px-3.25rem)] min-h-[560px]" : ""
+          modo === "pagina" ? "h-[calc(100vh-84px-3.25rem)] min-h-[800px]" : ""
         }`}
       >
         <DocumentoLeitor

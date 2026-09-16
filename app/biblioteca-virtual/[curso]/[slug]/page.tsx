@@ -56,7 +56,7 @@ export default async function ProjectoCientificoPage({
         description={`${projecto.ano}${projecto.ramos ? ` · ${projecto.ramos}` : ""}`}
         busca={false}
       />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-8 md:py-10">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-4 pb-16 md:pt-5 md:pb-24">
         <ProjectoCientificoPainel projecto={projecto} />
       </div>
     </main>
