@@ -88,59 +88,80 @@ function montarPaginas(doc: Document): PaginaInfo[] {
   return Array.from({ length: n }, (_, i) => ({ indice: i, tipo: "virtual" as const }));
 }
 
-async function gerarThumbnails(doc: Document, paginas: PaginaInfo[]): Promise<PaginaInfo[]> {
+async function capturarElemento(el: HTMLElement): Promise<HTMLCanvasElement | null> {
   try {
     const html2canvas = (await import("html2canvas")).default;
-    const secs = listarSeccoes(doc);
+    // Clonar para o documento principal — html2canvas falha com frequência dentro do iframe
+    const host = document.createElement("div");
+    host.setAttribute("aria-hidden", "true");
+    host.style.cssText =
+      "position:fixed;left:-10000px;top:0;width:794px;background:#fff;pointer-events:none;z-index:-1;overflow:hidden;";
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.margin = "0";
+    clone.style.boxShadow = "none";
+    clone.style.transform = "none";
+    clone.style.zoom = "1";
+    host.appendChild(clone);
+    document.body.appendChild(host);
+    try {
+      return await html2canvas(clone, {
+        backgroundColor: "#ffffff",
+        scale: 0.35,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false,
+        width: Math.min(clone.scrollWidth || 794, 900),
+        windowWidth: Math.min(clone.scrollWidth || 794, 900),
+      });
+    } finally {
+      host.remove();
+    }
+  } catch {
+    return null;
+  }
+}
+
+async function gerarThumbnails(doc: Document, paginas: PaginaInfo[]): Promise<PaginaInfo[]> {
+  const secs = listarSeccoes(doc);
+  const limite = Math.min(paginas.length, 40);
+
+  if (paginas[0]?.tipo === "section") {
     const out: PaginaInfo[] = [];
-
-    for (const p of paginas) {
-      if (p.tipo === "section" && secs[p.indice]) {
-        const el = secs[p.indice];
-        const canvas = await html2canvas(el, {
-          backgroundColor: "#ffffff",
-          scale: 0.25,
-          logging: false,
-          useCORS: true,
-          windowWidth: el.scrollWidth,
-          windowHeight: el.scrollHeight,
-        });
-        out.push({ ...p, thumb: canvas.toDataURL("image/jpeg", 0.72) });
-        continue;
-      }
-
-      // Página virtual: captura a secção única e corta a faixa
-      const el = secs[0] || (doc.getElementById("documento-pagina") as HTMLElement | null);
+    for (let i = 0; i < limite; i++) {
+      const p = paginas[i];
+      const el = secs[p.indice];
       if (!el) {
         out.push(p);
         continue;
       }
-      const full = await html2canvas(el, {
-        backgroundColor: "#ffffff",
-        scale: 0.2,
-        logging: false,
-        useCORS: true,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-      });
-      const sliceH = Math.max(1, Math.round(full.height / paginas.length));
-      const y = p.indice * sliceH;
-      const h = Math.min(sliceH, full.height - y);
-      const corte = document.createElement("canvas");
-      corte.width = full.width;
-      corte.height = Math.max(1, h);
-      const ctx = corte.getContext("2d");
-      if (ctx && h > 0) {
-        ctx.drawImage(full, 0, y, full.width, h, 0, 0, full.width, h);
-        out.push({ ...p, thumb: corte.toDataURL("image/jpeg", 0.72) });
-      } else {
-        out.push(p);
-      }
+      const canvas = await capturarElemento(el);
+      out.push(canvas ? { ...p, thumb: canvas.toDataURL("image/jpeg", 0.75) } : p);
     }
+    for (let i = limite; i < paginas.length; i++) out.push(paginas[i]);
     return out;
-  } catch {
-    return paginas;
   }
+
+  // Fluxo contínuo: uma captura, depois fatias por página
+  const el = secs[0] || (doc.getElementById("documento-pagina") as HTMLElement | null);
+  if (!el) return paginas;
+  const full = await capturarElemento(el);
+  if (!full) return paginas;
+
+  const sliceH = Math.max(1, Math.round(full.height / Math.max(paginas.length, 1)));
+  return paginas.map((p) => {
+    if (p.indice >= limite) return p;
+    const y = p.indice * sliceH;
+    const h = Math.min(sliceH, full.height - y);
+    if (h <= 0) return p;
+    const corte = document.createElement("canvas");
+    corte.width = full.width;
+    corte.height = h;
+    const ctx = corte.getContext("2d");
+    if (!ctx) return p;
+    ctx.drawImage(full, 0, y, full.width, h, 0, 0, full.width, h);
+    return { ...p, thumb: corte.toDataURL("image/jpeg", 0.75) };
+  });
 }
 
 /** Único leitor Word do site (docx-preview + fallback mammoth). */
@@ -161,15 +182,25 @@ export function WordLeitura({
   zoomRef.current = zoom;
 
   const actualizarPaginas = async (doc: Document) => {
-    // Esperar layout (fontes / imagens) antes de contar
+    // Esperar layout (fontes / imagens) antes de contar e capturar
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise((r) => setTimeout(r, 120));
+    await new Promise((r) => setTimeout(r, 400));
     const base = montarPaginas(doc);
     setPaginas(base);
     setPaginaActiva(0);
     const comThumbs = await gerarThumbnails(doc, base);
     setPaginas(comThumbs);
   };
+
+  // Se abrir «Páginas» sem miniaturas ainda, tentar gerar de novo
+  useEffect(() => {
+    if (!paginasAbertas) return;
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || status) return;
+    if (paginas.length > 0 && paginas.every((p) => p.thumb)) return;
+    void actualizarPaginas(doc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginasAbertas, status]);
 
   const irParaPagina = (indice: number) => {
     const doc = iframeRef.current?.contentDocument;
