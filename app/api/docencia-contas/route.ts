@@ -3,16 +3,19 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { eSuperAdmin } from "@/lib/gestao-auth";
 
 export const dynamic = "force-dynamic";
 
+const PAPEIS_ADMIN = ["admin", "administrador", "super_admin", "superadmin"];
+
 /**
- * Confirma que quem chamou a rota tem sessão iniciada — mesmo critério de
- * acesso já usado no resto do painel (/gestao não exige um papel especial,
- * só sessão iniciada), para esta funcionalidade não ficar mais restrita
- * do que as outras.
+ * Confirma que quem chamou a rota é super-admin. Esta rota usa a service
+ * role key (acesso total à autenticação — cria, altera e apaga QUALQUER
+ * conta), por isso não pode ficar ao mesmo nível de "sessão iniciada" do
+ * resto do painel: teria de ser sempre este critério mais estrito.
  */
-async function pedirAutenticado() {
+async function pedirSuperAdmin() {
   const cookieStore = cookies();
   const supabase = createServerClient(supabaseUrl(), supabaseAnonKey(), {
     cookies: {
@@ -25,11 +28,11 @@ async function pedirAutenticado() {
     },
   });
   const { data } = await supabase.auth.getUser();
-  return !!data.user;
+  return eSuperAdmin(data.user);
 }
 
 export async function GET() {
-  if (!(await pedirAutenticado())) {
+  if (!(await pedirSuperAdmin())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();
@@ -54,7 +57,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await pedirAutenticado())) {
+  if (!(await pedirSuperAdmin())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();
@@ -88,9 +91,9 @@ export async function POST(request: Request) {
   });
   if (!error) return NextResponse.json({ ok: true, id: data.user?.id });
 
-  // Correio já pertence a outra conta: em vez de falhar, atribui-lhe o
-  // papel de docente (é o caminho esperado quando se quer dar acesso à
-  // Docência a alguém que já tem sessão no site, ex.: uma conta de gestor).
+  // Correio já pertence a outra conta: em vez de falhar, concede-lhe o
+  // papel de docente — mas nunca lhe repõe a palavra-passe (é a conta de
+  // outra pessoa) nem toca em contas que já sejam de administração.
   if (/already.*registered|already.*exists/i.test(error.message)) {
     const { data: lista, error: listErr } = await admin.auth.admin.listUsers({ perPage: 200 });
     if (listErr) return NextResponse.json({ error: listErr.message }, { status: 400 });
@@ -99,10 +102,17 @@ export async function POST(request: Request) {
     );
     if (!existente) return NextResponse.json({ error: error.message }, { status: 400 });
 
+    const papelActual = String(existente.user_metadata?.role || "").toLowerCase();
+    if (PAPEIS_ADMIN.includes(papelActual)) {
+      return NextResponse.json(
+        { error: "Este correio já pertence a uma conta de administração — não foi alterado." },
+        { status: 400 }
+      );
+    }
+
     const { data: actualizado, error: updErr } = await admin.auth.admin.updateUserById(
       existente.id,
       {
-        password,
         user_metadata: {
           ...existente.user_metadata,
           role: "docente",
@@ -118,7 +128,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!(await pedirAutenticado())) {
+  if (!(await pedirSuperAdmin())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();

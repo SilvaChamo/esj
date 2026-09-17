@@ -61,7 +61,7 @@ export default function ContasDocentes() {
       setPassword("");
       setToast(
         r.actualizado
-          ? "Este correio já tinha conta — foi actualizada com o papel de docente e a nova palavra-passe."
+          ? "Este correio já tinha conta — foi-lhe atribuído o papel de docente (a palavra-passe existente não foi alterada)."
           : "Conta de docente criada."
       );
       carregar();
