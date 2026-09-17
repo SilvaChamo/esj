@@ -9,10 +9,12 @@ export default function BannerInteriorRodape({
   children,
   actions,
   busca = true,
+  compact,
 }: {
   children: ReactNode;
   actions?: ReactNode;
   busca?: boolean;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -37,13 +39,24 @@ export default function BannerInteriorRodape({
 
   return (
     <>
-      <section className="bg-navy-900 text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 from-0% via-navy-900 via-60% to-sky-700 text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/Bg1.webp"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none select-none absolute inset-x-0 bottom-0 w-full opacity-10"
+        />
         <div
-          className={`mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12${
+          className={`relative z-[1] mx-auto max-w-7xl px-4 lg:px-8 py-4 md:py-6${
             actions ? " flex flex-col md:flex-row md:items-end justify-between gap-6" : ""
           }`}
         >
-          <div className="min-w-0 flex-1">
+          <div
+            className={`min-w-0 flex-1 ${
+              compact ? "" : "flex flex-col justify-center min-h-[212px]"
+            }`}
+          >
             {children}
             <div className={`mt-4 flex items-center gap-4 ${busca ? "justify-between" : ""}`}>
               <VoltarBanner className="mt-0" />

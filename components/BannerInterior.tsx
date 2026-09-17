@@ -20,7 +20,7 @@ export default function BannerInterior({
   busca?: boolean;
 }) {
   const conteudo = (
-    <div className={compact ? undefined : "flex flex-col justify-center min-h-[180px]"}>
+    <div>
       {kicker ? (
         <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3 uppercase">
           <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
@@ -48,7 +48,7 @@ export default function BannerInterior({
 
   return (
     <div className={printHidden ? "print:hidden" : undefined}>
-      <BannerInteriorRodape actions={actions} busca={busca}>
+      <BannerInteriorRodape actions={actions} busca={busca} compact={compact}>
         {conteudo}
       </BannerInteriorRodape>
     </div>

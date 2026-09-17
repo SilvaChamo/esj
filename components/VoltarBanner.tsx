@@ -68,9 +68,14 @@ function destinoHierarquico(pathname: string) {
     return { href: "/", label: voltar("à", "Home") };
   }
 
+  if (p === "/docencia/partilhar") {
+    return { href: "/docencia", label: voltar("à", "docência") };
+  }
+
   if (
     p === "/calendario" ||
     p === "/documentos" ||
+    p === "/docencia" ||
     p === "/estudantes-internacionais"
   ) {
     return { href: "/#ensino", label: voltar("ao", "Ensino") };

@@ -62,12 +62,7 @@ export default function DocumentosEnsino() {
   };
 
   return (
-    <main className="bg-cream min-h-[70vh]">
-      <BannerInterior
-        kicker="ENSINO"
-        title="Documentos"
-        description="Minutas, regulamentos e outros documentos académicos — consulte ou descarregue sem sair da página."
-      />
+    <>
       <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           <aside className="lg:w-56 shrink-0">
@@ -179,6 +174,6 @@ export default function DocumentosEnsino() {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 }

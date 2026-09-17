@@ -38,6 +38,13 @@ export function eSuperAdmin(user: User | null | undefined): boolean {
   return emailsSuperAdmin().includes(email);
 }
 
+/** Conta de docente: acesso restrito à secção Docência (não ao painel de gestão). */
+export function eDocente(user: User | null | undefined): boolean {
+  if (!user) return false;
+  const role = String(user.user_metadata?.role || "").toLowerCase();
+  return role === "docente" || role === "professor";
+}
+
 /** Nome e apelido (nunca o rótulo Administrador). */
 export function nomeDeUser(user: User | null | undefined): string | null {
   if (!user) return null;
@@ -69,6 +76,7 @@ export type GestorSessao = {
   /** Texto para «Por: …» (Administrador ou nome). */
   autor: string | null;
   superAdmin: boolean;
+  docente: boolean;
 };
 
 export async function gestorSessao(): Promise<GestorSessao | null> {
@@ -82,5 +90,6 @@ export async function gestorSessao(): Promise<GestorSessao | null> {
     nome: nomeDeUser(user),
     autor: rotuloAutorConta(user),
     superAdmin: eSuperAdmin(user),
+    docente: eDocente(user),
   };
 }

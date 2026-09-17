@@ -20,31 +20,47 @@ import {
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { eDocente } from "@/lib/gestao-auth";
 
-type MenuChild = { label: string; href?: string; children?: MenuChild[] };
-type MenuItem = { label: string; href?: string; children?: MenuChild[] };
-
-const cursosGraduacao: MenuChild[] = [
-  { label: "Jornalismo", href: "/cursos/jornalismo" },
-  { label: "Publicidade e Marketing", href: "/cursos/publicidade-e-marketing" },
-  { label: "Relações Públicas", href: "/cursos/relacoes-publicas" },
-  {
-    label: "Biblioteconomia e Documentação",
-    href: "/cursos/biblioteconomia-e-documentacao",
-  },
-];
+type MenuChild = {
+  label: string;
+  href?: string;
+  description?: string;
+  cta?: string;
+  children?: MenuChild[];
+};
+type MenuItem = { label: string; href?: string; children?: MenuChild[]; mega?: boolean };
 
 const menu: MenuItem[] = [
   {
     label: "ENSINO",
     href: "/#ensino",
+    mega: true,
     children: [
-      { label: "Graduação", children: cursosGraduacao },
-      { label: "Pós-Graduação", href: "/cursos/pos-graduacao" },
-      { label: "Calendário Académico", href: "/calendario" },
-      { label: "Admissões", href: "/inscricoes" },
-      { label: "Documentos", href: "/documentos" },
-      { label: "Estudantes internacionais", href: "/estudantes-internacionais" },
+      {
+        label: "Calendário Académico",
+        href: "/calendario",
+        description: "Datas oficiais de inscrições, exames de admissão e início do ano lectivo.",
+        cta: "Ver calendário",
+      },
+      {
+        label: "Admissões",
+        href: "/inscricoes",
+        description: "Como concorrer à ESJ: prazos, requisitos e estado das inscrições.",
+        cta: "Ver admissões",
+      },
+      {
+        label: "Docência",
+        href: "/docencia",
+        description: "Materiais de ensino partilhados pelos docentes: pautas, livros e recursos por cadeira.",
+        cta: "Ver docência",
+      },
+      {
+        label: "Estudantes internacionais",
+        href: "/estudantes-internacionais",
+        description: "Acolhimento, intercâmbio e candidatura para estudantes de outros países.",
+        cta: "Saber mais",
+      },
     ],
   },
   {
@@ -86,14 +102,19 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [souDocente, setSouDocente] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
       const supabase = createBrowserSupabase();
-      void supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+      void supabase.auth.getUser().then(({ data }) => {
+        setLoggedIn(!!data.user);
+        setSouDocente(eDocente(data.user));
+      });
       const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
         setLoggedIn(!!session?.user);
+        setSouDocente(eDocente(session?.user));
       });
       return () => sub.subscription.unsubscribe();
     } catch {
@@ -160,10 +181,10 @@ export default function Header() {
               >
                 {loggedIn && (
                   <Link
-                    href="/gestao"
+                    href={souDocente ? "/docencia/partilhar" : "/gestao"}
                     className="hover:text-sky-300 transition-colors whitespace-nowrap"
                   >
-                    Voltar ao PAINEL
+                    {souDocente ? "Voltar à DOCÊNCIA" : "Voltar ao PAINEL"}
                   </Link>
                 )}
               </div>
@@ -234,7 +255,7 @@ export default function Header() {
 
       {/* Main nav */}
       <header data-site-chrome className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center h-[80px]">
+        <div className="relative mx-auto max-w-7xl px-4 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center h-[80px]">
           <Link href="/" className="flex items-center">
             <Image
               src="/esj-logo-mark.png"
@@ -267,7 +288,7 @@ export default function Header() {
                     {item.children && <ChevronDown size={14} />}
                   </span>
                 )}
-                {item.children && openSub === item.label && (
+                {!item.mega && item.children && openSub === item.label && (
                   <div className="absolute left-0 top-full bg-white shadow-lg border-t-2 border-sky min-w-[280px] py-2 z-50">
                     {item.children.map((child) =>
                       child.children?.length ? (
@@ -319,6 +340,50 @@ export default function Header() {
               </div>
             ))}
           </nav>
+
+          {(() => {
+            const megaItem = menu.find((m) => m.mega && m.label === openSub);
+            if (!megaItem?.children) return null;
+            return (
+              <>
+                <div
+                  aria-hidden
+                  onClick={() => setOpenSub(null)}
+                  className="fixed inset-x-0 top-[124px] bottom-0 bg-navy-900/40 z-40"
+                />
+                <div
+                  onMouseEnter={() => setOpenSub(megaItem.label)}
+                  onMouseLeave={() => setOpenSub(null)}
+                  className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky p-6 z-50"
+                >
+                  <div className="grid grid-cols-4 gap-4">
+                    {megaItem.children.map((child) => (
+                      <a
+                        key={child.label}
+                        href={child.href}
+                        className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
+                          {child.label}
+                        </h3>
+                        {child.description && (
+                          <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
+                            {child.description}
+                          </p>
+                        )}
+                        {child.cta && (
+                          <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
+                            {child.cta}
+                            <ChevronRight size={12} />
+                          </span>
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           <div className="flex items-center justify-end gap-4">
             {loggedIn ? (
@@ -443,10 +508,15 @@ export default function Header() {
                         <a
                           key={child.label}
                           href={child.href}
-                          className="block px-8 py-1.5 text-sm text-navy-900/80"
+                          className="block px-8 py-2 text-sm text-navy-900/80"
                           onClick={() => setMobileOpen(false)}
                         >
                           {child.label}
+                          {child.description && (
+                            <span className="mt-0.5 block text-[12px] font-normal text-navy-900/50 leading-relaxed">
+                              {child.description}
+                            </span>
+                          )}
                         </a>
                       ) : (
                         <span

@@ -82,6 +82,7 @@ import AlbunsGaleria from "@/components/gestao/AlbunsGaleria";
 import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
+import ContasDocentes from "@/components/gestao/ContasDocentes";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
@@ -104,6 +105,7 @@ type Section =
   | "videos"
   | "documentos"
   | "subscritores"
+  | "docentes"
   | "bib-jj"
   | "bib-pm"
   | "bib-rp"
@@ -179,6 +181,7 @@ const NAV: NavEntry[] = [
     ],
   },
   { id: "subscritores", label: "Subscritores", icon: Mail },
+  { id: "docentes", label: "Contas de docentes", icon: GraduationCap },
 ];
 
 function sectionLabel(section: Section): string {
@@ -624,6 +627,7 @@ export default function GestaoDashboard() {
           {section === "folha" && <FolhaAcademica onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "documentos" && <Documentos />}
+          {section === "docentes" && <ContasDocentes />}
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && (
             <Anuncios

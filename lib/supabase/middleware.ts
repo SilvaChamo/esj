@@ -32,14 +32,23 @@ export async function updateSession(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
-  if (path.startsWith("/gestao") && !user) {
+  const role = String(user?.user_metadata?.role || "").toLowerCase();
+  const soDocente = !!user && (role === "docente" || role === "professor");
+
+  if ((path.startsWith("/gestao") || path.startsWith("/docencia")) && !user) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/entrar";
     return NextResponse.redirect(redirect);
   }
+  // Conta de docente: só tem acesso à secção Docência, não ao painel de gestão.
+  if (path.startsWith("/gestao") && soDocente) {
+    const redirect = request.nextUrl.clone();
+    redirect.pathname = "/docencia/partilhar";
+    return NextResponse.redirect(redirect);
+  }
   if (path === "/entrar" && user) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/gestao";
+    redirect.pathname = soDocente ? "/docencia/partilhar" : "/gestao";
     return NextResponse.redirect(redirect);
   }
 

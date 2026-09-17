@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { eDocente } from "@/lib/gestao-auth";
 
 const floatingLabelClass =
   "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-navy-900/55 transition-all duration-150 pointer-events-none" +
@@ -86,9 +87,12 @@ export default function EntrarPage() {
     setError("");
     try {
       const supabase = createBrowserSupabase();
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (authError) throw authError;
-      router.push("/gestao");
+      router.push(eDocente(data.user) ? "/docencia/partilhar" : "/gestao");
       router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível entrar.";
