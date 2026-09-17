@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Upload } from "lucide-react";
 import {
   actualizarAlbumGaleria,
   apagarAlbumGaleria,
@@ -13,9 +13,10 @@ import {
 } from "@/lib/galeria-albuns";
 import { cmsError } from "@/lib/cms";
 import AlbumCard from "@/components/AlbumCard";
+import FotoLightbox from "@/components/FotoLightbox";
 import ImageSelector from "@/components/gestao/ImageSelector";
 
-type Modo = "lista" | "novo" | "editar";
+type Modo = "lista" | "novo" | "editar" | "ver";
 type SelectorAlvo = "capa" | "fotos" | null;
 
 type FotoPendente = {
@@ -64,6 +65,10 @@ export default function AlbunsGaleria() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [selector, setSelector] = useState<SelectorAlvo>(null);
+  const [verAlbum, setVerAlbum] = useState<AlbumGaleria | null>(null);
+  const [verFotos, setVerFotos] = useState<FotoAlbum[]>([]);
+  const [verLoading, setVerLoading] = useState(false);
+  const [verFotoAberta, setVerFotoAberta] = useState<FotoAlbum | null>(null);
 
   const carregar = () => {
     setLoading(true);
@@ -96,6 +101,9 @@ export default function AlbunsGaleria() {
     setEditar(null);
     setToast(null);
     setSelector(null);
+    setVerAlbum(null);
+    setVerFotos([]);
+    setVerFotoAberta(null);
     setModo("lista");
   };
 
@@ -133,6 +141,21 @@ export default function AlbunsGaleria() {
       setFotosExistentes([]);
     } finally {
       setLoadingFotos(false);
+    }
+  };
+
+  const abrirVer = async (album: AlbumGaleria) => {
+    setVerAlbum(album);
+    setVerFotos([]);
+    setVerFotoAberta(null);
+    setModo("ver");
+    setVerLoading(true);
+    try {
+      setVerFotos(await listFotosAlbum(album.slug));
+    } catch {
+      setVerFotos([]);
+    } finally {
+      setVerLoading(false);
     }
   };
 
@@ -200,6 +223,63 @@ export default function AlbunsGaleria() {
   };
 
   const fotosVisiveis = fotosExistentes.filter((f) => !apagar.includes(f.name));
+
+  if (modo === "ver" && verAlbum) {
+    return (
+      <div className="bg-white border border-navy-100 p-6 md:p-8 space-y-5">
+        <button id="albuns-novo" type="button" className="hidden" onClick={abrirNovo} />
+
+        <button
+          type="button"
+          onClick={resetForm}
+          className="inline-flex items-center gap-2 text-sm font-bold text-navy-900/60 hover:text-sky"
+        >
+          <ArrowLeft size={16} />
+          Voltar aos álbuns
+        </button>
+
+        <div>
+          <h2 className="font-serif text-xl font-bold text-navy-900">{verAlbum.title}</h2>
+          {verAlbum.subtitle ? (
+            <p className="mt-1 text-sm text-navy-900/55">{verAlbum.subtitle}</p>
+          ) : null}
+        </div>
+
+        {verLoading ? (
+          <p className="text-xs text-navy-900/45 py-6 text-center">A carregar fotos…</p>
+        ) : verFotos.length === 0 ? (
+          <p className="text-xs text-navy-900/45 italic">Este álbum ainda não tem fotos.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {verFotos.map((foto) => (
+              <button
+                key={foto.name}
+                type="button"
+                onClick={() => setVerFotoAberta(foto)}
+                className="relative aspect-square border border-navy-100 bg-cream overflow-hidden group"
+                aria-label="Ver foto"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={foto.url}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {verFotoAberta && (
+          <FotoLightbox
+            fotos={verFotos}
+            fotoInicial={verFotoAberta}
+            onClose={() => setVerFotoAberta(null)}
+          />
+        )}
+      </div>
+    );
+  }
 
   if (modo === "novo" || modo === "editar") {
     return (
@@ -394,7 +474,7 @@ export default function AlbunsGaleria() {
             <AlbumCard
               key={album.slug}
               album={album}
-              href={`/galeria/${album.slug}`}
+              onClick={() => void abrirVer(album)}
               imagemNativa
               tituloPainel
               actions={

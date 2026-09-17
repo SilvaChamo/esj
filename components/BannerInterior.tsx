@@ -20,7 +20,7 @@ export default function BannerInterior({
   busca?: boolean;
 }) {
   const conteudo = (
-    <>
+    <div className={compact ? undefined : "flex flex-col justify-center min-h-[180px]"}>
       {kicker ? (
         <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3 uppercase">
           <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
@@ -43,7 +43,7 @@ export default function BannerInterior({
           {description}
         </div>
       ) : null}
-    </>
+    </div>
   );
 
   return (

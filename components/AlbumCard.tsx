@@ -8,6 +8,8 @@ import type { AlbumGaleria } from "@/lib/galeria-albuns";
 type Props = {
   album: AlbumGaleria;
   href?: string;
+  /** Alternativa ao href: abre o álbum sem navegar (ex.: dentro do painel). */
+  onClick?: () => void;
   sizes?: string;
   className?: string;
   /** Botões só no painel (editar / eliminar) — ficam fora do link. */
@@ -33,6 +35,7 @@ function CantosHover() {
 export default function AlbumCard({
   album,
   href,
+  onClick,
   sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
   className = "",
   actions,
@@ -107,6 +110,10 @@ export default function AlbumCard({
     <Link href={href} className={baseClass}>
       {superficie}
     </Link>
+  ) : onClick ? (
+    <button type="button" onClick={onClick} className={`${baseClass} w-full text-left`}>
+      {superficie}
+    </button>
   ) : (
     <div className={baseClass}>{superficie}</div>
   );
