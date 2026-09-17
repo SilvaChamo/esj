@@ -35,7 +35,7 @@ export default function About() {
                   <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
                   Bem-vinda à
                 </p>
-                <h2 className="font-serif text-[35px] font-bold text-navy-900 leading-tight">
+                <h2 className="font-serif text-3xl md:text-[35px] font-bold text-navy-900 leading-tight">
                   Escola Superior de <span className="text-sky">Jornalismo</span>
                 </h2>
                 <p className="mt-5 text-navy-900/70 leading-relaxed text-[14px]">

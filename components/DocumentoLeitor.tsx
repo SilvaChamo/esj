@@ -50,8 +50,7 @@ function aplicarEstilosLeitura(doc: Document, zoom: number) {
     }
     .docx-wrapper {
       background: #d9d9d9 !important;
-      padding: 25px !important;
-      padding-bottom: 25px !important;
+      padding: 0 !important;
       display: flex !important;
       flex-flow: column !important;
       align-items: center !important;

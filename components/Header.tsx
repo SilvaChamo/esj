@@ -56,6 +56,12 @@ const menu: MenuItem[] = [
         cta: "Ver docência",
       },
       {
+        label: "Documentos",
+        href: "/documentos",
+        description: "Minutas, regulamentos e documentos académicos da Escola Superior de Jornalismo.",
+        cta: "Ver documentos",
+      },
+      {
         label: "Estudantes internacionais",
         href: "/estudantes-internacionais",
         description: "Acolhimento, intercâmbio e candidatura para estudantes de outros países.",

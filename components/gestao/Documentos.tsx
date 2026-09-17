@@ -9,7 +9,7 @@ import {
   uploadMediaDocumento,
   type MediaFile,
 } from "@/lib/cms";
-import DocumentoLeitor, { eWordUrl } from "@/components/DocumentoLeitor";
+import { eWordUrl } from "@/components/DocumentoLeitor";
 import LeitorDocumento from "@/components/LeitorDocumento";
 
 function formatSize(bytes: number) {
@@ -391,7 +391,7 @@ export default function Documentos() {
       {ler && (
         <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-5xl h-[85vh] bg-white border border-[#ccd0d4] flex flex-col overflow-hidden">
-            {tipoDocumento(ler) === "word" || eWordUrl(ler.url) ? (
+            {tipoDocumento(ler) === "word" || tipoDocumento(ler) === "pdf" || eWordUrl(ler.url) ? (
               <LeitorDocumento
                 url={ler.url}
                 title={nomeFicheiro(ler)}
@@ -466,8 +466,6 @@ export default function Documentos() {
                         <img src={ler.url} alt="" className="max-w-full h-auto" />
                       </div>
                     </div>
-                  ) : tipoDocumento(ler) === "pdf" ? (
-                    <DocumentoLeitor url={ler.url} title={ler.name} />
                   ) : tipoDocumento(ler) === "excel" || tipoDocumento(ler) === "office" ? (
                     <iframe
                       src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(ler.url)}`}
