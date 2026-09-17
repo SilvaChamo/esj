@@ -26,6 +26,7 @@ export default function ContasDocentes() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastErro, setToastErro] = useState(false);
 
   const carregar = () => {
     setLoading(true);
@@ -35,7 +36,10 @@ export default function ContasDocentes() {
       .catch((err) => {
         setContas([]);
         if (String(err.message).includes("serviço")) setErroConfig(true);
-        else setToast(err.message);
+        else {
+          setToast(err.message);
+          setToastErro(true);
+        }
       })
       .finally(() => setLoading(false));
   };
@@ -44,9 +48,10 @@ export default function ContasDocentes() {
 
   const criar = async () => {
     setToast(null);
+    setToastErro(false);
     setBusy(true);
     try {
-      await pedir("/api/docencia-contas", {
+      const r = await pedir<{ actualizado?: boolean }>("/api/docencia-contas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome, email, password }),
@@ -54,10 +59,15 @@ export default function ContasDocentes() {
       setNome("");
       setEmail("");
       setPassword("");
-      setToast("Conta de docente criada.");
+      setToast(
+        r.actualizado
+          ? "Este correio já tinha conta — foi actualizada com o papel de docente e a nova palavra-passe."
+          : "Conta de docente criada."
+      );
       carregar();
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Não foi possível criar a conta.");
+      setToastErro(true);
     } finally {
       setBusy(false);
     }
@@ -72,6 +82,7 @@ export default function ContasDocentes() {
       carregar();
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Não foi possível eliminar.");
+      setToastErro(true);
     }
   };
 
@@ -129,7 +140,9 @@ export default function ContasDocentes() {
           </div>
         </div>
 
-        {toast && <p className="mt-4 text-sm text-crimson">{toast}</p>}
+        {toast && (
+          <p className={`mt-4 text-sm ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
+        )}
 
         <div className="mt-6">
           <button

@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { eSuperAdmin } from "@/lib/gestao-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Confirma que quem chamou a rota tem sessão iniciada como super-admin. */
-async function pedirSuperAdmin() {
+/**
+ * Confirma que quem chamou a rota tem sessão iniciada — mesmo critério de
+ * acesso já usado no resto do painel (/gestao não exige um papel especial,
+ * só sessão iniciada), para esta funcionalidade não ficar mais restrita
+ * do que as outras.
+ */
+async function pedirAutenticado() {
   const cookieStore = cookies();
   const supabase = createServerClient(supabaseUrl(), supabaseAnonKey(), {
     cookies: {
@@ -21,11 +25,11 @@ async function pedirSuperAdmin() {
     },
   });
   const { data } = await supabase.auth.getUser();
-  return eSuperAdmin(data.user);
+  return !!data.user;
 }
 
 export async function GET() {
-  if (!(await pedirSuperAdmin())) {
+  if (!(await pedirAutenticado())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();
@@ -50,7 +54,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await pedirSuperAdmin())) {
+  if (!(await pedirAutenticado())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();
@@ -82,12 +86,39 @@ export async function POST(request: Request) {
     email_confirm: true,
     user_metadata: { role: "docente", full_name: nome || undefined },
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true, id: data.user?.id });
+  if (!error) return NextResponse.json({ ok: true, id: data.user?.id });
+
+  // Correio já pertence a outra conta: em vez de falhar, atribui-lhe o
+  // papel de docente (é o caminho esperado quando se quer dar acesso à
+  // Docência a alguém que já tem sessão no site, ex.: uma conta de gestor).
+  if (/already.*registered|already.*exists/i.test(error.message)) {
+    const { data: lista, error: listErr } = await admin.auth.admin.listUsers({ perPage: 200 });
+    if (listErr) return NextResponse.json({ error: listErr.message }, { status: 400 });
+    const existente = lista.users.find(
+      (u) => (u.email || "").toLowerCase() === email.toLowerCase()
+    );
+    if (!existente) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    const { data: actualizado, error: updErr } = await admin.auth.admin.updateUserById(
+      existente.id,
+      {
+        password,
+        user_metadata: {
+          ...existente.user_metadata,
+          role: "docente",
+          full_name: nome || existente.user_metadata?.full_name,
+        },
+      }
+    );
+    if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 });
+    return NextResponse.json({ ok: true, id: actualizado.user?.id, actualizado: true });
+  }
+
+  return NextResponse.json({ error: error.message }, { status: 400 });
 }
 
 export async function DELETE(request: Request) {
-  if (!(await pedirSuperAdmin())) {
+  if (!(await pedirAutenticado())) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
   const admin = getSupabaseAdmin();

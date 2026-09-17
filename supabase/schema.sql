@@ -881,10 +881,26 @@ create table if not exists docencia_materiais (
 create index if not exists docencia_materiais_curso_idx on docencia_materiais (curso);
 create index if not exists docencia_materiais_cadeira_idx on docencia_materiais (curso, cadeira_slug);
 
--- Acesso restrito: só contas autenticadas (docentes/admin) leem e escrevem.
+-- Acesso restrito: só contas autenticadas (pessoal da ESJ) leem e escrevem.
+-- Leitura, edição e eliminação ficam partilhadas entre o pessoal (mesmo
+-- critério dos álbuns/galeria); só a criação exige que o autor seja o
+-- próprio utilizador, para não se poder publicar material em nome de outro.
 alter table docencia_materiais enable row level security;
 
 drop policy if exists "docencia_materiais_auth_all" on docencia_materiais;
+drop policy if exists "docencia_materiais_read" on docencia_materiais;
+drop policy if exists "docencia_materiais_insert" on docencia_materiais;
+drop policy if exists "docencia_materiais_update" on docencia_materiais;
+drop policy if exists "docencia_materiais_delete" on docencia_materiais;
 
-create policy "docencia_materiais_auth_all"
-  on docencia_materiais for all to authenticated using (true) with check (true);
+create policy "docencia_materiais_read"
+  on docencia_materiais for select to authenticated using (true);
+
+create policy "docencia_materiais_insert"
+  on docencia_materiais for insert to authenticated with check (autor_id = auth.uid());
+
+create policy "docencia_materiais_update"
+  on docencia_materiais for update to authenticated using (true) with check (true);
+
+create policy "docencia_materiais_delete"
+  on docencia_materiais for delete to authenticated using (true);

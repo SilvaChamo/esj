@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Trash2, Upload } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { eDocente, eSuperAdmin, nomeDeUser } from "@/lib/gestao-auth";
+import { eSuperAdmin, nomeDeUser } from "@/lib/gestao-auth";
 import {
   CURSOS_DOCENCIA,
   TIPOS_MATERIAL_DOCENCIA,
@@ -42,7 +42,9 @@ export default function DocenciaPartilharClient() {
     const supabase = createBrowserSupabase();
     void supabase.auth.getUser().then(({ data }) => {
       const user = data.user;
-      if (user && (eDocente(user) || eSuperAdmin(user))) {
+      // Mesmo critério de acesso do resto do painel: sessão iniciada chega
+      // (sem contas de estudante ainda, "autenticado" já significa pessoal da ESJ).
+      if (user) {
         setAcesso("permitido");
         setAutor(eSuperAdmin(user) ? "Administrador" : nomeDeUser(user));
         setAutorId(user.id);
