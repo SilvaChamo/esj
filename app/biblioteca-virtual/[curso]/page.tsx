@@ -35,7 +35,7 @@ export default function BibliotecaCursoPage({ params }: { params: { curso: strin
           </>
         }
       />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <Suspense fallback={<p className="text-sm text-navy-900/55">A carregar o acervo…</p>}>
           <BibliotecaCursoClient curso={curso} />
         </Suspense>

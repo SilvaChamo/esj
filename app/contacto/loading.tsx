@@ -1,5 +1,11 @@
-import Carregando from "@/components/Carregando";
+import PaginaCarregando from "@/components/PaginaCarregando";
 
 export default function Loading() {
-  return <Carregando texto="A carregar o contacto…" />;
+  return (
+    <PaginaCarregando
+      kicker="CONTACTO"
+      title="Fale Connosco"
+      texto="A carregar o contacto…"
+    />
+  );
 }

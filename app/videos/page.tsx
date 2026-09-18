@@ -25,7 +25,7 @@ export default async function VideosPage() {
         description="Telejornal académico, entrevistas e reportagens da Escola Superior de Jornalismo."
       />
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-8 md:py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 md:py-12">
         <VideosPaginaClient videos={items} />
       </section>
     </main>

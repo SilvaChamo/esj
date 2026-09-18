@@ -35,7 +35,7 @@ const facilities = [
 
 export default function Facilities() {
   return (
-    <section id="extensao" className="mx-auto max-w-7xl px-4 lg:px-8 py-20">
+    <section id="extensao" className="mx-auto max-w-7xl px-4 py-20">
       <p className="text-sky-700 font-semibold tracking-widest text-xs mb-3">INFRAESTRUTURAS</p>
       <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 mb-10">
         Infraestruturas ao Serviço da Comunicação

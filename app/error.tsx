@@ -16,7 +16,7 @@ export default function Error({
 
   return (
     <main className="bg-cream min-h-[70vh]">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 md:py-24">
+      <div className="mx-auto max-w-7xl px-4 py-16 md:py-24">
         <div className="bg-white border border-navy-100 px-6 py-12 md:px-10 text-center max-w-lg mx-auto">
           <p className="text-[11px] font-bold tracking-widest text-sky mb-3">ERRO</p>
           <h1 className="font-serif font-bold text-2xl text-navy-900">Algo correu mal</h1>

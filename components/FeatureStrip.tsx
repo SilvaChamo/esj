@@ -25,7 +25,7 @@ const features = [
 
 export default function FeatureStrip() {
   return (
-    <div className="relative z-10 -mt-14 mx-auto max-w-7xl px-4 lg:px-8">
+    <div className="relative z-10 -mt-14 mx-auto max-w-7xl px-4">
       <div className="esj-entrada-hero esj-entrada-hero-atraso">
         <div className="bg-white shadow-xl rounded-sm px-0 py-2 lg:py-8 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-[#B8C5DB]">
         {features.map(({ icon: Icon, title, text }) => (

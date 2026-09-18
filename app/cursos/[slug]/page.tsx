@@ -35,7 +35,7 @@ export default function CursoPage({ params }: { params: { slug: string } }) {
           </Link>
         }
       />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <article className="bg-white border border-navy-100 p-8 md:p-10 max-w-3xl">
           <h2 className="font-serif text-2xl font-bold text-navy-900">Sobre o curso</h2>
           <div className="mt-5 space-y-4 text-sm text-navy-900/75 leading-relaxed">

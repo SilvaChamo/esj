@@ -21,7 +21,7 @@ const info: { label: string; href?: string }[] = [
 export default function Footer() {
   return (
     <footer data-site-chrome className="bg-navy-900 text-white/80">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 grid sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-12">
+      <div className="mx-auto max-w-7xl px-4 py-16 grid sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-12">
         <div>
           <Link href="/" className="inline-block mb-5">
             <Image
@@ -130,7 +130,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/50">
+        <div className="mx-auto max-w-7xl px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/50">
           <p>© 2026 Escola Superior de Jornalismo (ESJ). Todos os direitos reservados.</p>
           <div className="flex gap-5">
             <span className="text-white/40 cursor-default">Política de Privacidade</span>

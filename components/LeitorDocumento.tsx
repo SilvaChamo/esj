@@ -79,7 +79,7 @@ export default function LeitorDocumento({
           stickyTop ? "sticky top-[84px] z-40" : ""
         }`}
       >
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-3 flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"

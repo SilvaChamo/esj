@@ -9,7 +9,7 @@ export default function GlobalError({
   return (
     <html lang="pt-MZ">
       <body className="font-sans bg-cream text-navy-900 min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white border border-navy-100 px-6 py-10 text-center max-w-md w-full">
+        <div className="bg-white border border-navy-100 px-6 py-6 md:py-8 text-center max-w-md w-full">
           <p className="text-[11px] font-bold tracking-widest text-sky mb-3">ERRO</p>
           <h1 className="font-serif font-bold text-xl">Algo correu mal</h1>
           <p className="mt-3 text-sm text-navy-900/65">

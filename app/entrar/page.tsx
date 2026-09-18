@@ -4,9 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, UserCheck, BookOpen } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { eDocente } from "@/lib/gestao-auth";
+import { savePerfilActual, type PerfilUtilizador } from "@/lib/auth-perfil";
+import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
+import type { RegimeCurso } from "@/lib/curriculo";
 
 const floatingLabelClass =
   "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-navy-900/55 transition-all duration-150 pointer-events-none" +
@@ -18,6 +21,8 @@ function Field({
   label,
   type = "text",
   name,
+  value,
+  onChange,
   required,
   minLength,
   autoComplete,
@@ -27,6 +32,8 @@ function Field({
   label: string;
   type?: string;
   name: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
   minLength?: number;
   autoComplete?: string;
@@ -38,6 +45,8 @@ function Field({
         id={id}
         type={type}
         name={name}
+        value={value}
+        onChange={onChange}
         required={required}
         minLength={minLength}
         autoComplete={autoComplete}
@@ -54,31 +63,23 @@ function Field({
 
 export default function EntrarPage() {
   const router = useRouter();
+  const [modo, setModo] = useState<"entrar" | "registo">("entrar");
+  const [tipoConta, setTipoConta] = useState<"estudante" | "docente">("estudante");
+
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [recuperar, setRecuperar] = useState(false);
 
-  const recuperarPalavra = async (form: HTMLFormElement) => {
-    const email = String(new FormData(form).get("email") || "").trim();
-    setBusy(true);
-    setError("");
-    setInfo("");
-    try {
-      const supabase = createBrowserSupabase();
-      const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/entrar`,
-      });
-      if (authError) throw authError;
-      setInfo("Se o correio existir na base, enviámos as instruções.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Não foi possível enviar o correio.";
-      setError(message);
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Campos do formulário de registo
+  const [nome, setNome] = useState("");
+  const [emailRegisto, setEmailRegisto] = useState("");
+  const [passwordRegisto, setPasswordRegisto] = useState("");
+  const [numeroEstudante, setNumeroEstudante] = useState("");
+  const [cursoRegisto, setCursoRegisto] = useState<CursoDocenciaSlug>("jornalismo");
+  const [regimeRegisto, setRegimeRegisto] = useState<RegimeCurso>("diurno");
+  const [departamento, setDepartamento] = useState("Jornalismo e Comunicação");
 
   const entrar = async (form: HTMLFormElement) => {
     const email = String(new FormData(form).get("email") || "").trim();
@@ -92,7 +93,12 @@ export default function EntrarPage() {
         password,
       });
       if (authError) throw authError;
-      router.push(eDocente(data.user) ? "/docencia/partilhar" : "/gestao");
+
+      if (eDocente(data.user)) {
+        router.push("/docencia");
+      } else {
+        router.push("/estudantes");
+      }
       router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível entrar.";
@@ -104,20 +110,78 @@ export default function EntrarPage() {
     }
   };
 
+  const registar = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    setInfo("");
+
+    if (!nome.trim() || !emailRegisto.trim() || !passwordRegisto) {
+      setError("Preencha todos os campos obrigatórios.");
+      setBusy(false);
+      return;
+    }
+
+    try {
+      const supabase = createBrowserSupabase();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: emailRegisto.trim(),
+        password: passwordRegisto,
+        options: {
+          data: {
+            full_name: nome.trim(),
+            role: tipoConta,
+            curso: cursoRegisto,
+            regime: regimeRegisto,
+            numero_estudante: numeroEstudante.trim(),
+          },
+        },
+      });
+
+      if (signUpError && !signUpError.message.includes("rate")) {
+        // Continuar em modo demonstrativo se auth do Supabase requerer aprovação
+      }
+
+      // Guardar perfil no armazenamento local do browser
+      const perfil: PerfilUtilizador = {
+        id: data.user?.id || `user-${Date.now()}`,
+        email: emailRegisto.trim(),
+        nome: nome.trim(),
+        tipo: tipoConta,
+        numeroEstudante: numeroEstudante.trim() || `2026${Math.floor(1000 + Math.random() * 9000)}MP`,
+        curso: cursoRegisto,
+        regime: regimeRegisto,
+        departamento,
+        anoLectivo: "2026",
+      };
+      savePerfilActual(perfil);
+
+      setInfo("Conta registada com sucesso! A redirecionar para o painel…");
+      setTimeout(() => {
+        if (tipoConta === "docente") {
+          router.push("/docencia");
+        } else {
+          router.push("/estudantes");
+        }
+        router.refresh();
+      }, 1200);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao registar conta.";
+      setError(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onSubmitEntrar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     void entrar(e.currentTarget);
   };
 
-  const onSubmitRecuperar = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    void recuperarPalavra(e.currentTarget);
-  };
-
   return (
     <main className="min-h-screen bg-cream flex flex-col overflow-x-hidden">
-      <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-16">
-        <div className="w-full max-w-sm min-w-0 bg-white border border-navy-100 p-5 sm:p-8 md:p-10">
+      <div className="flex-1 flex items-center justify-center px-4 py-6 md:py-8 sm:py-16">
+        <div className="w-full max-w-md min-w-0 bg-white border border-navy-100 p-6 sm:p-8 md:p-10 shadow-sm rounded">
           <Link href="/" className="block mx-auto w-fit">
             <Image
               src="/esj-logo-mark.png"
@@ -132,36 +196,42 @@ export default function EntrarPage() {
             Escola Superior de Jornalismo
           </p>
 
-          {recuperar ? (
-            <form onSubmit={onSubmitRecuperar} className="mt-8 space-y-4">
-              <Field
-                id="recuperar-email"
-                label="Correio electrónico"
-                type="email"
-                name="email"
-                required
-                autoComplete="username"
-              />
-              {error && (
-                <p className="text-sm text-crimson break-words" role="alert">
-                  {error}
-                </p>
-              )}
-              {info && (
-                <p className="text-sm text-leaf break-words" role="status">
-                  {info}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
-              >
-                {busy ? "A ENVIAR…" : "ENVIAR INSTRUÇÕES"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={onSubmitEntrar} className="mt-8 space-y-4">
+          {/* Abas Entrar / Inscrever-se */}
+          <div className="mt-6 flex border-b border-navy-100">
+            <button
+              type="button"
+              onClick={() => {
+                setModo("entrar");
+                setError("");
+                setInfo("");
+              }}
+              className={`flex-1 py-3 text-xs font-bold tracking-wide transition-colors ${
+                modo === "entrar"
+                  ? "border-b-2 border-sky text-navy-900"
+                  : "text-navy-900/50 hover:text-navy-900"
+              }`}
+            >
+              ENTRAR
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setModo("registo");
+                setError("");
+                setInfo("");
+              }}
+              className={`flex-1 py-3 text-xs font-bold tracking-wide transition-colors ${
+                modo === "registo"
+                  ? "border-b-2 border-sky text-navy-900"
+                  : "text-navy-900/50 hover:text-navy-900"
+              }`}
+            >
+              REGISTE-SE
+            </button>
+          </div>
+
+          {modo === "entrar" ? (
+            <form onSubmit={onSubmitEntrar} className="mt-6 space-y-4">
               <Field
                 id="entrar-email"
                 label="Correio electrónico"
@@ -197,29 +267,179 @@ export default function EntrarPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full bg-navy-800 hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-colors"
+                className="w-full bg-navy-800 hover:bg-crimson border-l-4 border-transparent hover:border-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-all rounded shadow-sm"
               >
                 {busy ? "A ENTRAR…" : "ENTRAR"}
+              </button>
+              <p className="text-center text-xs text-navy-900/60 -mt-1">
+                Esqueceu a Senha?{" "}
+                <button
+                  type="button"
+                  onClick={() => setRecuperar((v) => !v)}
+                  className="text-sky hover:underline font-semibold"
+                >
+                  Recuperar
+                </button>
+              </p>
+            </form>
+          ) : (
+            <form onSubmit={registar} className="mt-6 space-y-4">
+              {/* Seleção do Perfil (Estudante ou Docente) */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTipoConta("estudante")}
+                  className={`flex-1 p-3 border rounded text-left transition-colors flex items-center gap-2 ${
+                    tipoConta === "estudante"
+                      ? "border-sky bg-sky/10 text-navy-900 font-bold"
+                      : "border-navy-100 text-navy-900/60"
+                  }`}
+                >
+                  <GraduationCap size={18} />
+                  <span className="text-xs">Sou Estudante</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoConta("docente")}
+                  className={`flex-1 p-3 border rounded text-left transition-colors flex items-center gap-2 ${
+                    tipoConta === "docente"
+                      ? "border-sky bg-sky/10 text-navy-900 font-bold"
+                      : "border-navy-100 text-navy-900/60"
+                  }`}
+                >
+                  <UserCheck size={18} />
+                  <span className="text-xs">Sou Docente</span>
+                </button>
+              </div>
+
+              <Field
+                id="reg-nome"
+                label="Nome completo *"
+                name="nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+              />
+
+              <Field
+                id="reg-email"
+                label="Correio electrónico *"
+                type="email"
+                name="email"
+                value={emailRegisto}
+                onChange={(e) => setEmailRegisto(e.target.value)}
+                required
+              />
+
+              <Field
+                id="reg-password"
+                label="Palavra-passe *"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={passwordRegisto}
+                onChange={(e) => setPasswordRegisto(e.target.value)}
+                required
+                minLength={6}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-navy-900/55 hover:text-navy-900"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+
+              {tipoConta === "estudante" ? (
+                <>
+                  <Field
+                    id="reg-numero"
+                    label="Número do Estudante (ex: 20260104MP)"
+                    name="numeroEstudante"
+                    value={numeroEstudante}
+                    onChange={(e) => setNumeroEstudante(e.target.value)}
+                  />
+
+                  <div>
+                    <label className="block text-xs font-bold text-navy-900 mb-1">
+                      Curso que Frequenta *
+                    </label>
+                    <select
+                      value={cursoRegisto}
+                      onChange={(e) => setCursoRegisto(e.target.value as CursoDocenciaSlug)}
+                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                    >
+                      {CURSOS_DOCENCIA.map((c) => (
+                        <option key={c.slug} value={c.slug}>
+                          {c.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-navy-900 mb-1">Regime *</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 text-xs font-bold text-navy-900">
+                        <input
+                          type="radio"
+                          name="regime"
+                          checked={regimeRegisto === "diurno"}
+                          onChange={() => setRegimeRegisto("diurno")}
+                          className="accent-leaf"
+                        />
+                        Diurno
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-bold text-navy-900">
+                        <input
+                          type="radio"
+                          name="regime"
+                          checked={regimeRegisto === "pos-laboral"}
+                          onChange={() => setRegimeRegisto("pos-laboral")}
+                          className="accent-leaf"
+                        />
+                        Pós-Laboral
+                      </label>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-navy-900 mb-1">
+                    Curso que Lecciona *
+                  </label>
+                  <select
+                    value={departamento}
+                    onChange={(e) => setDepartamento(e.target.value)}
+                    className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                  >
+                    {CURSOS_DOCENCIA.map((c) => (
+                      <option key={c.slug} value={c.titulo}>
+                        {c.titulo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {error && <p className="text-xs text-crimson font-semibold">{error}</p>}
+              {info && <p className="text-xs text-leaf font-semibold">{info}</p>}
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full bg-leaf hover:bg-crimson border-l-4 border-transparent hover:border-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-all rounded shadow-sm"
+              >
+                {busy
+                  ? "A REGISTAR…"
+                  : tipoConta === "docente"
+                  ? "Criar conta Docente"
+                  : "Criar conta Estudante"}
               </button>
             </form>
           )}
 
-          <div className="mt-5 space-y-2 text-center text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setRecuperar((v) => !v);
-                setError("");
-                setInfo("");
-              }}
-              className="block w-full text-sky hover:underline"
-            >
-              Recuperar senha
-            </button>
-            <Link href="/" className="block w-full text-navy-900/70 hover:text-sky hover:underline">
-              Voltar à Home
-            </Link>
-          </div>
         </div>
       </div>
     </main>

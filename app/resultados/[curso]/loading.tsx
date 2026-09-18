@@ -1,5 +1,11 @@
-import Carregando from "@/components/Carregando";
+import PaginaCarregando from "@/components/PaginaCarregando";
 
 export default function Loading() {
-  return <Carregando texto="A carregar a pauta de resultados…" />;
+  return (
+    <PaginaCarregando
+      kicker="ADMISSÕES"
+      title="Pauta de Resultados"
+      texto="A carregar a pauta de resultados…"
+    />
+  );
 }

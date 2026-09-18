@@ -16,7 +16,7 @@ export default function InscricoesEncerradasPage() {
         description="O período de pré-inscrição para o ano lectivo 2026 já terminou."
       />
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
+      <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
           <aside className="bg-white border border-navy-100 order-2 lg:order-1">
             <div className="p-5">
@@ -61,7 +61,7 @@ export default function InscricoesEncerradasPage() {
             </div>
           </aside>
 
-          <div className="bg-white border border-navy-100 px-6 py-10 md:px-12 md:py-12 order-1 lg:order-2">
+          <div className="bg-white border border-navy-100 px-6 py-6 md:py-8 md:px-12 md:py-12 order-1 lg:order-2">
             <p className="text-leaf font-bold tracking-widest text-[11px]">
               SECRETARIA ACADÉMICA
             </p>

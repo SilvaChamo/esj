@@ -3,7 +3,7 @@ import { GraduationCap, ChevronRight } from "lucide-react";
 export default function AdmissionsBanner() {
   return (
     <section id="admissoes" className="bg-navy-800">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8 flex flex-col md:flex-row items-center gap-6 md:gap-10">
         <div className="w-16 h-16 rounded-full bg-sky/20 flex items-center justify-center shrink-0">
           <GraduationCap className="text-sky" size={30} />
         </div>

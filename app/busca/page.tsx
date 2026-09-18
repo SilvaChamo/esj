@@ -13,7 +13,7 @@ export default function BuscaPage() {
       <BannerInterior kicker="PESQUISA" title="Resultados da busca" />
       <Suspense
         fallback={
-          <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10">
+          <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
             <div className="bg-white border border-navy-100">
               <CarregandoTexto texto="A carregar a pesquisa…" />
             </div>

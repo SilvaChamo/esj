@@ -1,22 +1,10 @@
-import BannerInterior from "@/components/BannerInterior";
-import DocenciaClient from "@/components/DocenciaClient";
+import DocenciaDashboard from "@/components/DocenciaDashboard";
 
 export const metadata = {
-  title: "Docência | ESJ",
-  description: "Materiais de ensino partilhados pelos docentes: pautas, livros e recursos por cadeira.",
+  title: "Painel do Docente | ESJ",
+  description: "Painel de administração e gestão de materiais académicos para docentes da ESJ.",
 };
 
 export default function DocenciaPage() {
-  return (
-    <main className="bg-cream min-h-[70vh]">
-      <BannerInterior
-        kicker="ENSINO"
-        title="Docência"
-        description="Materiais de ensino partilhados pelos docentes — pautas, livros e recursos, organizados por cadeira."
-      />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
-        <DocenciaClient />
-      </div>
-    </main>
-  );
+  return <DocenciaDashboard initialSection="materiais" />;
 }

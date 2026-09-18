@@ -47,7 +47,7 @@ export default function ContactBand() {
 
   return (
     <section id="contacto" className="bg-white">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 pt-16 pb-6 md:pt-24 md:pb-8">
+      <div className="mx-auto max-w-7xl px-4 pt-16 pb-6 md:pt-24 md:pb-8">
         <div className="mb-[72px]">
           <div className="flex flex-col md:flex-row md:items-stretch">
             <EntradaHome className="w-full md:flex-1 md:self-center">

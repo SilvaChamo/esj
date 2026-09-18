@@ -1,5 +1,11 @@
-import Carregando from "@/components/Carregando";
+import PaginaCarregando from "@/components/PaginaCarregando";
 
 export default function Loading() {
-  return <Carregando texto="A carregar a página…" />;
+  return (
+    <PaginaCarregando
+      kicker="ENSINO"
+      title="Estudantes Internacionais"
+      texto="A carregar a página…"
+    />
+  );
 }

@@ -11,9 +11,6 @@ import {
   cursoPorSlug,
   formatNota,
   parseFiltroFromRecord,
-  CursoAdmissao,
-  Nivel,
-  Regime,
 } from "@/lib/admissao";
 import { loadPautaPublica } from "@/lib/pauta";
 
@@ -34,35 +31,16 @@ export async function generateMetadata({ params, searchParams }: Props) {
   };
 }
 
-async function PautaConteudo({
-  curso,
-  nivel,
-  regime,
-}: {
-  curso: CursoAdmissao;
-  nivel: Nivel;
-  regime: Regime;
-}) {
-  const pauta = await loadPautaPublica({
-    curso: curso.nome,
-    nivel,
-    regime,
-  });
-
-  return (
-    <PautaAdmissao
-      curso={curso}
-      regime={regime}
-      anoLectivo={pauta.anoLectivo}
-      linhas={pauta.linhas}
-    />
-  );
-}
-
-export default function PautaCursoPage({ params, searchParams }: Props) {
+export default async function PautaCursoPage({ params, searchParams }: Props) {
   const { filtro } = parseFiltroFromRecord(searchParams);
   const curso = cursoPorSlug(params.curso, filtro.nivel);
   if (!curso) notFound();
+
+  const pauta = await loadPautaPublica({
+    curso: curso.nome,
+    nivel: filtro.nivel,
+    regime: filtro.regime,
+  });
 
   return (
     <main className="bg-cream min-h-[70vh]">
@@ -80,7 +58,7 @@ export default function PautaCursoPage({ params, searchParams }: Props) {
         printHidden
       />
 
-      <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 print:py-0 print:px-0 print:max-w-full">
+      <section className="mx-auto max-w-7xl px-4 py-6 md:py-8 print:py-0 print:px-0 print:max-w-full">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start print:block">
           <Suspense fallback={<CarregandoTexto texto="A carregar o menu de admissão…" />}>
             <div className="lg:sticky lg:top-24 print:hidden">
@@ -88,15 +66,12 @@ export default function PautaCursoPage({ params, searchParams }: Props) {
             </div>
           </Suspense>
           <div className="min-w-0 space-y-5">
-            <Suspense
-              fallback={
-                <div className="bg-white border border-navy-100 p-8">
-                  <CarregandoTexto texto="A carregar a pauta de admissão…" />
-                </div>
-              }
-            >
-              <PautaConteudo curso={curso} nivel={filtro.nivel} regime={filtro.regime} />
-            </Suspense>
+            <PautaAdmissao
+              curso={curso}
+              regime={filtro.regime}
+              anoLectivo={pauta.anoLectivo}
+              linhas={pauta.linhas}
+            />
           </div>
         </div>
       </section>

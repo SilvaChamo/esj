@@ -29,7 +29,7 @@ export default function SearchResults() {
   const results: SearchItem[] = pronto ? searchSite(query, remotos ?? []) : searchSite(query, []);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 lg:px-8 py-10 min-h-[40vh]">
+    <section className="mx-auto max-w-7xl px-4 py-6 md:py-8 min-h-[40vh]">
       {query ? (
         <p className="mt-3 text-navy-900/70">
           {results.length === 1

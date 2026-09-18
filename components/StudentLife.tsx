@@ -12,7 +12,7 @@ const photos = [
 export default function StudentLife() {
   return (
     <section id="galeria" className="bg-white py-20">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4">
         <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
           <div>
             <p className="text-sky-700 font-semibold tracking-widest text-xs mb-3">VIDA ACADÉMICA</p>

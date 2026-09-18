@@ -206,7 +206,7 @@ export default function Academics() {
         </div>
       )}
       <div className="bg-cream border-b border-navy-100">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 flex flex-wrap">
+        <div className="mx-auto max-w-7xl px-4 flex flex-wrap">
           {SECTION_TABS.map((t) => (
             <button
               key={t.id}
@@ -224,7 +224,7 @@ export default function Academics() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4">
         <div className="py-16 md:py-20">
         {tab === "internacional" && (
           <EntradaHome>

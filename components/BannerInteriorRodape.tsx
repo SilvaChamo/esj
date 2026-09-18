@@ -45,10 +45,11 @@ export default function BannerInteriorRodape({
           src="/Bg1.webp"
           alt=""
           aria-hidden="true"
+          style={{ position: "absolute", bottom: 0, left: 0, right: 0, width: "100%", opacity: 0.1, pointerEvents: "none" }}
           className="pointer-events-none select-none absolute inset-x-0 bottom-0 w-full opacity-10"
         />
         <div
-          className={`relative z-[1] mx-auto max-w-7xl px-4 lg:px-8 py-4 md:py-6${
+          className={`relative z-[1] mx-auto max-w-7xl px-4 py-4 md:py-6${
             actions ? " flex flex-col md:flex-row md:items-end justify-between gap-6" : ""
           }`}
         >
@@ -92,7 +93,7 @@ export default function BannerInteriorRodape({
           }`}
         >
           <form
-            className="mx-auto max-w-7xl px-4 lg:px-8 py-4"
+            className="mx-auto max-w-7xl px-4 py-4"
             onSubmit={(e) => {
               e.preventDefault();
               pesquisar();

@@ -63,7 +63,7 @@ export default function DocumentosEnsino() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           <aside className="lg:w-56 shrink-0">
             <p className="text-[11px] font-bold tracking-widest text-sky mb-3">FILTRAR</p>

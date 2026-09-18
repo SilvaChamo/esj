@@ -50,10 +50,16 @@ const menu: MenuItem[] = [
         cta: "Ver admissões",
       },
       {
-        label: "Docência",
+        label: "Portal do Estudante",
+        href: "/estudantes",
+        description: "Aceda aos materiais de estudo, pautas de frequências, calendário e minutas da ESJ.",
+        cta: "Entrar no portal",
+      },
+      {
+        label: "Painel do Docente",
         href: "/docencia",
-        description: "Materiais de ensino partilhados pelos docentes: pautas, livros e recursos por cadeira.",
-        cta: "Ver docência",
+        description: "Área de publicação e gestão de materiais pedagógicos para professores.",
+        cta: "Ver painel",
       },
       {
         label: "Estudantes internacionais",
@@ -154,7 +160,7 @@ export default function Header() {
     <>
       {/* Top utility bar */}
       <div className="bg-navy-800 text-white text-[11px] font-medium">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 flex items-center justify-between h-10">
+        <div className="mx-auto max-w-7xl px-4 flex items-center justify-between h-10">
           <div className={`items-center gap-5 shrink-0 ${searchOpen ? "hidden sm:flex" : "flex"}`}>
             <span className="flex items-center gap-2 shrink-0 whitespace-nowrap">
               <MapPin size={14} />
@@ -255,7 +261,7 @@ export default function Header() {
 
       {/* Main nav */}
       <header data-site-chrome className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="relative mx-auto max-w-7xl px-4 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center h-[80px]">
+        <div className="relative mx-auto max-w-7xl px-4 grid grid-cols-[auto_1fr_auto] items-center h-[80px]">
           <Link href="/" className="flex items-center">
             <Image
               src="/esj-logo-mark.png"
@@ -354,31 +360,33 @@ export default function Header() {
                 <div
                   onMouseEnter={() => setOpenSub(megaItem.label)}
                   onMouseLeave={() => setOpenSub(null)}
-                  className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky p-6 z-50"
+                  className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
                 >
-                  <div className="grid grid-cols-4 gap-4">
-                    {megaItem.children.map((child) => (
-                      <a
-                        key={child.label}
-                        href={child.href}
-                        className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
-                      >
-                        <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
-                          {child.label}
-                        </h3>
-                        {child.description && (
-                          <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
-                            {child.description}
-                          </p>
-                        )}
-                        {child.cta && (
-                          <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
-                            {child.cta}
-                            <ChevronRight size={12} />
-                          </span>
-                        )}
-                      </a>
-                    ))}
+                  <div className="mx-auto max-w-7xl px-4 py-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {megaItem.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
+                        >
+                          <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
+                            {child.label}
+                          </h3>
+                          {child.description && (
+                            <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
+                              {child.description}
+                            </p>
+                          )}
+                          {child.cta && (
+                            <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
+                              {child.cta}
+                              <ChevronRight size={12} />
+                            </span>
+                          )}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </>

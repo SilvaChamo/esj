@@ -186,7 +186,7 @@ export default function InscricaoForm() {
       </nav>
 
       <form noValidate onSubmit={onSubmit} className="border border-navy-100 bg-white min-w-0">
-        <div className="px-4 sm:px-6 md:px-10 py-8 md:py-10 min-w-0">
+        <div className="px-4 sm:px-6 md:px-10 py-8 md:py-6 md:py-8 min-w-0">
         <h2 className="font-serif text-2xl font-bold text-navy-900 mb-6">{STEPS[step].title}</h2>
 
         <div data-step="0" className={step === 0 ? "space-y-6" : "hidden"}>

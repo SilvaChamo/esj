@@ -235,7 +235,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-navy-900/50">
+                <td colSpan={8} className="px-5 py-6 md:py-8 text-center text-navy-900/50">
                   Ainda sem candidatos nesta pauta.
                 </td>
               </tr>

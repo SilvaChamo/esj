@@ -1,5 +1,11 @@
-import Carregando from "@/components/Carregando";
+import PaginaCarregando from "@/components/PaginaCarregando";
 
 export default function Loading() {
-  return <Carregando texto="A carregar a notícia…" />;
+  return (
+    <PaginaCarregando
+      kicker="BLOG"
+      title="Notícia"
+      texto="A carregar a notícia…"
+    />
+  );
 }

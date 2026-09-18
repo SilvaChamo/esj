@@ -27,7 +27,7 @@ export default function BibliotecaVirtualPage() {
         }
       />
 
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <div className="grid sm:grid-cols-2 gap-5">
           {CURSOS_BIBLIOTECA.map((curso) => (
             <Link

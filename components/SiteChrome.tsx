@@ -30,7 +30,12 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("hashchange", onHash);
   }, [pathname]);
 
-  if (pathname.startsWith("/gestao") || pathname.startsWith("/entrar")) {
+  if (
+    pathname.startsWith("/gestao") ||
+    pathname.startsWith("/entrar") ||
+    pathname.startsWith("/docencia") ||
+    (pathname.startsWith("/estudantes") && pathname !== "/estudantes-internacionais")
+  ) {
     return <>{children}</>;
   }
   return (

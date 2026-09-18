@@ -17,7 +17,7 @@ export default function GaleriaPageClient() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
+    <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
       {loading ? (
         <p className="text-sm text-navy-900/50">A carregar os álbuns…</p>
       ) : albuns.length === 0 ? (

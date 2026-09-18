@@ -13,7 +13,7 @@ const destaques = [
 export default function About() {
   return (
     <section className="relative overflow-x-clip bg-cream">
-      <div className="relative mx-auto max-w-7xl px-4 lg:px-8 py-16 md:py-24 w-full">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 w-full">
         <EntradaHome>
           <div className="w-full grid md:grid-cols-2 md:items-center gap-8 md:gap-10 lg:gap-12">
             <div className="relative w-full">

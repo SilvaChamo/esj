@@ -100,7 +100,7 @@ export default function PautaAdmissao({
           <tbody>
             {visiveis.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-navy-900/50">
+                <td colSpan={7} className="px-5 py-6 md:py-8 text-center text-navy-900/50">
                   {linhas.length === 0
                     ? "Ainda não há resultados publicados para este curso e regime."
                     : "Nenhum nome corresponde à procura."}

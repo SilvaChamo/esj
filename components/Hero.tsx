@@ -109,7 +109,7 @@ export default function Hero() {
         ))}
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900/90 via-navy-900/60 to-navy-900/20" />
 
-        <div className="relative h-full mx-auto max-w-7xl px-4 lg:px-8 flex flex-col justify-center esj-entrada-hero">
+        <div className="relative h-full mx-auto max-w-7xl px-4 flex flex-col justify-center esj-entrada-hero">
           <div className="max-w-2xl text-white">
             <p className="text-leaf font-bold tracking-widest text-[10px] md:text-xs mb-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]">
               {slides[active].eyebrow}

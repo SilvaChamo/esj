@@ -196,7 +196,7 @@ export default function EnsinoHistoria({ embedded = false }: { embedded?: boolea
 
   return (
     <section id="ensino-historia" className="bg-white scroll-mt-24">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 md:py-20">{content}</div>
+      <div className="mx-auto max-w-7xl px-4 py-16 md:py-20">{content}</div>
     </section>
   );
 }

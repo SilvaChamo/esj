@@ -22,7 +22,7 @@ export default function BibliotecaVirtual() {
       </div>
 
       <div className="relative bg-cream flow-root">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 pb-16 md:pb-20">
+        <div className="mx-auto max-w-7xl px-4 pb-16 md:pb-20">
           <EntradaHome>
             <div className="relative z-10 -mt-[100px] w-full bg-white px-5 py-12 sm:px-8 sm:py-14 md:px-10 md:py-16 text-center shadow-[0_12px_40px_rgba(12,29,59,0.18)]">
               <div className="flex items-center justify-center gap-3 mb-4">

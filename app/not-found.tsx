@@ -3,8 +3,8 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <main className="bg-cream min-h-[70vh]">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 md:py-24">
-        <div className="bg-white border border-navy-100 px-6 py-10 md:px-10 text-center max-w-3xl mx-auto overflow-x-hidden">
+      <div className="mx-auto max-w-7xl px-4 py-16 md:py-24">
+        <div className="bg-white border border-navy-100 px-6 py-6 md:py-8 md:px-10 text-center max-w-3xl mx-auto overflow-x-hidden">
           <p className="font-serif font-black text-sky leading-none text-[100px] select-none tracking-tighter">
             404
           </p>

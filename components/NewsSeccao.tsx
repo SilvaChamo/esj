@@ -31,7 +31,7 @@ export default function NewsSeccao({
   return (
     <section id="noticias" className="bg-white scroll-mt-24">
       <div className="border-t border-navy-100">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 flex justify-end">
+        <div className="mx-auto max-w-7xl px-4 flex justify-end">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -49,7 +49,7 @@ export default function NewsSeccao({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-16 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 py-16 md:py-20">
         {tab === "noticias" && (
           <>
             <EntradaHome>

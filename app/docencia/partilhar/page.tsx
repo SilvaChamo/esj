@@ -1,22 +1,10 @@
-import BannerInterior from "@/components/BannerInterior";
-import DocenciaPartilharClient from "@/components/DocenciaPartilharClient";
+import DocenciaDashboard from "@/components/DocenciaDashboard";
 
 export const metadata = {
-  title: "Partilhar material | Docência | ESJ",
+  title: "Publicar Material | Docência | ESJ",
+  description: "Publicação de pautas, livros e recursos de ensino para os cursos da ESJ.",
 };
 
 export default function DocenciaPartilharPage() {
-  return (
-    <main className="bg-cream min-h-[70vh]">
-      <BannerInterior
-        kicker="DOCÊNCIA"
-        title="Partilhar material"
-        description="Publique pautas, livros e outros recursos de ensino para a cadeira que lecciona."
-        busca={false}
-      />
-      <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
-        <DocenciaPartilharClient />
-      </div>
-    </main>
-  );
+  return <DocenciaDashboard initialSection="partilhar" />;
 }

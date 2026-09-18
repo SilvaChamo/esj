@@ -49,7 +49,7 @@ export default function GaleriaAlbumClient({ slug }: { slug: string }) {
       <BannerInterior title={tituloBanner} description={descricaoBanner} />
 
       {!loading && album && fotos.length > 0 && (
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 py-10 md:py-12">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:py-8 md:py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {fotos.map((foto, i) => (
               <EntradaHome key={foto.name} atraso={i * 0.03}>
