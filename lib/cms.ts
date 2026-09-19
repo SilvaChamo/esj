@@ -553,6 +553,82 @@ export async function deletePautaLinha(id: string) {
   if (error) throw error;
 }
 
+export type SituacaoEstudanteLinha = {
+  id: string;
+  numero_estudante: string;
+  nome: string;
+  curso: string | null;
+  regime: string | null;
+  regularizado: boolean;
+  observacao: string | null;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+export async function listSituacaoGestao(pesquisa: string) {
+  const supabase = createBrowserSupabase();
+  let query = supabase
+    .from("situacao_estudante")
+    .select(
+      "id, numero_estudante, nome, curso, regime, regularizado, observacao, updated_at, updated_by"
+    )
+    .order("updated_at", { ascending: false });
+  const termo = pesquisa.trim();
+  if (termo) {
+    query = query.or(`numero_estudante.ilike.%${termo}%,nome.ilike.%${termo}%`);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as SituacaoEstudanteLinha[];
+}
+
+export async function saveSituacaoEstudante(input: {
+  numeroEstudante: string;
+  nome: string;
+  curso?: string;
+  regime?: string;
+  regularizado: boolean;
+  observacao?: string;
+  updatedBy?: string;
+}) {
+  const supabase = createBrowserSupabase();
+  const row = {
+    numero_estudante: input.numeroEstudante.trim(),
+    nome: input.nome.trim(),
+    curso: input.curso || null,
+    regime: input.regime || null,
+    regularizado: input.regularizado,
+    observacao: input.observacao?.trim() || null,
+    updated_at: new Date().toISOString(),
+    updated_by: input.updatedBy || null,
+  };
+  const { error } = await supabase
+    .from("situacao_estudante")
+    .upsert(row, { onConflict: "numero_estudante" });
+  if (error) throw error;
+}
+
+export async function deleteSituacaoEstudante(id: string) {
+  const supabase = createBrowserSupabase();
+  const { error } = await supabase.from("situacao_estudante").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Usado pelo painel do estudante para saber a sua própria situação real. */
+export async function getSituacaoEstudante(numeroEstudante: string) {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("situacao_estudante")
+    .select("regularizado, observacao, updated_at")
+    .eq("numero_estudante", numeroEstudante.trim())
+    .maybeSingle();
+  if (error) {
+    if (isMissingTable(error)) return null;
+    throw error;
+  }
+  return data;
+}
+
 const GALERIA_BUCKET = "media";
 const GALERIA_FOLDER = "galeria";
 const LIXEIRA_FOLDER = "galeria/lixeira";

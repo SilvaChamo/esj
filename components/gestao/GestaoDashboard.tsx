@@ -29,6 +29,7 @@ import {
   Send,
   Trash2,
   Upload,
+  UserCheck,
   Users,
   Video,
   LogOut,
@@ -83,6 +84,7 @@ import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
 import ContasDocentes from "@/components/gestao/ContasDocentes";
+import SituacaoEstudantes from "@/components/gestao/SituacaoEstudantes";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
@@ -106,6 +108,7 @@ type Section =
   | "documentos"
   | "subscritores"
   | "docentes"
+  | "situacao"
   | "bib-jj"
   | "bib-pm"
   | "bib-rp"
@@ -182,6 +185,7 @@ const NAV: NavEntry[] = [
   },
   { id: "subscritores", label: "Subscritores", icon: Mail },
   { id: "docentes", label: "Contas de docentes", icon: GraduationCap },
+  { id: "situacao", label: "Situação dos estudantes", icon: UserCheck },
 ];
 
 function sectionLabel(section: Section): string {
@@ -628,6 +632,7 @@ export default function GestaoDashboard() {
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "documentos" && <Documentos />}
           {section === "docentes" && <ContasDocentes />}
+          {section === "situacao" && <SituacaoEstudantes onAction={showNote} />}
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && (
             <Anuncios

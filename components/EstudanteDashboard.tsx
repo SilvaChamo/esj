@@ -51,8 +51,10 @@ import {
   type EventoCalendarioDetalhado,
 } from "@/lib/calendario-detalhado";
 import { getCurriculoPorCurso, type CadeiraCurriculo, type RegimeCurso } from "@/lib/curriculo";
-import { EXEMPLO_EPAUTA_JORNALISMO, exportarEpautaPDF, type EPautaEletronica } from "@/lib/epauta";
+import { exportarEpautaPDF, montarEpauta } from "@/lib/epauta";
+import { listarMinhasNotas, listarPautaCadeira, type NotaEstudante } from "@/lib/notas";
 import { getPerfilActual, savePerfilActual, clearPerfilActual, type PerfilUtilizador } from "@/lib/auth-perfil";
+import { getSituacaoEstudante } from "@/lib/cms";
 import LeitorDocumento from "@/components/LeitorDocumento";
 
 type Section =
@@ -103,8 +105,13 @@ export default function EstudanteDashboard({
   const [sucessoFin, setSucessoFin] = useState<string | null>(null);
   const [ler, setLer] = useState<MaterialDocencia | null>(null);
 
-  // Pauta eletrónica ativa
-  const [epauta, setEpauta] = useState<EPautaEletronica>(EXEMPLO_EPAUTA_JORNALISMO);
+  // Notas reais lançadas pelos docentes (substituem o histórico estático quando existem)
+  const [minhasNotas, setMinhasNotas] = useState<NotaEstudante[] | null>(null);
+
+  // Pauta eletrónica: cadeira selecionada e respetivos resultados reais
+  const [cadeiraPautaCodigo, setCadeiraPautaCodigo] = useState("");
+  const [pautaCadeiraAtual, setPautaCadeiraAtual] = useState<NotaEstudante[] | null>(null);
+  const [carregandoPauta, setCarregandoPauta] = useState(false);
 
   // Estados para as Configurações da Conta
   const [nomeForm, setNomeForm] = useState("");
@@ -187,6 +194,8 @@ export default function EstudanteDashboard({
         curso: cursoReal,
         regime: regimeReal,
         anoLectivo: meta.anoLectivo || "2026",
+        regularizado: meta.regularizado ?? perfilGuardado?.regularizado,
+        avatar_url: meta.avatar_url || perfilGuardado?.avatar_url,
       };
 
       // Guardar o perfil actualizado no localStorage
@@ -195,6 +204,19 @@ export default function EstudanteDashboard({
       setPerfil(perfilActualizado);
       setCurso(cursoReal);
       setRegime(regimeReal);
+
+      // 3. Confirmar a situação real (regularizado/não) junto da secretaria.
+      void getSituacaoEstudante(numEstudante)
+        .then((situacao) => {
+          const regularizadoReal = situacao ? situacao.regularizado : true;
+          setPerfil((actual) =>
+            actual ? { ...actual, regularizado: regularizadoReal } : actual
+          );
+          savePerfilActual({ ...perfilActualizado, regularizado: regularizadoReal });
+        })
+        .catch(() => {
+          /* sem tabela ainda ou sem ligação — mantém o último valor conhecido */
+        });
     });
 
     setLoading(true);
@@ -202,6 +224,10 @@ export default function EstudanteDashboard({
       .then((rows) => setMateriais(rows ?? []))
       .catch(() => setMateriais([]))
       .finally(() => setLoading(false));
+
+    listarMinhasNotas()
+      .then(setMinhasNotas)
+      .catch(() => setMinhasNotas([]));
   }, []);
 
   useEffect(() => {
@@ -323,6 +349,34 @@ export default function EstudanteDashboard({
     () => getCurriculoPorCurso(curso, regime),
     [curso, regime]
   );
+
+  // Selecciona automaticamente a primeira cadeira do curso para a Pauta Eletrónica
+  useEffect(() => {
+    if (cadeirasCurriculo.length === 0) {
+      setCadeiraPautaCodigo("");
+      return;
+    }
+    if (!cadeirasCurriculo.some((c) => c.codigo === cadeiraPautaCodigo)) {
+      setCadeiraPautaCodigo(cadeirasCurriculo[0].codigo);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cadeirasCurriculo]);
+
+  const cadeiraPautaInfo = useMemo(
+    () => cadeirasCurriculo.find((c) => c.codigo === cadeiraPautaCodigo) || null,
+    [cadeirasCurriculo, cadeiraPautaCodigo]
+  );
+
+  useEffect(() => {
+    if (!cadeiraPautaInfo) {
+      setPautaCadeiraAtual(null);
+      return;
+    }
+    setCarregandoPauta(true);
+    listarPautaCadeira(curso, cadeiraPautaInfo.codigo)
+      .then(setPautaCadeiraAtual)
+      .finally(() => setCarregandoPauta(false));
+  }, [curso, cadeiraPautaInfo]);
 
   const materiaisFiltrados = useMemo(() => {
     let lista = (materiais ?? []).filter((m) => m.curso === curso);
@@ -843,16 +897,23 @@ export default function EstudanteDashboard({
 
                       return cadeirasDoPeriodo.map((cad) => {
                         const isExpanded = cadeirasExpandidas[cad.id];
-                        const temNota = cad.notaFinal !== undefined;
-                        const notaStr = temNota ? `${cad.notaFinal}.0 V` : "—";
-                        const res = cad.resultado || "Aprovado";
+                        // Nota lançada pelo docente (real) tem sempre prioridade sobre o histórico estático
+                        const notaReal = (minhasNotas ?? []).find((n) => n.cadeiraCodigo === cad.codigo);
+                        const notaFinalEfetiva = notaReal?.mediaFinal ?? cad.notaFinal ?? null;
+                        const temNota = notaFinalEfetiva !== null && notaFinalEfetiva !== undefined;
+                        const notaStr = temNota ? `${Number(notaFinalEfetiva).toFixed(1)} V` : "—";
+                        const res = notaReal?.resultado ?? cad.resultado ?? "Aprovado";
                         const isAprovado = res === "Aprovado";
                         const isFrequencia = res === "Em Frequência";
                         const isReprovado = res === "Reprovado" || res === "Excluído";
+                        const lancadaPeloDocente = Boolean(notaReal);
 
-                        const t1 = cad.teste1 ?? (temNota ? Number((cad.notaFinal! - 0.5).toFixed(1)) : 14.0);
-                        const t2 = cad.teste2 ?? (temNota ? Number((cad.notaFinal! + 0.5).toFixed(1)) : 14.5);
-                        const trab = cad.trabalho ?? (temNota ? Number(cad.notaFinal!.toFixed(1)) : 15.0);
+                        const t1 =
+                          notaReal?.teste1 ?? cad.teste1 ?? (temNota ? Number((Number(notaFinalEfetiva) - 0.5).toFixed(1)) : 14.0);
+                        const t2 =
+                          notaReal?.teste2 ?? cad.teste2 ?? (temNota ? Number((Number(notaFinalEfetiva) + 0.5).toFixed(1)) : 14.5);
+                        const trab =
+                          notaReal?.trabalho ?? cad.trabalho ?? (temNota ? Number(Number(notaFinalEfetiva).toFixed(1)) : 15.0);
 
                         return (
                           <Fragment key={cad.id}>
@@ -886,6 +947,14 @@ export default function EstudanteDashboard({
                                 <span className="text-[10px] text-navy-900/40 font-mono font-normal">
                                   ({cad.codigo})
                                 </span>
+                                {lancadaPeloDocente && (
+                                  <span
+                                    title="Nota lançada pelo docente"
+                                    className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-leaf bg-leaf/10 border border-leaf/30 px-1.5 py-0.5 rounded"
+                                  >
+                                    <CheckCircle2 size={10} /> Lançada
+                                  </span>
+                                )}
                               </td>
                               <td className="p-4 text-navy-900/70">
                                 {cad.ano}º Ano · {cad.semestre}º Semestre
@@ -2041,78 +2110,119 @@ export default function EstudanteDashboard({
           <div className="p-6 md:p-8 space-y-6 max-w-5xl">
             <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-serif font-bold text-xl text-navy-900">
-                    Pauta Eletrónica de Avaliação — {epauta.cadeira}
+                    Pauta Eletrónica de Avaliação
                   </h3>
                   <p className="text-xs text-navy-900/60 mt-1">
-                    Cadeira: <strong>{epauta.codigoCadeira}</strong> · Docente: <strong>{epauta.docenteNome}</strong> · Ano Lectivo: <strong>{epauta.anoLectivo}</strong>
+                    Escolha a cadeira para consultar os resultados publicados pelo docente.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => exportarEpautaPDF(epauta)}
-                  className="inline-flex items-center gap-2 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-4 py-2.5 rounded transition-colors shadow-sm"
+                <select
+                  value={cadeiraPautaCodigo}
+                  onChange={(e) => setCadeiraPautaCodigo(e.target.value)}
+                  className="bg-white border border-navy-100 text-navy-900 text-xs font-bold py-2.5 px-3 rounded focus:outline-none focus:border-sky cursor-pointer min-w-[220px]"
                 >
-                  <Printer size={16} />
-                  <span>Descarregar Pauta (PDF)</span>
-                </button>
+                  {cadeirasCurriculo.map((c) => (
+                    <option key={c.codigo} value={c.codigo}>
+                      {c.nome} ({c.codigo})
+                    </option>
+                  ))}
+                </select>
+
+                {cadeiraPautaInfo && (
+                  <button
+                    type="button"
+                    disabled={!pautaCadeiraAtual || pautaCadeiraAtual.length === 0}
+                    onClick={() =>
+                      exportarEpautaPDF(
+                        montarEpauta(
+                          curso,
+                          CURSOS_DOCENCIA.find((c) => c.slug === curso)?.titulo || "Jornalismo",
+                          regime,
+                          cadeiraPautaInfo,
+                          pautaCadeiraAtual ?? []
+                        )
+                      )
+                    }
+                    className="inline-flex items-center gap-2 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-4 py-2.5 rounded transition-colors shadow-sm disabled:opacity-40"
+                  >
+                    <Printer size={16} />
+                    <span>Descarregar Pauta (PDF)</span>
+                  </button>
+                )}
               </div>
 
-              {/* Tabela da Pauta Eletrónica */}
-              <div className="overflow-x-auto border border-navy-100 rounded">
-                <table className="w-full text-left text-xs text-navy-900 border-collapse">
-                  <thead>
-                    <tr className="bg-navy-900 text-white border-b border-navy-900">
-                      <th className="p-3 text-center w-12">#</th>
-                      <th className="p-3">Nº Estudante</th>
-                      <th className="p-3">Nome do Estudante</th>
-                      <th className="p-3 text-center">Teste 1</th>
-                      <th className="p-3 text-center">Teste 2</th>
-                      <th className="p-3 text-center">Trabalho</th>
-                      <th className="p-3 text-center">Média Freq.</th>
-                      <th className="p-3 text-center">Exame</th>
-                      <th className="p-3 text-center">Média Final</th>
-                      <th className="p-3 text-center">Resultado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-navy-100">
-                    {epauta.estudantes.map((e, idx) => {
-                      const eEu = perfil?.numeroEstudante === e.numeroEstudante;
-                      return (
-                        <tr
-                          key={e.numeroEstudante}
-                          className={`transition-colors ${eEu ? "bg-sky/15 font-bold" : idx % 2 === 1 ? "bg-cream/40" : "bg-white"
-                            }`}
-                        >
-                          <td className="p-3 text-center font-bold">{idx + 1}</td>
-                          <td className="p-3 font-mono font-bold text-sky">{e.numeroEstudante}</td>
-                          <td className="p-3">{e.nomeEstudante} {eEu && "(Você)"}</td>
-                          <td className="p-3 text-center">{e.teste1?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center">{e.teste2?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center">{e.trabalho?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center font-bold">{e.mediaFrequencia?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center">{e.exameNormal?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center font-bold text-navy-900">{e.mediaFinal?.toFixed(1) ?? "-"}</td>
-                          <td className="p-3 text-center">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.resultado === "Aprovado"
-                                ? "bg-leaf/20 text-leaf"
-                                : e.resultado === "Excluído"
-                                  ? "bg-crimson/20 text-crimson"
-                                  : "bg-amber-100 text-amber-800"
-                                }`}
-                            >
-                              {e.resultado || "Pendente"}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {cadeiraPautaInfo && (
+                <p className="text-xs text-navy-900/60 mb-4">
+                  Cadeira: <strong>{cadeiraPautaInfo.codigo}</strong> · Docente: <strong>{cadeiraPautaInfo.docente}</strong> ·{" "}
+                  {cadeiraPautaInfo.ano}º Ano · {cadeiraPautaInfo.semestre}º Semestre
+                </p>
+              )}
+
+              {carregandoPauta ? (
+                <div className="p-8 text-center text-sm text-navy-900/60">A carregar pauta…</div>
+              ) : !pautaCadeiraAtual || pautaCadeiraAtual.length === 0 ? (
+                <div className="p-8 text-center border border-navy-100 rounded bg-cream/40">
+                  <ClipboardList size={28} className="mx-auto text-navy-900/30 mb-2" />
+                  <p className="text-sm font-bold text-navy-900">Pauta ainda não publicada</p>
+                  <p className="text-xs text-navy-900/60 mt-1">
+                    O docente ainda não lançou notas para esta cadeira.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-navy-100 rounded">
+                  <table className="w-full text-left text-xs text-navy-900 border-collapse">
+                    <thead>
+                      <tr className="bg-navy-900 text-white border-b border-navy-900">
+                        <th className="p-3 text-center w-12">#</th>
+                        <th className="p-3">Nº Estudante</th>
+                        <th className="p-3">Nome do Estudante</th>
+                        <th className="p-3 text-center">Teste 1</th>
+                        <th className="p-3 text-center">Teste 2</th>
+                        <th className="p-3 text-center">Trabalho</th>
+                        <th className="p-3 text-center">Exame</th>
+                        <th className="p-3 text-center">Média Final</th>
+                        <th className="p-3 text-center">Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-navy-100">
+                      {pautaCadeiraAtual.map((e, idx) => {
+                        const eEu = perfil?.id === e.estudanteId;
+                        return (
+                          <tr
+                            key={e.id}
+                            className={`transition-colors ${eEu ? "bg-sky/15 font-bold" : idx % 2 === 1 ? "bg-cream/40" : "bg-white"
+                              }`}
+                          >
+                            <td className="p-3 text-center font-bold">{idx + 1}</td>
+                            <td className="p-3 font-mono font-bold text-sky">{e.numeroEstudante}</td>
+                            <td className="p-3">{e.nomeEstudante} {eEu && "(Você)"}</td>
+                            <td className="p-3 text-center">{e.teste1?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">{e.teste2?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">{e.trabalho?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">{e.exameNormal?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center font-bold text-navy-900">{e.mediaFinal?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.resultado === "Aprovado"
+                                  ? "bg-leaf/20 text-leaf"
+                                  : e.resultado === "Reprovado" || e.resultado === "Excluído"
+                                    ? "bg-crimson/20 text-crimson"
+                                    : "bg-amber-100 text-amber-800"
+                                  }`}
+                              >
+                                {e.resultado}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

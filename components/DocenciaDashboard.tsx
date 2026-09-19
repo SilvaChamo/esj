@@ -4,18 +4,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BookOpen,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   ExternalLink,
   Eye,
   FileText,
   Folder,
+  GraduationCap,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  Save,
   Search,
   Trash2,
   Upload,
@@ -37,11 +42,23 @@ import {
   type MaterialDocencia,
   type TipoMaterialDocencia,
 } from "@/lib/docencia";
+import { listarMinhasCadeiras, type CadeiraAtribuida } from "@/lib/docencia-cadeiras";
+import { listarPautaCadeira, type NotaEstudante, type ResultadoNota } from "@/lib/notas";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import LeitorDocumento from "@/components/LeitorDocumento";
 
-type Section = "materiais" | "partilhar" | "gerir";
+type Section = "materiais" | "partilhar" | "gerir" | "cadeiras" | "notas";
 type Acesso = "a-verificar" | "negado" | "permitido";
+
+type EstudanteBusca = {
+  id: string;
+  email: string | null;
+  nome: string | null;
+  numeroEstudante: string | null;
+  curso: CursoDocenciaSlug | null;
+};
+
+const RESULTADOS_NOTA: ResultadoNota[] = ["Aprovado", "Em Frequência", "Reprovado", "Excluído"];
 
 export default function DocenciaDashboard({
   initialSection = "materiais",
@@ -53,6 +70,7 @@ export default function DocenciaDashboard({
   const [autor, setAutor] = useState<string | null>(null);
   const [autorId, setAutorId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [souSuperAdmin, setSouSuperAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [menuMateriaisAberto, setMenuMateriaisAberto] = useState(true);
@@ -61,6 +79,9 @@ export default function DocenciaDashboard({
   const [materiais, setMateriais] = useState<MaterialDocencia[] | null>(null);
   const [needsSchema, setNeedsSchema] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Cadeiras atribuídas ao docente autenticado
+  const [minhasCadeiras, setMinhasCadeiras] = useState<CadeiraAtribuida[] | null>(null);
 
   // Filtros de materiais
   const [curso, setCurso] = useState<CursoDocenciaSlug>(CURSOS_DOCENCIA[0].slug);
@@ -75,6 +96,22 @@ export default function DocenciaDashboard({
   const [tituloForm, setTituloForm] = useState("");
   const [ficheiroForm, setFicheiroForm] = useState<File | null>(null);
 
+  // Formulário de lançamento de notas
+  const [cadeiraNotaSel, setCadeiraNotaSel] = useState("");
+  const [buscaEstudante, setBuscaEstudante] = useState("");
+  const [resultadosBusca, setResultadosBusca] = useState<EstudanteBusca[]>([]);
+  const [buscandoEstudante, setBuscandoEstudante] = useState(false);
+  const [estudanteSel, setEstudanteSel] = useState<EstudanteBusca | null>(null);
+  const [teste1Form, setTeste1Form] = useState("");
+  const [teste2Form, setTeste2Form] = useState("");
+  const [trabalhoForm, setTrabalhoForm] = useState("");
+  const [exameForm, setExameForm] = useState("");
+  const [resultadoForm, setResultadoForm] = useState<ResultadoNota>("Em Frequência");
+  const [notaBusy, setNotaBusy] = useState(false);
+  const [notaToast, setNotaToast] = useState<string | null>(null);
+  const [notaToastErro, setNotaToastErro] = useState(false);
+  const [pautaCadeiraAtual, setPautaCadeiraAtual] = useState<NotaEstudante[] | null>(null);
+
   useEffect(() => {
     const supabase = createBrowserSupabase();
     void supabase.auth.getUser().then(({ data }) => {
@@ -82,8 +119,12 @@ export default function DocenciaDashboard({
       if (user) {
         setAcesso("permitido");
         setUserEmail(user.email ?? null);
+        setSouSuperAdmin(eSuperAdmin(user));
         setAutor(eSuperAdmin(user) ? "Administrador" : nomeDeUser(user));
         setAutorId(user.id);
+        listarMinhasCadeiras()
+          .then(setMinhasCadeiras)
+          .catch(() => setMinhasCadeiras([]));
       } else {
         // Permitir visualização como visitante/docente em teste
         setAcesso("permitido");
@@ -123,6 +164,19 @@ export default function DocenciaDashboard({
     };
   }, [ler]);
 
+  // Cursos onde este docente tem pelo menos uma cadeira atribuída (admin vê sempre tudo)
+  const cursosPermitidos = useMemo(() => {
+    if (souSuperAdmin || !minhasCadeiras || minhasCadeiras.length === 0) return CURSOS_DOCENCIA;
+    const slugs = new Set(minhasCadeiras.map((c) => c.curso));
+    return CURSOS_DOCENCIA.filter((c) => slugs.has(c.slug));
+  }, [souSuperAdmin, minhasCadeiras]);
+
+  // Cadeiras atribuídas ao docente dentro do curso selecionado no formulário de partilha
+  const minhasCadeirasDoCurso = useMemo(
+    () => (minhasCadeiras ?? []).filter((c) => c.curso === curso),
+    [minhasCadeiras, curso]
+  );
+
   const materiaisFiltrados = useMemo(() => {
     const lista = (materiais ?? []).filter((m) => m.curso === curso);
     if (!termoBusca.trim()) return lista;
@@ -139,6 +193,128 @@ export default function DocenciaDashboard({
     () => agruparPorCadeira(materiaisFiltrados),
     [materiaisFiltrados]
   );
+
+  // Cadeira selecionada no formulário de lançamento de notas (curso::codigo)
+  const cadeiraNotaInfo = useMemo(() => {
+    const [cursoSel, codigoSel] = cadeiraNotaSel.split("::");
+    return (minhasCadeiras ?? []).find((c) => c.curso === cursoSel && c.cadeiraCodigo === codigoSel) || null;
+  }, [cadeiraNotaSel, minhasCadeiras]);
+
+  const mediaCalculada = useMemo(() => {
+    const t1 = Number(teste1Form);
+    const t2 = Number(teste2Form);
+    const tr = Number(trabalhoForm);
+    if (!teste1Form || !teste2Form || !trabalhoForm) return null;
+    if (!Number.isFinite(t1) || !Number.isFinite(t2) || !Number.isFinite(tr)) return null;
+    return Math.round((t1 * 0.3 + t2 * 0.3 + tr * 0.4) * 10) / 10;
+  }, [teste1Form, teste2Form, trabalhoForm]);
+
+  useEffect(() => {
+    if (!cadeiraNotaInfo) {
+      setPautaCadeiraAtual(null);
+      return;
+    }
+    listarPautaCadeira(cadeiraNotaInfo.curso, cadeiraNotaInfo.cadeiraCodigo).then(setPautaCadeiraAtual);
+  }, [cadeiraNotaInfo]);
+
+  useEffect(() => {
+    const q = buscaEstudante.trim();
+    if (q.length < 2) {
+      setResultadosBusca([]);
+      return;
+    }
+    setBuscandoEstudante(true);
+    const t = setTimeout(() => {
+      fetch(`/api/estudantes-busca?q=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((r) => setResultadosBusca(r.estudantes ?? []))
+        .catch(() => setResultadosBusca([]))
+        .finally(() => setBuscandoEstudante(false));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [buscaEstudante]);
+
+  const limparFormularioNota = () => {
+    setEstudanteSel(null);
+    setBuscaEstudante("");
+    setResultadosBusca([]);
+    setTeste1Form("");
+    setTeste2Form("");
+    setTrabalhoForm("");
+    setExameForm("");
+    setResultadoForm("Em Frequência");
+  };
+
+  const carregarNotaExistente = (linha: NotaEstudante) => {
+    setEstudanteSel({
+      id: linha.estudanteId,
+      email: null,
+      nome: linha.nomeEstudante,
+      numeroEstudante: linha.numeroEstudante,
+      curso: linha.curso,
+    });
+    setBuscaEstudante("");
+    setResultadosBusca([]);
+    setTeste1Form(linha.teste1 !== null ? String(linha.teste1) : "");
+    setTeste2Form(linha.teste2 !== null ? String(linha.teste2) : "");
+    setTrabalhoForm(linha.trabalho !== null ? String(linha.trabalho) : "");
+    setExameForm(linha.exameNormal !== null ? String(linha.exameNormal) : "");
+    setResultadoForm(linha.resultado);
+  };
+
+  const lancarNota = async (e: FormEvent) => {
+    e.preventDefault();
+    setNotaToast(null);
+    if (!cadeiraNotaInfo) {
+      setNotaToast("Selecione a cadeira.");
+      setNotaToastErro(true);
+      return;
+    }
+    if (!estudanteSel) {
+      setNotaToast("Pesquise e selecione o estudante a avaliar.");
+      setNotaToastErro(true);
+      return;
+    }
+    if (!estudanteSel.numeroEstudante) {
+      setNotaToast("Este estudante não tem número de estudante definido na conta — peça-lhe para o preencher em Configurações.");
+      setNotaToastErro(true);
+      return;
+    }
+    setNotaBusy(true);
+    try {
+      const res = await fetch("/api/docencia-notas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estudanteId: estudanteSel.id,
+          numeroEstudante: estudanteSel.numeroEstudante,
+          nomeEstudante: estudanteSel.nome || estudanteSel.email,
+          curso: cadeiraNotaInfo.curso,
+          cadeiraCodigo: cadeiraNotaInfo.cadeiraCodigo,
+          cadeiraNome: cadeiraNotaInfo.cadeiraNome,
+          ano: cadeiraNotaInfo.ano,
+          semestre: cadeiraNotaInfo.semestre,
+          teste1: teste1Form || null,
+          teste2: teste2Form || null,
+          trabalho: trabalhoForm || null,
+          exameNormal: exameForm || null,
+          mediaFinal: mediaCalculada,
+          resultado: resultadoForm,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Não foi possível lançar a nota.");
+      setNotaToast(`Nota de ${estudanteSel.nome || estudanteSel.email} publicada — já visível no painel do estudante.`);
+      setNotaToastErro(false);
+      limparFormularioNota();
+      listarPautaCadeira(cadeiraNotaInfo.curso, cadeiraNotaInfo.cadeiraCodigo).then(setPautaCadeiraAtual);
+    } catch (err) {
+      setNotaToast(err instanceof Error ? err.message : "Não foi possível lançar a nota.");
+      setNotaToastErro(true);
+    } finally {
+      setNotaBusy(false);
+    }
+  };
 
   const submeterPartilha = async (e: FormEvent) => {
     e.preventDefault();
@@ -284,7 +460,7 @@ export default function DocenciaDashboard({
 
             {menuMateriaisAberto && !isSidebarCollapsed && (
               <div className="ml-4 pl-3 border-l border-white/15 space-y-1 mt-1">
-                {CURSOS_DOCENCIA.map((c) => (
+                {cursosPermitidos.map((c) => (
                   <button
                     key={c.slug}
                     type="button"
@@ -305,6 +481,36 @@ export default function DocenciaDashboard({
               </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSection("cadeiras");
+              setIsMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors text-left ${section === "cadeiras"
+                ? "bg-sky/15 text-sky-300 border-l-4 border-sky-300"
+                : "text-white/70 hover:bg-white/5 hover:text-white"
+              }`}
+          >
+            <GraduationCap size={20} className="shrink-0" />
+            {!isSidebarCollapsed && <span>Minhas Cadeiras</span>}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSection("notas");
+              setIsMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors text-left ${section === "notas"
+                ? "bg-sky/15 text-sky-300 border-l-4 border-sky-300"
+                : "text-white/70 hover:bg-white/5 hover:text-white"
+              }`}
+          >
+            <ClipboardList size={20} className="shrink-0" />
+            {!isSidebarCollapsed && <span>Lançar Notas</span>}
+          </button>
 
           <button
             type="button"
@@ -371,6 +577,8 @@ export default function DocenciaDashboard({
               {section === "materiais" && `Materiais Académicos — ${CURSOS_DOCENCIA.find((c) => c.slug === curso)?.titulo || "Todos os Cursos"}`}
               {section === "partilhar" && "Publicar Novo Material de Ensino"}
               {section === "gerir" && "Gestão e Remoção de Ficheiros"}
+              {section === "cadeiras" && "Minhas Cadeiras Leccionadas"}
+              {section === "notas" && "Lançamento de Notas & Pautas"}
             </h2>
             <span className="text-[11px] font-bold tracking-widest text-sky uppercase mt-0.5 block">
               Docência · ESJ
@@ -421,6 +629,30 @@ export default function DocenciaDashboard({
               titulo="Criar a tabela de Docência no Supabase"
               descricao="A secção de Docência requer a tabela de materiais no banco de dados."
               onVerificar={carregarMateriais}
+            />
+          </div>
+        )}
+
+        {minhasCadeiras === null && (
+          <div className="p-6 md:p-8">
+            <SchemaInstall
+              sqlPath="/docencia-cadeiras.sql"
+              titulo="Criar a tabela de Cadeiras de Docência no Supabase"
+              descricao="Para atribuir cadeiras aos docentes e mostrar «Minhas Cadeiras» é preciso criar esta tabela."
+              onVerificar={() => listarMinhasCadeiras().then(setMinhasCadeiras)}
+            />
+          </div>
+        )}
+
+        {(section === "notas") && pautaCadeiraAtual === null && cadeiraNotaInfo && (
+          <div className="p-6 md:p-8">
+            <SchemaInstall
+              sqlPath="/estudantes-notas.sql"
+              titulo="Criar a tabela de Notas dos Estudantes no Supabase"
+              descricao="Para lançar notas e alimentar a pauta do estudante é preciso criar esta tabela."
+              onVerificar={() =>
+                listarPautaCadeira(cadeiraNotaInfo.curso, cadeiraNotaInfo.cadeiraCodigo).then(setPautaCadeiraAtual)
+              }
             />
           </div>
         )}
@@ -548,6 +780,293 @@ export default function DocenciaDashboard({
           </div>
         )}
 
+        {/* SECÇÃO: MINHAS CADEIRAS */}
+        {section === "cadeiras" && (
+          <div className="p-6 md:p-8 space-y-6 max-w-4xl">
+            {souSuperAdmin && (
+              <div className="p-4 bg-sky/10 border border-sky/30 rounded text-xs font-semibold text-navy-900">
+                Como administrador, tem acesso a todos os cursos e cadeiras, independentemente de atribuição.
+              </div>
+            )}
+
+            {!minhasCadeiras || minhasCadeiras.length === 0 ? (
+              <div className="bg-white border border-navy-100 p-12 text-center">
+                <GraduationCap size={36} className="mx-auto text-navy-900/30 mb-3" />
+                <p className="text-base font-serif font-bold text-navy-900">
+                  Ainda não tem cadeiras atribuídas
+                </p>
+                <p className="mt-1 text-sm text-navy-900/60">
+                  Peça à Gestão da ESJ para lhe atribuir as cadeiras que lecciona — só depois poderá lançar notas nelas.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-navy-100 bg-cream/70">
+                  <h3 className="font-serif text-lg font-bold text-navy-900">
+                    {minhasCadeiras.length} cadeira{minhasCadeiras.length === 1 ? "" : "s"} atribuída{minhasCadeiras.length === 1 ? "" : "s"}
+                  </h3>
+                </div>
+                <ul className="divide-y divide-navy-100">
+                  {minhasCadeiras.map((c) => (
+                    <li key={c.id} className="p-5 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-serif font-bold text-navy-900">{c.cadeiraNome}</p>
+                        <p className="text-xs text-navy-900/55 mt-0.5">
+                          {CURSOS_DOCENCIA.find((cur) => cur.slug === c.curso)?.titulo} · {c.cadeiraCodigo}
+                          {c.ano && c.semestre ? ` · ${c.ano}º Ano · ${c.semestre}º Semestre` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 px-2.5 py-1 bg-leaf/10 text-leaf text-[11px] font-bold rounded border border-leaf/30">
+                        Atribuída
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECÇÃO: LANÇAR NOTAS */}
+        {section === "notas" && (
+          <div className="p-6 md:p-8 space-y-6 max-w-4xl">
+            {(!minhasCadeiras || minhasCadeiras.length === 0) && !souSuperAdmin ? (
+              <div className="bg-white border border-navy-100 p-12 text-center">
+                <ClipboardList size={36} className="mx-auto text-navy-900/30 mb-3" />
+                <p className="text-base font-serif font-bold text-navy-900">
+                  Sem cadeiras atribuídas
+                </p>
+                <p className="mt-1 text-sm text-navy-900/60">
+                  Só pode lançar notas em cadeiras que lhe tenham sido atribuídas pela Gestão.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                      Cadeira *
+                    </label>
+                    <select
+                      value={cadeiraNotaSel}
+                      onChange={(e) => {
+                        setCadeiraNotaSel(e.target.value);
+                        limparFormularioNota();
+                      }}
+                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                    >
+                      <option value="">— Selecione a cadeira —</option>
+                      {(minhasCadeiras ?? []).map((c) => (
+                        <option key={c.id} value={`${c.curso}::${c.cadeiraCodigo}`}>
+                          {c.cadeiraNome} ({c.cadeiraCodigo}) — {CURSOS_DOCENCIA.find((cur) => cur.slug === c.curso)?.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {cadeiraNotaInfo && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                          Estudante *
+                        </label>
+                        {estudanteSel ? (
+                          <div className="flex items-center justify-between gap-3 p-3 bg-sky/10 border border-sky/30 rounded">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-navy-900 truncate">{estudanteSel.nome || estudanteSel.email}</p>
+                              <p className="text-xs text-navy-900/60">
+                                Nº {estudanteSel.numeroEstudante || "—"} {estudanteSel.email ? `· ${estudanteSel.email}` : ""}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={limparFormularioNota}
+                              className="shrink-0 text-xs font-bold text-navy-900/60 hover:text-crimson"
+                            >
+                              Trocar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-900/40" />
+                            <input
+                              type="text"
+                              value={buscaEstudante}
+                              onChange={(e) => setBuscaEstudante(e.target.value)}
+                              placeholder="Pesquisar por nome, número ou e-mail do estudante…"
+                              className="w-full pl-9 pr-3 p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                            />
+                            {buscandoEstudante && (
+                              <p className="mt-1 text-[11px] text-navy-900/50">A pesquisar…</p>
+                            )}
+                            {resultadosBusca.length > 0 && (
+                              <ul className="mt-2 border border-navy-100 rounded divide-y divide-navy-100 bg-white shadow-sm max-h-56 overflow-y-auto">
+                                {resultadosBusca.map((e) => (
+                                  <li key={e.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEstudanteSel(e);
+                                        setBuscaEstudante("");
+                                        setResultadosBusca([]);
+                                      }}
+                                      className="w-full text-left px-3 py-2.5 hover:bg-cream/60 transition-colors"
+                                    >
+                                      <p className="text-sm font-semibold text-navy-900">{e.nome || e.email}</p>
+                                      <p className="text-[11px] text-navy-900/55">
+                                        Nº {e.numeroEstudante || "—"} · {e.email}
+                                      </p>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {estudanteSel && (
+                        <form onSubmit={lancarNota} className="space-y-4 pt-2 border-t border-navy-100">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                            <div>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">1º Teste</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={20}
+                                step={0.1}
+                                value={teste1Form}
+                                onChange={(e) => setTeste1Form(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">2º Teste</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={20}
+                                step={0.1}
+                                value={teste2Form}
+                                onChange={(e) => setTeste2Form(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Trabalho</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={20}
+                                step={0.1}
+                                value={trabalhoForm}
+                                onChange={(e) => setTrabalhoForm(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Exame (opc.)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={20}
+                                step={0.1}
+                                value={exameForm}
+                                onChange={(e) => setExameForm(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <div className="min-w-[160px]">
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Resultado</label>
+                              <select
+                                value={resultadoForm}
+                                onChange={(e) => setResultadoForm(e.target.value as ResultadoNota)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              >
+                                {RESULTADOS_NOTA.map((r) => (
+                                  <option key={r} value={r}>
+                                    {r}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            {mediaCalculada !== null && (
+                              <div className="text-xs font-bold text-navy-900">
+                                Média calculada (30/30/40): <span className="text-leaf font-mono text-sm">{mediaCalculada.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {notaToast && (
+                            <p className={`text-xs font-semibold flex items-center gap-1.5 ${notaToastErro ? "text-crimson" : "text-leaf"}`}>
+                              {notaToastErro ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+                              {notaToast}
+                            </p>
+                          )}
+
+                          <button
+                            type="submit"
+                            disabled={notaBusy}
+                            className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white text-xs font-bold px-6 py-3 rounded transition-colors disabled:opacity-50"
+                          >
+                            <Save size={16} />
+                            <span>{notaBusy ? "A publicar…" : "Lançar Nota"}</span>
+                          </button>
+                        </form>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {cadeiraNotaInfo && pautaCadeiraAtual && pautaCadeiraAtual.length > 0 && (
+                  <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-navy-100 bg-cream/70">
+                      <h3 className="font-serif text-lg font-bold text-navy-900">
+                        Notas já lançadas — {cadeiraNotaInfo.cadeiraNome}
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
+                            <th className="p-3">Nº</th>
+                            <th className="p-3">Estudante</th>
+                            <th className="p-3 text-center">Média Final</th>
+                            <th className="p-3 text-center">Resultado</th>
+                            <th className="p-3 text-right">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-navy-100 text-navy-900">
+                          {pautaCadeiraAtual.map((n) => (
+                            <tr key={n.id} className="hover:bg-cream/40 transition-colors">
+                              <td className="p-3 font-mono font-bold text-sky">{n.numeroEstudante}</td>
+                              <td className="p-3 font-semibold">{n.nomeEstudante}</td>
+                              <td className="p-3 text-center font-mono font-bold">{n.mediaFinal?.toFixed(1) ?? "—"}</td>
+                              <td className="p-3 text-center">{n.resultado}</td>
+                              <td className="p-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => carregarNotaExistente(n)}
+                                  className="text-sky hover:underline font-bold"
+                                >
+                                  Editar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* SECÇÃO: PUBLICAR NOVO MATERIAL */}
         {section === "partilhar" && (
           <div className="p-6 md:p-8 max-w-3xl">
@@ -569,10 +1088,13 @@ export default function DocenciaDashboard({
                     </label>
                     <select
                       value={curso}
-                      onChange={(e) => setCurso(e.target.value as CursoDocenciaSlug)}
+                      onChange={(e) => {
+                        setCurso(e.target.value as CursoDocenciaSlug);
+                        setCadeiraForm("");
+                      }}
                       className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
                     >
-                      {CURSOS_DOCENCIA.map((c) => (
+                      {cursosPermitidos.map((c) => (
                         <option key={c.slug} value={c.slug}>
                           {c.titulo}
                         </option>
@@ -602,14 +1124,30 @@ export default function DocenciaDashboard({
                   <label className="block text-xs font-bold text-navy-900 mb-1.5">
                     Nome da Cadeira / Cursso *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Teoria da Comunicação, Ética Jornalística…"
-                    value={cadeiraForm}
-                    onChange={(e) => setCadeiraForm(e.target.value)}
-                    className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                  />
+                  {minhasCadeirasDoCurso.length > 0 ? (
+                    <select
+                      required
+                      value={cadeiraForm}
+                      onChange={(e) => setCadeiraForm(e.target.value)}
+                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                    >
+                      <option value="">— Selecione a cadeira —</option>
+                      {minhasCadeirasDoCurso.map((c) => (
+                        <option key={c.id} value={c.cadeiraNome}>
+                          {c.cadeiraNome} ({c.cadeiraCodigo})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Teoria da Comunicação, Ética Jornalística…"
+                      value={cadeiraForm}
+                      onChange={(e) => setCadeiraForm(e.target.value)}
+                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                    />
+                  )}
                 </div>
 
                 <div>

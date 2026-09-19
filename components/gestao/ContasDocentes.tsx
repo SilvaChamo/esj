@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, UserPlus } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, Trash2, UserPlus } from "lucide-react";
+import { todasAsCadeirasPorCurso } from "@/lib/docencia-cadeiras";
 
 type ContaDocente = {
   id: string;
@@ -10,11 +11,174 @@ type ContaDocente = {
   createdAt: string;
 };
 
+type CadeiraAtribuidaRow = {
+  curso: string;
+  cadeira_codigo: string;
+};
+
 async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || "Não foi possível completar o pedido.");
   return json as T;
+}
+
+const CURSOS_CADEIRAS = todasAsCadeirasPorCurso();
+
+function CadeirasDocente({
+  docente,
+  onFechar,
+}: {
+  docente: ContaDocente;
+  onFechar: () => void;
+}) {
+  const [carregando, setCarregando] = useState(true);
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const [busca, setBusca] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [toastErro, setToastErro] = useState(false);
+
+  const chave = (curso: string, codigo: string) => `${curso}::${codigo}`;
+
+  useEffect(() => {
+    setCarregando(true);
+    pedir<{ cadeiras: CadeiraAtribuidaRow[] }>(
+      `/api/docencia-cadeiras?docenteId=${encodeURIComponent(docente.id)}`
+    )
+      .then((r) => {
+        setSelecionadas(new Set(r.cadeiras.map((c) => chave(c.curso, c.cadeira_codigo))));
+      })
+      .catch((err) => {
+        setToast(err instanceof Error ? err.message : "Não foi possível carregar as cadeiras.");
+        setToastErro(true);
+      })
+      .finally(() => setCarregando(false));
+  }, [docente.id]);
+
+  const alternar = (curso: string, codigo: string) => {
+    setSelecionadas((prev) => {
+      const novo = new Set(prev);
+      const k = chave(curso, codigo);
+      if (novo.has(k)) novo.delete(k);
+      else novo.add(k);
+      return novo;
+    });
+  };
+
+  const guardar = async () => {
+    setGuardando(true);
+    setToast(null);
+    try {
+      const cadeiras = CURSOS_CADEIRAS.flatMap((grupo) =>
+        grupo.cadeiras
+          .filter((cad) => selecionadas.has(chave(grupo.curso, cad.codigo)))
+          .map((cad) => ({
+            curso: grupo.curso,
+            codigo: cad.codigo,
+            nome: cad.nome,
+            ano: cad.ano,
+            semestre: cad.semestre,
+          }))
+      );
+      await pedir("/api/docencia-cadeiras", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ docenteId: docente.id, docenteEmail: docente.email, cadeiras }),
+      });
+      setToast(`Cadeiras atualizadas (${cadeiras.length} atribuída${cadeiras.length === 1 ? "" : "s"}).`);
+      setToastErro(false);
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Não foi possível guardar.");
+      setToastErro(true);
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const q = busca.trim().toLowerCase();
+
+  return (
+    <div className="border-t border-navy-100 bg-cream/40 p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-navy-900">
+            Cadeiras leccionadas por {docente.nome || docente.email}
+          </p>
+          <p className="text-xs text-navy-900/55 mt-0.5">
+            Marque as cadeiras que este docente lecciona. Só verá e poderá lançar notas nestas.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onFechar}
+          className="shrink-0 text-xs font-bold text-navy-900/50 hover:text-navy-900"
+        >
+          Fechar
+        </button>
+      </div>
+
+      <input
+        type="text"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Filtrar por nome ou código da cadeira…"
+        className="w-full max-w-sm border border-navy-100 px-3 h-10 text-xs outline-none focus:border-sky bg-white"
+      />
+
+      {carregando ? (
+        <p className="text-xs text-navy-900/55">A carregar…</p>
+      ) : (
+        <div className="max-h-96 overflow-y-auto space-y-4 bg-white border border-navy-100 p-4">
+          {CURSOS_CADEIRAS.map((grupo) => {
+            const cadeiras = grupo.cadeiras.filter(
+              (c) => !q || c.nome.toLowerCase().includes(q) || c.codigo.toLowerCase().includes(q)
+            );
+            if (cadeiras.length === 0) return null;
+            return (
+              <div key={grupo.curso}>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-sky mb-2">
+                  {grupo.cursoNome}
+                </p>
+                <div className="grid sm:grid-cols-2 gap-1.5">
+                  {cadeiras.map((cad) => (
+                    <label
+                      key={cad.id}
+                      className="flex items-center gap-2 text-xs text-navy-900 px-2 py-1.5 hover:bg-cream/60 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selecionadas.has(chave(grupo.curso, cad.codigo))}
+                        onChange={() => alternar(grupo.curso, cad.codigo)}
+                      />
+                      <span className="font-mono text-[10px] text-navy-900/50">{cad.codigo}</span>
+                      <span className="truncate">{cad.nome}</span>
+                      <span className="text-navy-900/40 shrink-0">
+                        ({cad.ano}º/{cad.semestre}º)
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {toast && (
+        <p className={`text-xs ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
+      )}
+
+      <button
+        type="button"
+        disabled={guardando || carregando}
+        onClick={() => void guardar()}
+        className="inline-flex items-center gap-2 h-10 px-5 bg-navy-900 text-white text-xs font-bold hover:bg-crimson disabled:opacity-60 transition-colors"
+      >
+        {guardando ? "A GUARDAR…" : "GUARDAR CADEIRAS"}
+      </button>
+    </div>
+  );
 }
 
 export default function ContasDocentes() {
@@ -27,6 +191,7 @@ export default function ContasDocentes() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [toastErro, setToastErro] = useState(false);
+  const [expandido, setExpandido] = useState<string | null>(null);
 
   const carregar = () => {
     setLoading(true);
@@ -170,20 +335,34 @@ export default function ContasDocentes() {
         ) : (
           <ul className="divide-y divide-navy-100">
             {contas.map((c) => (
-              <li key={c.id} className="flex items-center gap-4 px-6 py-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm text-navy-900">{c.nome || "Sem nome"}</p>
-                  <p className="text-[12px] text-navy-900/55">{c.email}</p>
+              <li key={c.id}>
+                <div className="flex items-center gap-4 px-6 py-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm text-navy-900">{c.nome || "Sem nome"}</p>
+                    <p className="text-[12px] text-navy-900/55">{c.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExpandido((v) => (v === c.id ? null : c.id))}
+                    className="shrink-0 inline-flex items-center gap-1.5 border border-navy-100 hover:border-sky text-navy-900 text-xs font-bold px-3 py-2 transition-colors"
+                  >
+                    <BookOpen size={14} />
+                    Cadeiras
+                    {expandido === c.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void eliminar(c)}
+                    title="Eliminar conta"
+                    aria-label={`Eliminar ${c.email}`}
+                    className="shrink-0 p-2 text-crimson hover:bg-cream transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void eliminar(c)}
-                  title="Eliminar conta"
-                  aria-label={`Eliminar ${c.email}`}
-                  className="shrink-0 p-2 text-crimson hover:bg-cream transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {expandido === c.id && (
+                  <CadeirasDocente docente={c} onFechar={() => setExpandido(null)} />
+                )}
               </li>
             ))}
           </ul>

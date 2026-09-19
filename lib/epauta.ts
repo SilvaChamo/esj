@@ -1,5 +1,6 @@
 import type { CursoDocenciaSlug } from "@/lib/docencia";
-import type { RegimeCurso } from "@/lib/curriculo";
+import type { CadeiraCurriculo, RegimeCurso } from "@/lib/curriculo";
+import type { NotaEstudante } from "@/lib/notas";
 
 export type NotaEstudanteEPauta = {
   numeroEstudante: string;
@@ -97,11 +98,36 @@ export const EXEMPLO_EPAUTA_JORNALISMO: EPautaEletronica = {
   ],
 };
 
-export function exportarEpautaPDF(epauta: EPautaEletronica) {
+function escapeHtml(valor: string): string {
+  return valor
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function exportarEpautaPDF(epautaOriginal: EPautaEletronica) {
   if (typeof window === "undefined") return;
 
   const janela = window.open("", "_blank");
   if (!janela) return;
+
+  // Os nomes e números de estudante vêm de dados reais preenchidos pelos
+  // próprios utilizadores no registo — nunca interpolar sem escapar antes
+  // de injectar no HTML exportado (document.write).
+  const epauta: EPautaEletronica = {
+    ...epautaOriginal,
+    cadeira: escapeHtml(epautaOriginal.cadeira),
+    codigoCadeira: escapeHtml(epautaOriginal.codigoCadeira),
+    docenteNome: escapeHtml(epautaOriginal.docenteNome),
+    cursoNome: escapeHtml(epautaOriginal.cursoNome),
+    estudantes: epautaOriginal.estudantes.map((e) => ({
+      ...e,
+      numeroEstudante: escapeHtml(e.numeroEstudante),
+      nomeEstudante: escapeHtml(e.nomeEstudante),
+    })),
+  };
 
   const html = `
     <!DOCTYPE html>
@@ -213,4 +239,40 @@ export function exportarEpautaPDF(epauta: EPautaEletronica) {
 
   janela.document.write(html);
   janela.document.close();
+}
+
+/** Constrói uma pauta eletrónica a partir de dados reais (currículo + notas lançadas) para exportação em PDF. */
+export function montarEpauta(
+  curso: CursoDocenciaSlug,
+  cursoNome: string,
+  regime: RegimeCurso,
+  cadeira: CadeiraCurriculo,
+  notas: NotaEstudante[]
+): EPautaEletronica {
+  return {
+    id: `ep-${cadeira.codigo}`,
+    curso,
+    cursoNome,
+    regime,
+    cadeira: cadeira.nome,
+    codigoCadeira: cadeira.codigo,
+    docenteNome: cadeira.docente,
+    anoLectivo: String(cadeira.anoConclusao || new Date().getFullYear()),
+    semestre: `${cadeira.semestre}º Semestre`,
+    dataPublicacao: new Date().toLocaleDateString("pt-PT", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    estudantes: notas.map((n) => ({
+      numeroEstudante: n.numeroEstudante,
+      nomeEstudante: n.nomeEstudante,
+      teste1: n.teste1 ?? undefined,
+      teste2: n.teste2 ?? undefined,
+      trabalho: n.trabalho ?? undefined,
+      exameNormal: n.exameNormal ?? undefined,
+      mediaFinal: n.mediaFinal ?? undefined,
+      resultado: n.resultado === "Em Frequência" ? "Pendente" : n.resultado,
+    })),
+  };
 }
