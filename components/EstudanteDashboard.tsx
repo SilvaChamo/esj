@@ -908,13 +908,6 @@ export default function EstudanteDashboard({
                         const isReprovado = res === "Reprovado" || res === "Excluído";
                         const lancadaPeloDocente = Boolean(notaReal);
 
-                        const t1 =
-                          notaReal?.teste1 ?? cad.teste1 ?? (temNota ? Number((Number(notaFinalEfetiva) - 0.5).toFixed(1)) : 14.0);
-                        const t2 =
-                          notaReal?.teste2 ?? cad.teste2 ?? (temNota ? Number((Number(notaFinalEfetiva) + 0.5).toFixed(1)) : 14.5);
-                        const trab =
-                          notaReal?.trabalho ?? cad.trabalho ?? (temNota ? Number(Number(notaFinalEfetiva).toFixed(1)) : 15.0);
-
                         return (
                           <Fragment key={cad.id}>
                             <tr
@@ -1019,36 +1012,52 @@ export default function EstudanteDashboard({
                                   colSpan={5}
                                   className="p-4 pl-10 border-t border-navy-100/60"
                                 >
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                  <div className="flex flex-nowrap gap-3 text-xs overflow-x-auto pb-1">
+                                    <div className="flex-1 min-w-[130px] p-3 bg-white rounded border border-navy-100 shadow-sm">
                                       <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
-                                        1º Teste Escrito (30%)
+                                        1ª / 2ª Avaliação
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {t1.toFixed(1)} V
+                                        {notaReal?.teste1?.toFixed(1) ?? "—"} / {notaReal?.teste2?.toFixed(1) ?? "—"}
                                       </span>
                                     </div>
-                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                    <div className="flex-1 min-w-[130px] p-3 bg-white rounded border border-navy-100 shadow-sm">
                                       <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
-                                        2º Teste Escrito (30%)
+                                        1º / 2º Trabalho
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {t2.toFixed(1)} V
+                                        {notaReal?.trabalho?.toFixed(1) ?? "—"} / {notaReal?.trabalho2?.toFixed(1) ?? "—"}
                                       </span>
                                     </div>
-                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                    <div className="flex-1 min-w-[130px] p-3 bg-white rounded border border-navy-100 shadow-sm">
                                       <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
-                                        Trabalho / Pesquisa (40%)
+                                        Nota de Frequência
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {trab.toFixed(1)} V
+                                        {notaReal?.notaFrequencia?.toFixed(1) ?? "—"}
                                       </span>
+                                      {notaReal && (
+                                        <span className="text-[10px] block font-semibold text-navy-900/60">
+                                          {notaReal.estadoFrequencia}
+                                        </span>
+                                      )}
                                     </div>
+                                    {(!notaReal || notaReal.estadoFrequencia === "Admitido") && (
+                                      <div className="flex-1 min-w-[130px] p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                        <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
+                                          Exame Normal{notaReal?.exameRecorrencia !== null && notaReal?.exameRecorrencia !== undefined ? " / Recorrência" : ""}
+                                        </span>
+                                        <span className="font-mono font-bold text-sm text-navy-900">
+                                          {notaReal?.exameNormal?.toFixed(1) ?? "—"}
+                                          {notaReal?.exameRecorrencia !== null && notaReal?.exameRecorrencia !== undefined
+                                            ? ` / ${notaReal.exameRecorrencia.toFixed(1)}`
+                                            : ""}
+                                        </span>
+                                      </div>
+                                    )}
                                     <div
-                                      className={`p-3 bg-white rounded border shadow-sm ${
-                                        isReprovado
-                                          ? "border-crimson/40"
-                                          : "border-leaf/40"
+                                      className={`flex-1 min-w-[130px] p-3 bg-white rounded border shadow-sm ${
+                                        isReprovado ? "border-crimson/40" : "border-leaf/40"
                                       }`}
                                     >
                                       <span
@@ -1056,7 +1065,7 @@ export default function EstudanteDashboard({
                                           isReprovado ? "text-crimson" : "text-leaf"
                                         }`}
                                       >
-                                        Média Final (MF)
+                                        Média Final (MF){!notaReal ? " · histórico" : ""}
                                       </span>
                                       <span
                                         className={`font-mono font-bold text-sm ${
@@ -2179,10 +2188,9 @@ export default function EstudanteDashboard({
                         <th className="p-3 text-center w-12">#</th>
                         <th className="p-3">Nº Estudante</th>
                         <th className="p-3">Nome do Estudante</th>
-                        <th className="p-3 text-center">Teste 1</th>
-                        <th className="p-3 text-center">Teste 2</th>
-                        <th className="p-3 text-center">Trabalho</th>
-                        <th className="p-3 text-center">Exame</th>
+                        <th className="p-3 text-center">Frequência</th>
+                        <th className="p-3 text-center">Exame Normal</th>
+                        <th className="p-3 text-center">Exame Recorrência</th>
                         <th className="p-3 text-center">Média Final</th>
                         <th className="p-3 text-center">Resultado</th>
                       </tr>
@@ -2199,10 +2207,12 @@ export default function EstudanteDashboard({
                             <td className="p-3 text-center font-bold">{idx + 1}</td>
                             <td className="p-3 font-mono font-bold text-sky">{e.numeroEstudante}</td>
                             <td className="p-3">{e.nomeEstudante} {eEu && "(Você)"}</td>
-                            <td className="p-3 text-center">{e.teste1?.toFixed(1) ?? "-"}</td>
-                            <td className="p-3 text-center">{e.teste2?.toFixed(1) ?? "-"}</td>
-                            <td className="p-3 text-center">{e.trabalho?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">
+                              {e.notaFrequencia?.toFixed(1) ?? "-"}
+                              <span className="text-navy-900/50"> · {e.estadoFrequencia}</span>
+                            </td>
                             <td className="p-3 text-center">{e.exameNormal?.toFixed(1) ?? "-"}</td>
+                            <td className="p-3 text-center">{e.exameRecorrencia?.toFixed(1) ?? "-"}</td>
                             <td className="p-3 text-center font-bold text-navy-900">{e.mediaFinal?.toFixed(1) ?? "-"}</td>
                             <td className="p-3 text-center">
                               <span

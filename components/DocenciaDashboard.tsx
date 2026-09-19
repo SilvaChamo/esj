@@ -43,7 +43,8 @@ import {
   type TipoMaterialDocencia,
 } from "@/lib/docencia";
 import { listarMinhasCadeiras, type CadeiraAtribuida } from "@/lib/docencia-cadeiras";
-import { listarPautaCadeira, type NotaEstudante, type ResultadoNota } from "@/lib/notas";
+import { listarPautaCadeira, type NotaEstudante } from "@/lib/notas";
+import { calcularResultadoFinal } from "@/lib/notas-formula";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import LeitorDocumento from "@/components/LeitorDocumento";
 
@@ -57,8 +58,6 @@ type EstudanteBusca = {
   numeroEstudante: string | null;
   curso: CursoDocenciaSlug | null;
 };
-
-const RESULTADOS_NOTA: ResultadoNota[] = ["Aprovado", "Em Frequência", "Reprovado", "Excluído"];
 
 export default function DocenciaDashboard({
   initialSection = "materiais",
@@ -104,9 +103,11 @@ export default function DocenciaDashboard({
   const [estudanteSel, setEstudanteSel] = useState<EstudanteBusca | null>(null);
   const [teste1Form, setTeste1Form] = useState("");
   const [teste2Form, setTeste2Form] = useState("");
-  const [trabalhoForm, setTrabalhoForm] = useState("");
-  const [exameForm, setExameForm] = useState("");
-  const [resultadoForm, setResultadoForm] = useState<ResultadoNota>("Em Frequência");
+  const [trabalho1Form, setTrabalho1Form] = useState("");
+  const [trabalho2Form, setTrabalho2Form] = useState("");
+  const [participacaoForm, setParticipacaoForm] = useState("");
+  const [exameNormalForm, setExameNormalForm] = useState("");
+  const [exameRecorrenciaForm, setExameRecorrenciaForm] = useState("");
   const [notaBusy, setNotaBusy] = useState(false);
   const [notaToast, setNotaToast] = useState<string | null>(null);
   const [notaToastErro, setNotaToastErro] = useState(false);
@@ -200,14 +201,25 @@ export default function DocenciaDashboard({
     return (minhasCadeiras ?? []).find((c) => c.curso === cursoSel && c.cadeiraCodigo === codigoSel) || null;
   }, [cadeiraNotaSel, minhasCadeiras]);
 
-  const mediaCalculada = useMemo(() => {
-    const t1 = Number(teste1Form);
-    const t2 = Number(teste2Form);
-    const tr = Number(trabalhoForm);
-    if (!teste1Form || !teste2Form || !trabalhoForm) return null;
-    if (!Number.isFinite(t1) || !Number.isFinite(t2) || !Number.isFinite(tr)) return null;
-    return Math.round((t1 * 0.3 + t2 * 0.3 + tr * 0.4) * 10) / 10;
-  }, [teste1Form, teste2Form, trabalhoForm]);
+  const numOuUndef = (v: string): number | undefined => {
+    if (!v.trim()) return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const resultadoPrevisto = useMemo(
+    () =>
+      calcularResultadoFinal({
+        teste1: numOuUndef(teste1Form),
+        teste2: numOuUndef(teste2Form),
+        trabalho1: numOuUndef(trabalho1Form),
+        trabalho2: numOuUndef(trabalho2Form),
+        participacao: numOuUndef(participacaoForm),
+        exameNormal: numOuUndef(exameNormalForm),
+        exameRecorrencia: numOuUndef(exameRecorrenciaForm),
+      }),
+    [teste1Form, teste2Form, trabalho1Form, trabalho2Form, participacaoForm, exameNormalForm, exameRecorrenciaForm]
+  );
 
   useEffect(() => {
     if (!cadeiraNotaInfo) {
@@ -240,9 +252,11 @@ export default function DocenciaDashboard({
     setResultadosBusca([]);
     setTeste1Form("");
     setTeste2Form("");
-    setTrabalhoForm("");
-    setExameForm("");
-    setResultadoForm("Em Frequência");
+    setTrabalho1Form("");
+    setTrabalho2Form("");
+    setParticipacaoForm("");
+    setExameNormalForm("");
+    setExameRecorrenciaForm("");
   };
 
   const carregarNotaExistente = (linha: NotaEstudante) => {
@@ -257,9 +271,11 @@ export default function DocenciaDashboard({
     setResultadosBusca([]);
     setTeste1Form(linha.teste1 !== null ? String(linha.teste1) : "");
     setTeste2Form(linha.teste2 !== null ? String(linha.teste2) : "");
-    setTrabalhoForm(linha.trabalho !== null ? String(linha.trabalho) : "");
-    setExameForm(linha.exameNormal !== null ? String(linha.exameNormal) : "");
-    setResultadoForm(linha.resultado);
+    setTrabalho1Form(linha.trabalho !== null ? String(linha.trabalho) : "");
+    setTrabalho2Form(linha.trabalho2 !== null ? String(linha.trabalho2) : "");
+    setParticipacaoForm(linha.participacao !== null ? String(linha.participacao) : "");
+    setExameNormalForm(linha.exameNormal !== null ? String(linha.exameNormal) : "");
+    setExameRecorrenciaForm(linha.exameRecorrencia !== null ? String(linha.exameRecorrencia) : "");
   };
 
   const lancarNota = async (e: FormEvent) => {
@@ -296,10 +312,11 @@ export default function DocenciaDashboard({
           semestre: cadeiraNotaInfo.semestre,
           teste1: teste1Form || null,
           teste2: teste2Form || null,
-          trabalho: trabalhoForm || null,
-          exameNormal: exameForm || null,
-          mediaFinal: mediaCalculada,
-          resultado: resultadoForm,
+          trabalho: trabalho1Form || null,
+          trabalho2: trabalho2Form || null,
+          participacao: participacaoForm || null,
+          exameNormal: exameNormalForm || null,
+          exameRecorrencia: exameRecorrenciaForm || null,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -927,9 +944,12 @@ export default function DocenciaDashboard({
 
                       {estudanteSel && (
                         <form onSubmit={lancarNota} className="space-y-4 pt-2 border-t border-navy-100">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                          <p className="text-[11px] font-bold text-navy-900/70 uppercase tracking-wide pt-3">
+                            Frequência — Testes 70% + Trabalhos 20% + Participação 10%
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                             <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">1º Teste</label>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">1ª Avaliação</label>
                               <input
                                 type="number"
                                 min={0}
@@ -941,7 +961,7 @@ export default function DocenciaDashboard({
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">2º Teste</label>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">2ª Avaliação</label>
                               <input
                                 type="number"
                                 min={0}
@@ -953,51 +973,96 @@ export default function DocenciaDashboard({
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Trabalho</label>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">1º Trabalho</label>
                               <input
                                 type="number"
                                 min={0}
                                 max={20}
                                 step={0.1}
-                                value={trabalhoForm}
-                                onChange={(e) => setTrabalhoForm(e.target.value)}
+                                value={trabalho1Form}
+                                onChange={(e) => setTrabalho1Form(e.target.value)}
                                 className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Exame (opc.)</label>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">2º Trabalho</label>
                               <input
                                 type="number"
                                 min={0}
                                 max={20}
                                 step={0.1}
-                                value={exameForm}
-                                onChange={(e) => setExameForm(e.target.value)}
+                                value={trabalho2Form}
+                                onChange={(e) => setTrabalho2Form(e.target.value)}
+                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Participação (opc.)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={20}
+                                step={0.1}
+                                value={participacaoForm}
+                                onChange={(e) => setParticipacaoForm(e.target.value)}
                                 className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
                               />
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <div className="min-w-[160px]">
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Resultado</label>
-                              <select
-                                value={resultadoForm}
-                                onChange={(e) => setResultadoForm(e.target.value as ResultadoNota)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              >
-                                {RESULTADOS_NOTA.map((r) => (
-                                  <option key={r} value={r}>
-                                    {r}
-                                  </option>
-                                ))}
-                              </select>
+                          {resultadoPrevisto.notaFrequencia !== null && (
+                            <div className="text-xs font-bold text-navy-900 bg-cream/70 rounded px-3 py-2 inline-block">
+                              Nota de Frequência: <span className="text-leaf font-mono text-sm">{resultadoPrevisto.notaFrequencia.toFixed(1)}</span>
+                              {" — "}
+                              <span>{resultadoPrevisto.estadoFrequencia}</span>
                             </div>
-                            {mediaCalculada !== null && (
+                          )}
+
+                          {resultadoPrevisto.estadoFrequencia === "Admitido" && (
+                            <>
+                              <p className="text-[11px] font-bold text-navy-900/70 uppercase tracking-wide">
+                                Admitido ao exame — Média Final = (Frequência + Exame) ÷ 2
+                              </p>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Exame Normal</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    step={0.1}
+                                    value={exameNormalForm}
+                                    onChange={(e) => setExameNormalForm(e.target.value)}
+                                    className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                                  />
+                                </div>
+                                {exameNormalForm !== "" && Number(exameNormalForm) < 10 && (
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Exame de Recorrência</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={20}
+                                      step={0.1}
+                                      value={exameRecorrenciaForm}
+                                      onChange={(e) => setExameRecorrenciaForm(e.target.value)}
+                                      className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          <div className="flex items-center gap-4 flex-wrap">
+                            {resultadoPrevisto.mediaFinal !== null && (
                               <div className="text-xs font-bold text-navy-900">
-                                Média calculada (30/30/40): <span className="text-leaf font-mono text-sm">{mediaCalculada.toFixed(1)}</span>
+                                Média Final: <span className="text-leaf font-mono text-sm">{resultadoPrevisto.mediaFinal.toFixed(1)}</span>
                               </div>
                             )}
+                            <div className="text-xs font-bold text-navy-900">
+                              Resultado: <span className="text-leaf">{resultadoPrevisto.resultado}</span>
+                            </div>
                           </div>
 
                           {notaToast && (
@@ -1034,6 +1099,7 @@ export default function DocenciaDashboard({
                           <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
                             <th className="p-3">Nº</th>
                             <th className="p-3">Estudante</th>
+                            <th className="p-3 text-center">Frequência</th>
                             <th className="p-3 text-center">Média Final</th>
                             <th className="p-3 text-center">Resultado</th>
                             <th className="p-3 text-right">Ação</th>
@@ -1044,6 +1110,12 @@ export default function DocenciaDashboard({
                             <tr key={n.id} className="hover:bg-cream/40 transition-colors">
                               <td className="p-3 font-mono font-bold text-sky">{n.numeroEstudante}</td>
                               <td className="p-3 font-semibold">{n.nomeEstudante}</td>
+                              <td className="p-3 text-center">
+                                {n.notaFrequencia?.toFixed(1) ?? "—"}
+                                {n.notaFrequencia !== null && (
+                                  <span className="text-navy-900/50"> · {n.estadoFrequencia}</span>
+                                )}
+                              </td>
                               <td className="p-3 text-center font-mono font-bold">{n.mediaFinal?.toFixed(1) ?? "—"}</td>
                               <td className="p-3 text-center">{n.resultado}</td>
                               <td className="p-3 text-right">

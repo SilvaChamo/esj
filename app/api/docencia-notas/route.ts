@@ -4,10 +4,9 @@ import { createServerClient } from "@supabase/ssr";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { eSuperAdmin, rotuloAutorConta } from "@/lib/gestao-auth";
+import { calcularResultadoFinal } from "@/lib/notas-formula";
 
 export const dynamic = "force-dynamic";
-
-const RESULTADOS_VALIDOS = ["Aprovado", "Em Frequência", "Reprovado", "Excluído"];
 
 function sessaoSupabase() {
   const cookieStore = cookies();
@@ -50,15 +49,12 @@ export async function POST(request: Request) {
   const curso = String(body?.curso || "");
   const cadeiraCodigo = String(body?.cadeiraCodigo || "");
   const cadeiraNome = String(body?.cadeiraNome || "").trim();
+  const regime = body?.regime === "pos-laboral" ? "pos-laboral" : "diurno";
   const ano = Number(body?.ano) || null;
   const semestre = Number(body?.semestre) || null;
-  const resultado = String(body?.resultado || "Em Frequência");
 
   if (!estudanteId || !numeroEstudante || !nomeEstudante || !curso || !cadeiraCodigo || !cadeiraNome) {
     return NextResponse.json({ error: "Preencha o estudante e a cadeira." }, { status: 400 });
-  }
-  if (!RESULTADOS_VALIDOS.includes(resultado)) {
-    return NextResponse.json({ error: "Resultado inválido." }, { status: 400 });
   }
 
   if (!eSuperAdmin(user)) {
@@ -88,13 +84,24 @@ export async function POST(request: Request) {
   const teste1 = numOuNull(body?.teste1);
   const teste2 = numOuNull(body?.teste2);
   const trabalho = numOuNull(body?.trabalho);
+  const trabalho2 = numOuNull(body?.trabalho2);
+  const participacao = numOuNull(body?.participacao);
   const exameNormal = numOuNull(body?.exameNormal);
-  const mediaInformada = numOuNull(body?.mediaFinal);
-  const mediaCalculada =
-    teste1 !== null && teste2 !== null && trabalho !== null
-      ? Math.round((teste1 * 0.3 + teste2 * 0.3 + trabalho * 0.4) * 10) / 10
-      : null;
-  const mediaFinal = mediaInformada ?? mediaCalculada;
+  const exameRecorrencia = numOuNull(body?.exameRecorrencia);
+
+  // A nota final e o resultado são sempre calculados aqui, nunca confiados
+  // ao ecrã do docente — ver lib/notas-formula.ts para a regra completa
+  // (Frequência = Testes 70% + Trabalhos 20% + Participação 10%; dispensa,
+  // exame normal e recorrência conforme as pautas reais da ESJ).
+  const { mediaFinal, resultado } = calcularResultadoFinal({
+    teste1,
+    teste2,
+    trabalho1: trabalho,
+    trabalho2,
+    participacao,
+    exameNormal,
+    exameRecorrencia,
+  });
 
   const { error } = await admin.from("estudantes_notas").upsert(
     {
@@ -104,12 +111,16 @@ export async function POST(request: Request) {
       curso,
       cadeira_codigo: cadeiraCodigo,
       cadeira_nome: cadeiraNome,
+      regime,
       ano,
       semestre,
       teste1,
       teste2,
       trabalho,
+      trabalho2,
+      participacao,
       exame_normal: exameNormal,
+      exame_recorrencia: exameRecorrencia,
       media_final: mediaFinal,
       resultado,
       docente_id: user.id,

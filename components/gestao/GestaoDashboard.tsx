@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Eye,
   FileText,
+  Globe,
   GraduationCap,
   Image as ImageIcon,
   Images,
@@ -85,6 +86,7 @@ import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
 import ContasDocentes from "@/components/gestao/ContasDocentes";
 import SituacaoEstudantes from "@/components/gestao/SituacaoEstudantes";
+import PublicarPautas from "@/components/gestao/PublicarPautas";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
@@ -95,6 +97,7 @@ type Section =
   | "painel"
   | "candidaturas"
   | "resultados"
+  | "pautas-finais"
   | "calendario"
   | "edital"
   | "noticias"
@@ -147,7 +150,8 @@ const NAV: NavEntry[] = [
     icon: GraduationCap,
     children: [
       { id: "candidaturas", label: "Candidaturas", icon: Users },
-      { id: "resultados", label: "Pautas", icon: ClipboardList },
+      { id: "resultados", label: "Pautas de Admissão", icon: ClipboardList },
+      { id: "pautas-finais", label: "Pautas Finais (Cadeiras)", icon: Globe },
       { id: "calendario", label: "Calendário Académico", icon: Calendar },
       { id: "edital", label: "Edital", icon: FileText },
     ],
@@ -626,6 +630,7 @@ export default function GestaoDashboard() {
           {section === "albuns" && <AlbunsGaleria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
+          {section === "pautas-finais" && <PublicarPautas onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "newsletter" && <NewsletterEnvio onAction={showNote} />}
           {section === "folha" && <FolhaAcademica onAction={showNote} />}

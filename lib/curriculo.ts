@@ -17,9 +17,6 @@ export type CadeiraCurriculo = {
   notaFinal?: number;
   resultado?: "Aprovado" | "Em Frequência" | "Reprovado" | "Excluído";
   anoConclusao?: string;
-  teste1?: number;
-  teste2?: number;
-  trabalho?: number;
 };
 
 export type CurriculoCurso = {
