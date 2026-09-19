@@ -23,6 +23,30 @@ body {
   @apply file:mr-0 file:mb-2 file:block file:max-w-full file:border-0 file:bg-navy-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:tracking-wide file:text-white sm:file:mb-0 sm:file:mr-3 sm:file:inline-block;
 }
 
+.gestao-list-card {
+  @apply overflow-hidden border border-[#d7e1ec] bg-white;
+}
+
+.gestao-list-header {
+  @apply border-b border-[#d7e1ec] bg-[#f4f8fb] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[#52657d];
+}
+
+.gestao-list-row {
+  @apply border-b border-[#d7e1ec] px-3 py-2.5 text-xs text-navy-900 transition-colors last:border-b-0;
+}
+
+.gestao-list-row:nth-child(even) {
+  @apply bg-[#f6f9fc];
+}
+
+.gestao-list-row:hover {
+  @apply bg-[#edf6fb];
+}
+
+.gestao-list-action {
+  @apply inline-flex items-center justify-center border border-transparent p-1.5 text-sky transition-colors hover:border-sky/30 hover:bg-white;
+}
+
 .noticia-editor-area:empty:before {
   content: attr(data-placeholder);
   color: #8c8f94;

@@ -322,9 +322,10 @@ export default function ContasDocentes() {
         </div>
       </div>
 
-      <div className="bg-white border border-navy-100">
-        <div className="px-6 py-4 border-b border-navy-100">
-          <h2 className="font-serif text-lg font-bold text-navy-900">Contas de docente</h2>
+      <div className="gestao-list-card">
+        <div className="gestao-list-header flex items-center justify-between">
+          <h2>Contas de docente</h2>
+          <span>{contas?.length ?? 0} conta{contas?.length === 1 ? "" : "s"}</span>
         </div>
         {loading ? (
           <p className="px-6 py-8 text-sm text-navy-900/55">A carregar…</p>
@@ -333,18 +334,18 @@ export default function ContasDocentes() {
             Ainda não há contas de docente.
           </p>
         ) : (
-          <ul className="divide-y divide-navy-100">
+          <ul>
             {contas.map((c) => (
-              <li key={c.id}>
-                <div className="flex items-center gap-4 px-6 py-4">
+              <li key={c.id} className="gestao-list-row">
+                <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm text-navy-900">{c.nome || "Sem nome"}</p>
-                    <p className="text-[12px] text-navy-900/55">{c.email}</p>
+                    <p className="font-semibold text-xs text-navy-900">{c.nome || "Sem nome"}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-navy-900/55">{c.email}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setExpandido((v) => (v === c.id ? null : c.id))}
-                    className="shrink-0 inline-flex items-center gap-1.5 border border-navy-100 hover:border-sky text-navy-900 text-xs font-bold px-3 py-2 transition-colors"
+                    className="shrink-0 inline-flex items-center gap-1.5 border border-[#d7e1ec] bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-900 transition-colors hover:border-sky"
                   >
                     <BookOpen size={14} />
                     Cadeiras
@@ -355,7 +356,7 @@ export default function ContasDocentes() {
                     onClick={() => void eliminar(c)}
                     title="Eliminar conta"
                     aria-label={`Eliminar ${c.email}`}
-                    className="shrink-0 p-2 text-crimson hover:bg-cream transition-colors"
+                    className="gestao-list-action shrink-0 text-crimson hover:border-crimson/30 hover:text-crimson"
                   >
                     <Trash2 size={16} />
                   </button>
