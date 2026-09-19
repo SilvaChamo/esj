@@ -26,6 +26,9 @@ drop policy if exists "situacao_auth_write" on situacao_estudante;
 create policy "situacao_auth_read" on situacao_estudante
   for select to authenticated using (true);
 
--- Só quem tem sessão iniciada pode escrever (o painel /gestao já exige sessão).
-create policy "situacao_auth_write" on situacao_estudante
-  for all to authenticated using (true) with check (true);
+-- Sem política de escrita para utilizadores autenticados: confirmar/editar a
+-- situação de um estudante é acto da secretaria e passa sempre pela rota
+-- /api/situacao-estudante, que confirma super-admin e usa a chave de serviço
+-- (o mesmo critério de docencia_cadeiras) — caso contrário qualquer conta
+-- autenticada (incluindo um estudante) poderia marcar-se a si própria como
+-- regularizada directamente pela API do Supabase.

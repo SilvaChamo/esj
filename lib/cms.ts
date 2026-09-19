@@ -591,27 +591,21 @@ export async function saveSituacaoEstudante(input: {
   observacao?: string;
   updatedBy?: string;
 }) {
-  const supabase = createBrowserSupabase();
-  const row = {
-    numero_estudante: input.numeroEstudante.trim(),
-    nome: input.nome.trim(),
-    curso: input.curso || null,
-    regime: input.regime || null,
-    regularizado: input.regularizado,
-    observacao: input.observacao?.trim() || null,
-    updated_at: new Date().toISOString(),
-    updated_by: input.updatedBy || null,
-  };
-  const { error } = await supabase
-    .from("situacao_estudante")
-    .upsert(row, { onConflict: "numero_estudante" });
-  if (error) throw error;
+  const res = await fetch("/api/situacao-estudante", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error || "Não foi possível gravar a situação do estudante.");
 }
 
 export async function deleteSituacaoEstudante(id: string) {
-  const supabase = createBrowserSupabase();
-  const { error } = await supabase.from("situacao_estudante").delete().eq("id", id);
-  if (error) throw error;
+  const res = await fetch(`/api/situacao-estudante?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error || "Não foi possível remover o registo.");
 }
 
 /** Usado pelo painel do estudante para saber a sua própria situação real. */
