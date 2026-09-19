@@ -6,12 +6,9 @@
     "dev": "next dev -p 3411",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "1.15.1",
     "@s8fy/emf2svg": "^1.0.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
@@ -31,7 +28,6 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.10",
-    "typescript": "^5.5.4",
-    "wrangler": "4.59.2"
+    "typescript": "^5.5.4"
   }
 }
