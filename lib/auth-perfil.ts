@@ -13,6 +13,8 @@ export type PerfilUtilizador = {
   curso?: CursoDocenciaSlug;
   regime?: RegimeCurso;
   anoLectivo?: string;
+  regularizado?: boolean;
+  avatar_url?: string;
   // Campos específicos de docente:
   departamento?: string;
   cadeiras?: string[];

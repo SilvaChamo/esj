@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -18,15 +18,20 @@ import {
   Eye,
   FileText,
   GraduationCap,
+  Lock,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Printer,
   Receipt,
+  Save,
   Search,
+  Settings,
   ShieldCheck,
   User,
   UserCheck,
+  KeyRound,
   X,
 } from "lucide-react";
 import { MINUTAS } from "@/lib/ensino-docs";
@@ -52,6 +57,7 @@ import LeitorDocumento from "@/components/LeitorDocumento";
 
 type Section =
   | "conta"
+  | "configuracoes"
   | "financeiro"
   | "materiais"
   | "curso-jornalismo"
@@ -75,6 +81,7 @@ export default function EstudanteDashboard({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Estados dos menus sanfona
+  const [menuContaAberto, setMenuContaAberto] = useState(true);
   const [menuMateriaisAberto, setMenuMateriaisAberto] = useState(true);
   const [menuDocumentosAberto, setMenuDocumentosAberto] = useState(false);
 
@@ -88,6 +95,7 @@ export default function EstudanteDashboard({
   const [termoBusca, setTermoBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<"todos" | TipoMaterialDocencia>("todos");
   const [anoSelecionado, setAnoSelecionado] = useState<1 | 2 | 3 | 4>(1);
+  const [semestreSelecionado, setSemestreSelecionado] = useState<number>(0);
   const [cadeirasExpandidas, setCadeirasExpandidas] = useState<Record<string, boolean>>({});
   const [abaFinanceira, setAbaFinanceira] = useState<"recibos" | "recorrencia" | "mudanca" | "taxas">("recibos");
   const [metodoPagamento, setMetodoPagamento] = useState<"mpesa" | "emola" | "banco">("mpesa");
@@ -97,6 +105,23 @@ export default function EstudanteDashboard({
 
   // Pauta eletrónica ativa
   const [epauta, setEpauta] = useState<EPautaEletronica>(EXEMPLO_EPAUTA_JORNALISMO);
+
+  // Estados para as Configurações da Conta
+  const [nomeForm, setNomeForm] = useState("");
+  const [emailForm, setEmailForm] = useState("");
+  const [telefoneForm, setTelefoneForm] = useState("");
+  const [biForm, setBiForm] = useState("");
+  const [enderecoForm, setEnderecoForm] = useState("");
+  const [emergenciaNomeForm, setEmergenciaNomeForm] = useState("");
+  const [emergenciaTelefoneForm, setEmergenciaTelefoneForm] = useState("");
+
+  const [senhaAtualForm, setSenhaAtualForm] = useState("");
+  const [novaSenhaForm, setNovaSenhaForm] = useState("");
+  const [confirmarSenhaForm, setConfirmarSenhaForm] = useState("");
+
+  const [sucessoConfig, setSucessoConfig] = useState<string | null>(null);
+  const [erroConfig, setErroConfig] = useState<string | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
 
   // Calendário
   const calendario = readCalendarioDetalhado();
@@ -178,6 +203,111 @@ export default function EstudanteDashboard({
       .catch(() => setMateriais([]))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (perfil) {
+      if (!nomeForm) setNomeForm(perfil.nome || "");
+      if (!emailForm) setEmailForm(perfil.email || "");
+      if (!telefoneForm && (perfil as any).telefone) setTelefoneForm((perfil as any).telefone);
+      if (!biForm && (perfil as any).bi) setBiForm((perfil as any).bi);
+      if (!enderecoForm && (perfil as any).endereco) setEnderecoForm((perfil as any).endereco);
+      if (!emergenciaNomeForm && (perfil as any).emergenciaNome) setEmergenciaNomeForm((perfil as any).emergenciaNome);
+      if (!emergenciaTelefoneForm && (perfil as any).emergenciaTelefone) setEmergenciaTelefoneForm((perfil as any).emergenciaTelefone);
+    }
+  }, [perfil]);
+
+  const handleGuardarDadosPessoais = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroConfig(null);
+    setSucessoConfig(null);
+    setLoadingConfig(true);
+
+    try {
+      const perfilAtualizado: PerfilUtilizador = {
+        ...perfil,
+        tipo: "estudante",
+        nome: nomeForm,
+        email: emailForm,
+        numeroEstudante: perfil?.numeroEstudante || "20260104MP",
+        curso: perfil?.curso || curso,
+        regime: perfil?.regime || regime,
+        regularizado: perfil?.regularizado !== false,
+        avatar_url: perfil?.avatar_url,
+        ...(telefoneForm && { telefone: telefoneForm }),
+        ...(biForm && { bi: biForm }),
+        ...(enderecoForm && { endereco: enderecoForm }),
+        ...(emergenciaNomeForm && { emergenciaNome: emergenciaNomeForm }),
+        ...(emergenciaTelefoneForm && { emergenciaTelefone: emergenciaTelefoneForm }),
+      } as PerfilUtilizador;
+
+      savePerfilActual(perfilAtualizado);
+      setPerfil(perfilAtualizado);
+
+      const supabase = createBrowserSupabase();
+      if (supabase) {
+        await supabase.auth.updateUser({
+          email: emailForm !== perfil?.email ? emailForm : undefined,
+          data: {
+            full_name: nomeForm,
+            nome: nomeForm,
+            telefone: telefoneForm,
+            bi: biForm,
+            endereco: enderecoForm,
+            emergencia_nome: emergenciaNomeForm,
+            emergencia_telefone: emergenciaTelefoneForm,
+          },
+        });
+      }
+
+      setSucessoConfig("Informações pessoais e de contacto atualizadas com sucesso!");
+    } catch (err: any) {
+      console.error(err);
+      setErroConfig(err?.message || "Erro ao guardar alterações do perfil.");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  const handleAlterarPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroConfig(null);
+    setSucessoConfig(null);
+
+    if (novaSenhaForm.length < 6) {
+      setErroConfig("A nova palavra-passe deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (novaSenhaForm !== confirmarSenhaForm) {
+      setErroConfig("A nova palavra-passe e a confirmação não coincidem.");
+      return;
+    }
+
+    setLoadingConfig(true);
+
+    try {
+      const supabase = createBrowserSupabase();
+      if (supabase) {
+        const { error } = await supabase.auth.updateUser({
+          password: novaSenhaForm,
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+      }
+
+      setSenhaAtualForm("");
+      setNovaSenhaForm("");
+      setConfirmarSenhaForm("");
+      setSucessoConfig("Palavra-passe alterada com sucesso!");
+    } catch (err: any) {
+      console.error(err);
+      setErroConfig(err?.message || "Não foi possível atualizar a palavra-passe. Certifique-se de estar autenticado.");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -306,21 +436,54 @@ export default function EstudanteDashboard({
             {!isSidebarCollapsed && <span>DASHBOARD</span>}
           </button>
 
-          {/* Situação Financeira & Pagamentos */}
-          <button
-            type="button"
-            onClick={() => {
-              setSection("financeiro");
-              setIsMobileMenuOpen(false);
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-semibold rounded-lg transition-colors text-left ${section === "financeiro"
-              ? "bg-sky/15 text-sky-300 border-l-4 border-sky-300 font-bold"
-              : "text-white/80 hover:bg-white/5 hover:text-white"
-              }`}
-          >
-            <CreditCard size={20} className="shrink-0 text-leaf" />
-            {!isSidebarCollapsed && <span>Situação Financeira</span>}
-          </button>
+          {/* MENU PAI: MINHA CONTA (Submenus: Configurações & Situação Financeira) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setMenuContaAberto((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-3 text-sm font-semibold rounded-lg text-white/80 hover:bg-white/5 hover:text-white transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <User size={20} className="shrink-0 text-sky-300" />
+                {!isSidebarCollapsed && <span>Minha Conta</span>}
+              </div>
+              {!isSidebarCollapsed &&
+                (menuContaAberto ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
+            </button>
+
+            {menuContaAberto && !isSidebarCollapsed && (
+              <div className="ml-4 pl-3 border-l border-white/15 space-y-1 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSection("configuracoes");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left py-2 px-3 text-xs font-semibold rounded transition-colors flex items-center gap-2 ${section === "configuracoes"
+                    ? "bg-sky/20 text-sky-300 font-bold"
+                    : "text-white/60 hover:text-white"
+                    }`}
+                >
+                  <Settings size={14} className="shrink-0" />
+                  <span>Configurações</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSection("financeiro");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left py-2 px-3 text-xs font-semibold rounded transition-colors flex items-center gap-2 ${section === "financeiro"
+                    ? "bg-sky/20 text-sky-300 font-bold"
+                    : "text-white/60 hover:text-white"
+                    }`}
+                >
+                  <CreditCard size={14} className="shrink-0 text-leaf" />
+                  <span>Situação Financeira</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Material de Estudo */}
           <button
@@ -471,6 +634,7 @@ export default function EstudanteDashboard({
           <div>
             <h2 className="font-serif font-[800] text-2xl text-navy-900 tracking-tight" style={{ fontWeight: 800 }}>
               {section === "conta" && "DASHBOARD"}
+              {section === "configuracoes" && "Configurações da Conta & Segurança"}
               {section === "financeiro" && "Situação Financeira & Pagamentos Online"}
               {(section.startsWith("curso-") || section === "materiais") && `Material de Estudo — ${CURSOS_DOCENCIA.find((c) => c.slug === curso)?.titulo || "Meu Curso"}`}
               {section === "cadeiras" && `Cadeiras e Docentes Leccionadores (${regime.toUpperCase()})`}
@@ -479,9 +643,14 @@ export default function EstudanteDashboard({
               {section === "doc-minutas" && "Documentos — Minutas Académicas"}
               {section === "doc-requerimentos" && "Documentos — Requerimentos Oficiais"}
             </h2>
-            <span className="text-[11px] font-bold tracking-widest text-sky uppercase mt-0.5 block">
-              Portal do Estudante · ESJ
-            </span>
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <span className="text-[11px] font-bold tracking-widest text-sky uppercase">
+                Portal do Estudante · ESJ
+              </span>
+              <span className="px-2 py-0.5 bg-sky/10 border border-sky/30 text-sky text-[10px] font-extrabold uppercase tracking-wider rounded">
+                {regime.toUpperCase()}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -489,10 +658,6 @@ export default function EstudanteDashboard({
               <UserCheck size={14} />
               <span>Nº {perfil?.numeroEstudante || "20260104MP"}</span>
             </div>
-
-            <span className="px-2.5 py-1.5 bg-sky/10 border border-sky/30 text-sky text-[11px] font-extrabold uppercase tracking-wider rounded">
-              {regime.toUpperCase()}
-            </span>
 
             {/* Botão Sair no topo */}
             <button
@@ -610,21 +775,40 @@ export default function EstudanteDashboard({
                   </p>
                 </div>
 
-                <div className="inline-flex items-center gap-1 bg-white p-1 border border-navy-100 rounded self-start sm:self-auto">
-                  <span className="text-[11px] font-bold text-navy-900/60 px-2 uppercase tracking-wider">Ano Lectivo:</span>
-                  {([1, 2, 3, 4] as const).map((ano) => (
-                    <button
-                      key={ano}
-                      type="button"
-                      onClick={() => setAnoSelecionado(ano)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${anoSelecionado === ano
-                        ? "bg-navy-900 text-white shadow-sm"
-                        : "text-navy-900/60 hover:text-navy-900 hover:bg-cream"
-                        }`}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Seletor de Semestre com Dropdown (PRIMEIRO) */}
+                  <div className="inline-flex items-center gap-2 bg-white px-3 py-1.5 border border-navy-100 rounded">
+                    <span className="text-xs font-bold text-navy-900 flex items-center gap-1">
+                      Semestre <span className="text-sky font-bold">→</span>
+                    </span>
+                    <select
+                      value={semestreSelecionado}
+                      onChange={(e) => setSemestreSelecionado(Number(e.target.value))}
+                      className="bg-cream/70 border border-navy-100 text-navy-900 text-xs font-bold py-1 px-2 rounded focus:outline-none focus:border-sky cursor-pointer"
                     >
-                      {ano}º Ano
-                    </button>
-                  ))}
+                      <option value={0}>Todos os Semestres</option>
+                      <option value={1}>1º Semestre</option>
+                      <option value={2}>2º Semestre</option>
+                    </select>
+                  </div>
+
+                  {/* Seletor de Ano (DEPOIS) */}
+                  <div className="inline-flex items-center gap-1 bg-white p-1 border border-navy-100 rounded">
+                    <span className="text-[11px] font-bold text-navy-900/60 px-2 uppercase tracking-wider">Ano:</span>
+                    {([1, 2, 3, 4] as const).map((ano) => (
+                      <button
+                        key={ano}
+                        type="button"
+                        onClick={() => setAnoSelecionado(ano)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${anoSelecionado === ano
+                          ? "bg-navy-900 text-white shadow-sm"
+                          : "text-navy-900/60 hover:text-navy-900 hover:bg-cream"
+                          }`}
+                      >
+                        {ano}º Ano
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -640,477 +824,194 @@ export default function EstudanteDashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-navy-100 text-navy-900 font-medium">
-                    {anoSelecionado === 1 && (
-                      <>
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor1: !p.jor1 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor1 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Teoria da Comunicação I</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">1º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono">15.1 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
-                              <CheckCircle2 size={12} /> Aprovado
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-leaf font-bold font-sans">Passada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor1 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.5 V</span> <span className="text-[10px] text-navy-900/50">(30%)</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">15.0 V</span> <span className="text-[10px] text-navy-900/50">(30%)</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Trabalho de Pesquisa</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">16.0 V</span> <span className="text-[10px] text-navy-900/50">(20%)</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-leaf/40 shadow-sm">
-                                  <span className="text-leaf text-[10px] uppercase font-bold block">Média Final</span>
-                                  <span className="font-mono font-bold text-sm text-leaf">15.1 V</span> <span className="text-[10px] text-leaf block font-semibold">Aprovado</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                    {(() => {
+                      const cadeirasDoPeriodo = cadeirasCurriculo.filter(
+                        (cad) =>
+                          cad.ano === anoSelecionado &&
+                          (semestreSelecionado === 0 || cad.semestre === semestreSelecionado)
+                      );
 
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor2: !p.jor2 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor2 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Técnicas de Expressão em Língua Portuguesa</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">1º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono">14.0 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
-                              <CheckCircle2 size={12} /> Aprovado
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-leaf font-bold font-sans">Passada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor2 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">13.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Redações Práticas</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-leaf/40 shadow-sm">
-                                  <span className="text-leaf text-[10px] uppercase font-bold block">Média Final</span>
-                                  <span className="font-mono font-bold text-sm text-leaf">14.0 V</span>
-                                </div>
-                              </div>
+                      if (cadeirasDoPeriodo.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={5} className="p-8 text-center text-navy-900/50 italic font-medium">
+                              Nenhuma disciplina registrada para o {anoSelecionado}º Ano {semestreSelecionado > 0 ? `(${semestreSelecionado}º Semestre)` : ""}.
                             </td>
                           </tr>
-                        )}
+                        );
+                      }
 
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor1_3: !p.jor1_3 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor1_3 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Introdução ao Jornalismo & História da Imprensa</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">1º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono">16.0 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
-                              <CheckCircle2 size={12} /> Aprovado
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-leaf font-bold font-sans">Passada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor1_3 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">15.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">16.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Trabalho de Campo</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">16.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-leaf/40 shadow-sm">
-                                  <span className="text-leaf text-[10px] uppercase font-bold block">Média Final</span>
-                                  <span className="font-mono font-bold text-sm text-leaf">16.0 V</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                      return cadeirasDoPeriodo.map((cad) => {
+                        const isExpanded = cadeirasExpandidas[cad.id];
+                        const temNota = cad.notaFinal !== undefined;
+                        const notaStr = temNota ? `${cad.notaFinal}.0 V` : "—";
+                        const res = cad.resultado || "Aprovado";
+                        const isAprovado = res === "Aprovado";
+                        const isFrequencia = res === "Em Frequência";
+                        const isReprovado = res === "Reprovado" || res === "Excluído";
 
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor3: !p.jor3 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer bg-crimson/5"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm text-crimson flex items-center gap-2">
-                            <button type="button" className="p-1 text-crimson hover:text-navy-900">
-                              {cadeirasExpandidas.jor3 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Economia Política da Comunicação</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">1º Ano · 2º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono text-crimson">8.5 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-crimson/10 border border-crimson/30 text-crimson font-bold px-2.5 py-1 rounded text-[11px]">
-                              <AlertTriangle size={12} /> Reprovado / Excluído
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-crimson font-bold font-sans">Chumbada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor3 && (
-                          <tr className="bg-crimson/5">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-crimson/20">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-crimson/20 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-crimson">7.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste Escrito</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">8.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Trabalho Prático</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">10.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-crimson/40 shadow-sm">
-                                  <span className="text-crimson text-[10px] uppercase font-bold block">Situação de Exame</span>
-                                  <span className="font-bold text-xs text-crimson">Recorrência (500,00 MT)</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                        const t1 = cad.teste1 ?? (temNota ? Number((cad.notaFinal! - 0.5).toFixed(1)) : 14.0);
+                        const t2 = cad.teste2 ?? (temNota ? Number((cad.notaFinal! + 0.5).toFixed(1)) : 14.5);
+                        const trab = cad.trabalho ?? (temNota ? Number(cad.notaFinal!.toFixed(1)) : 15.0);
 
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor1_5: !p.jor1_5 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor1_5 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Gêneros Jornalísticos I (Notícia e Reportagem)</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">1º Ano · 2º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono">13.8 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
-                              <CheckCircle2 size={12} /> Aprovado
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-leaf font-bold font-sans">Passada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor1_5 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">13.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Reportagem de Campo</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.5 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-leaf/40 shadow-sm">
-                                  <span className="text-leaf text-[10px] uppercase font-bold block">Média Final</span>
-                                  <span className="font-mono font-bold text-sm text-leaf">13.8 V</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    )}
+                        return (
+                          <Fragment key={cad.id}>
+                            <tr
+                              onClick={() =>
+                                setCadeirasExpandidas((p) => ({
+                                  ...p,
+                                  [cad.id]: !p[cad.id],
+                                }))
+                              }
+                              className={`hover:bg-cream/40 transition-colors cursor-pointer ${
+                                isReprovado
+                                  ? "bg-crimson/5"
+                                  : isFrequencia
+                                  ? "bg-sky/5"
+                                  : ""
+                              }`}
+                            >
+                              <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="p-1 text-navy-900/60 hover:text-sky"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown size={16} />
+                                  ) : (
+                                    <ChevronRight size={16} />
+                                  )}
+                                </button>
+                                <span>{cad.nome}</span>
+                                <span className="text-[10px] text-navy-900/40 font-mono font-normal">
+                                  ({cad.codigo})
+                                </span>
+                              </td>
+                              <td className="p-4 text-navy-900/70">
+                                {cad.ano}º Ano · {cad.semestre}º Semestre
+                              </td>
+                              <td
+                                className={`p-4 text-center font-bold text-sm font-mono ${
+                                  isReprovado
+                                    ? "text-crimson"
+                                    : isFrequencia
+                                    ? "text-sky"
+                                    : "text-navy-900"
+                                }`}
+                              >
+                                {notaStr}
+                              </td>
+                              <td className="p-4 text-center">
+                                {isAprovado && (
+                                  <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
+                                    <CheckCircle2 size={12} /> Aprovado
+                                  </span>
+                                )}
+                                {isFrequencia && (
+                                  <span className="inline-flex items-center gap-1 bg-sky/10 border border-sky/30 text-sky font-bold px-2.5 py-1 rounded text-[11px]">
+                                    <Clock size={12} /> Em Frequência
+                                  </span>
+                                )}
+                                {isReprovado && (
+                                  <span className="inline-flex items-center gap-1 bg-crimson/10 border border-crimson/30 text-crimson font-bold px-2.5 py-1 rounded text-[11px]">
+                                    <AlertTriangle size={12} /> {res}
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                className={`p-4 text-right font-bold font-sans ${
+                                  isReprovado
+                                    ? "text-crimson"
+                                    : isFrequencia
+                                    ? "text-sky"
+                                    : "text-leaf"
+                                }`}
+                              >
+                                {isAprovado
+                                  ? "Passada"
+                                  : isFrequencia
+                                  ? "A Decorrer"
+                                  : "Chumbada"}
+                              </td>
+                            </tr>
 
-                    {anoSelecionado === 2 && (
-                      <>
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor2_1: !p.jor2_1 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor2_1 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Jornalismo de Investigação</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">2º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono">15.5 V</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2.5 py-1 rounded text-[11px]">
-                              <CheckCircle2 size={12} /> Aprovado
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-leaf font-bold font-sans">Passada</td>
-                        </tr>
-                        {cadeirasExpandidas.jor2_1 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">15.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Dossiê Investigativo</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">16.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-leaf/40 shadow-sm">
-                                  <span className="text-leaf text-[10px] uppercase font-bold block">Média Final</span>
-                                  <span className="font-mono font-bold text-sm text-leaf">15.5 V</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor2_2: !p.jor2_2 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer bg-sky/5"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor2_2 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Ciberjornalismo & Mídias Digitais</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">2º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono text-sky">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-sky/10 border border-sky/30 text-sky font-bold px-2.5 py-1 rounded text-[11px]">
-                              <Clock size={12} /> Em Frequência
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-sky font-bold font-sans">A Decorrer</td>
-                        </tr>
-                        {cadeirasExpandidas.jor2_2 && (
-                          <tr className="bg-sky/5">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-sky/20">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste Prático</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">14.0 V</span>
-                                </div>
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Projeto Web</span>
-                                  <span className="font-mono font-bold text-sm text-sky">Em Avaliação</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor2_3: !p.jor2_3 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer bg-sky/5"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor2_3 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Ateliê de Imprensa Escrita</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">2º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-bold text-sm font-mono text-sky">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-sky/10 border border-sky/30 text-sky font-bold px-2.5 py-1 rounded text-[11px]">
-                              <Clock size={12} /> Em Frequência
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-sky font-bold font-sans">A Decorrer</td>
-                        </tr>
-                        {cadeirasExpandidas.jor2_3 && (
-                          <tr className="bg-sky/5">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-sky/20">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Edição de Jornal</span>
-                                  <span className="font-mono font-bold text-sm text-navy-900">15.0 V</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor2_4: !p.jor2_4 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor2_4 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Direito da Comunicação e Liberdade de Imprensa</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">2º Ano · 2º Semestre</td>
-                          <td className="p-4 text-center font-mono text-navy-900/40">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-navy-900/5 text-navy-900/60 font-bold px-2.5 py-1 rounded text-[11px]">
-                              Pendente
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-navy-900/50 font-sans">A Iniciar</td>
-                        </tr>
-                        {cadeirasExpandidas.jor2_4 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Estado da Disciplina</span>
-                                  <span className="font-bold text-xs text-navy-900">A iniciar no 2º Semestre</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    )}
-
-                    {anoSelecionado === 3 && (
-                      <>
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor3_1: !p.jor3_1 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor3_1 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Radiojornalismo e Produção Áudio</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">3º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-mono text-navy-900/40">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-navy-900/5 text-navy-900/60 font-bold px-2.5 py-1 rounded text-[11px]">
-                              Pendente
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-navy-900/50 font-sans">A Iniciar</td>
-                        </tr>
-                        {cadeirasExpandidas.jor3_1 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Estado</span>
-                                  <span className="font-bold text-xs text-navy-900">Programada para 3º Ano</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor3_2: !p.jor3_2 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor3_2 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Telejornalismo e Edição de Vídeo</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">3º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-mono text-navy-900/40">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-navy-900/5 text-navy-900/60 font-bold px-2.5 py-1 rounded text-[11px]">
-                              Pendente
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-navy-900/50 font-sans">A Iniciar</td>
-                        </tr>
-                        {cadeirasExpandidas.jor3_2 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Estado</span>
-                                  <span className="font-bold text-xs text-navy-900">Programada para 3º Ano</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    )}
-
-                    {anoSelecionado === 4 && (
-                      <>
-                        <tr
-                          onClick={() => setCadeirasExpandidas((p) => ({ ...p, jor4_1: !p.jor4_1 }))}
-                          className="hover:bg-cream/40 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-bold font-serif text-sm flex items-center gap-2">
-                            <button type="button" className="p-1 text-navy-900/60 hover:text-sky">
-                              {cadeirasExpandidas.jor4_1 ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <span>Seminário de Projeto de Licenciatura</span>
-                          </td>
-                          <td className="p-4 text-navy-900/70">4º Ano · 1º Semestre</td>
-                          <td className="p-4 text-center font-mono text-navy-900/40">—</td>
-                          <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1 bg-navy-900/5 text-navy-900/60 font-bold px-2.5 py-1 rounded text-[11px]">
-                              Pendente
-                            </span>
-                          </td>
-                          <td className="p-4 text-right text-navy-900/50 font-sans">A Iniciar</td>
-                        </tr>
-                        {cadeirasExpandidas.jor4_1 && (
-                          <tr className="bg-cream/40">
-                            <td colSpan={5} className="p-4 pl-10 border-t border-navy-100/60">
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
-                                  <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Projeto Final</span>
-                                  <span className="font-bold text-xs text-navy-900">A iniciar no 4º Ano</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    )}
+                            {/* Dropdown de testes feitos e resultados ao expandir */}
+                            {isExpanded && (
+                              <tr
+                                className={
+                                  isReprovado
+                                    ? "bg-crimson/5"
+                                    : isFrequencia
+                                    ? "bg-sky/5"
+                                    : "bg-cream/40"
+                                }
+                              >
+                                <td
+                                  colSpan={5}
+                                  className="p-4 pl-10 border-t border-navy-100/60"
+                                >
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                      <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
+                                        1º Teste Escrito (30%)
+                                      </span>
+                                      <span className="font-mono font-bold text-sm text-navy-900">
+                                        {t1.toFixed(1)} V
+                                      </span>
+                                    </div>
+                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                      <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
+                                        2º Teste Escrito (30%)
+                                      </span>
+                                      <span className="font-mono font-bold text-sm text-navy-900">
+                                        {t2.toFixed(1)} V
+                                      </span>
+                                    </div>
+                                    <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
+                                      <span className="text-navy-900/60 text-[10px] uppercase font-bold block">
+                                        Trabalho / Pesquisa (40%)
+                                      </span>
+                                      <span className="font-mono font-bold text-sm text-navy-900">
+                                        {trab.toFixed(1)} V
+                                      </span>
+                                    </div>
+                                    <div
+                                      className={`p-3 bg-white rounded border shadow-sm ${
+                                        isReprovado
+                                          ? "border-crimson/40"
+                                          : "border-leaf/40"
+                                      }`}
+                                    >
+                                      <span
+                                        className={`text-[10px] uppercase font-bold block ${
+                                          isReprovado ? "text-crimson" : "text-leaf"
+                                        }`}
+                                      >
+                                        Média Final (MF)
+                                      </span>
+                                      <span
+                                        className={`font-mono font-bold text-sm ${
+                                          isReprovado ? "text-crimson" : "text-leaf"
+                                        }`}
+                                      >
+                                        {notaStr}
+                                      </span>
+                                      <span
+                                        className={`text-[10px] block font-semibold ${
+                                          isReprovado ? "text-crimson" : "text-leaf"
+                                        }`}
+                                      >
+                                        {res}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -1652,6 +1553,263 @@ export default function EstudanteDashboard({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* SECÇÃO: CONFIGURAÇÕES DA CONTA & SEGURANÇA */}
+        {section === "configuracoes" && (
+          <div className="p-6 md:p-8 space-y-6 w-full">
+            {/* Cabeçalho do perfil */}
+            <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 rounded-xl p-6 sm:p-8 text-white shadow-md border border-navy-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="relative h-16 w-16 rounded-full bg-leaf flex items-center justify-center text-white font-bold text-2xl shadow-inner border-2 border-white/20 shrink-0 overflow-hidden">
+                  {perfil?.avatar_url ? (
+                    <img src={perfil.avatar_url} alt={perfil.nome} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{perfil?.nome ? perfil.nome[0].toUpperCase() : "E"}</span>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-2xl text-white">
+                    Configurações da Conta
+                  </h3>
+                  <p className="text-xs text-white/70 mt-1">
+                    Gerir dados pessoais, contactos de emergência e segurança da sua conta de estudante
+                  </p>
+                </div>
+              </div>
+              <div className="px-3.5 py-2 bg-white/10 rounded-lg text-xs font-semibold text-sky-300 border border-white/15 shrink-0">
+                N.º de Estudante: {perfil?.numeroEstudante || "20260104MP"}
+              </div>
+            </div>
+
+            {/* Mensagens de Sucesso / Erro Globais */}
+            {sucessoConfig && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-semibold flex items-center justify-between gap-3 animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                  <span>{sucessoConfig}</span>
+                </div>
+                <button type="button" onClick={() => setSucessoConfig(null)} className="text-emerald-700 hover:text-emerald-900">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {erroConfig && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs font-semibold flex items-center justify-between gap-3 animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={18} className="text-rose-600 shrink-0" />
+                  <span>{erroConfig}</span>
+                </div>
+                <button type="button" onClick={() => setErroConfig(null)} className="text-rose-700 hover:text-rose-900">
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Form 1: Dados Pessoais e de Contacto */}
+              <div className="lg:col-span-2 bg-white border border-navy-100 rounded-xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="border-b border-navy-100 pb-4">
+                  <h4 className="font-serif text-lg font-bold text-navy-900 flex items-center gap-2">
+                    <User size={20} className="text-sky" /> Dados Pessoais & Contactos
+                  </h4>
+                  <p className="text-xs text-navy-900/60 mt-0.5">
+                    Atualize os seus dados de identificação e números de contacto
+                  </p>
+                </div>
+
+                <form onSubmit={handleGuardarDadosPessoais} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Nome Completo *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={nomeForm}
+                        onChange={(e) => setNomeForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Endereço de E-mail *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={emailForm}
+                        onChange={(e) => setEmailForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Telefone / WhatsApp *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="+258 84/86 000 0000"
+                        value={telefoneForm}
+                        onChange={(e) => setTelefoneForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        N.º de BI / NUIT
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="110100000000A / 100000000"
+                        value={biForm}
+                        onChange={(e) => setBiForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Endereço de Residência (Bairro, Cidade)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Bairro Polana Cimento, Av. Eduardo Mondlane, Maputo"
+                        value={enderecoForm}
+                        onChange={(e) => setEnderecoForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contacto de Emergência */}
+                  <div className="pt-6 border-t border-navy-100 space-y-4">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-navy-900/70">
+                      Contacto de Emergência / Encarregado
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                          Nome do Contacto
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Carlos Zacarias Macuácua (Pai)"
+                          value={emergenciaNomeForm}
+                          onChange={(e) => setEmergenciaNomeForm(e.target.value)}
+                          className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                          Telefone do Contacto
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="+258 82/84/86 000 0000"
+                          value={emergenciaTelefoneForm}
+                          onChange={(e) => setEmergenciaTelefoneForm(e.target.value)}
+                          className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={loadingConfig}
+                      className="bg-navy-800 hover:bg-sky text-white font-bold text-xs px-6 py-3.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                    >
+                      <Save size={16} />
+                      <span>{loadingConfig ? "A GUARDAR..." : "GUARDAR ALTERAÇÕES DO PERFIL"}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Form 2: Alterar Palavra-passe */}
+              <div className="space-y-6">
+                <div className="bg-white border border-navy-100 rounded-xl p-6 sm:p-8 shadow-sm space-y-6">
+                  <div className="border-b border-navy-100 pb-4">
+                    <h4 className="font-serif text-lg font-bold text-navy-900 flex items-center gap-2">
+                      <Lock size={20} className="text-leaf" /> Alterar Palavra-passe
+                    </h4>
+                    <p className="text-xs text-navy-900/60 mt-0.5">
+                      Atualize a senha de acesso ao portal do estudante
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleAlterarPassword} className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Palavra-passe Atual
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={senhaAtualForm}
+                        onChange={(e) => setSenhaAtualForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Nova Palavra-passe *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Mínimo 6 caracteres"
+                        value={novaSenhaForm}
+                        onChange={(e) => setNovaSenhaForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Confirmar Nova Palavra-passe *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Repita a nova palavra-passe"
+                        value={confirmarSenhaForm}
+                        onChange={(e) => setConfirmarSenhaForm(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded-lg text-xs font-medium text-navy-900 focus:outline-none focus:border-sky"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loadingConfig}
+                      className="w-full bg-leaf hover:bg-leaf/90 text-white font-bold text-xs py-3.5 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 mt-2"
+                    >
+                      <KeyRound size={16} />
+                      <span>{loadingConfig ? "A ATUALIZAR..." : "ATUALIZAR PALAVRA-PASSE"}</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Dica de Segurança */}
+                <div className="bg-sky/10 border border-sky/30 rounded-xl p-5 space-y-2 text-xs">
+                  <h5 className="font-bold text-navy-900 flex items-center gap-1.5">
+                    <ShieldCheck size={16} className="text-sky" /> Dica de Segurança
+                  </h5>
+                  <p className="text-navy-900/80 leading-relaxed">
+                    Utilize uma palavra-passe forte contendo letras, números e caracteres especiais. Nunca partilhe a sua senha com terceiros.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
