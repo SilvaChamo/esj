@@ -447,6 +447,8 @@ export default function ContasDocentes({
   const [toast, setToast] = useState<string | null>(null);
   const [toastErro, setToastErro] = useState(false);
   const [expandido, setExpandido] = useState<string | null>(null);
+  // Seleção em lote (Checkboxes) — mesmo padrão de ContasAdministradores.
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
 
   // Popup "Criar conta de docente" — inclui já a escolha das cadeiras.
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
@@ -711,9 +713,56 @@ export default function ContasDocentes({
       await pedir(`/api/docencia-contas?id=${encodeURIComponent(conta.id)}`, {
         method: "DELETE",
       });
+      setSelecionados((prev) => {
+        const novo = new Set(prev);
+        novo.delete(conta.id);
+        return novo;
+      });
       carregar();
     } catch (err) {
       setToast(err instanceof Error ? err.message : "Não foi possível eliminar.");
+      setToastErro(true);
+    }
+  };
+
+  const toggleSelecionar = (id: string) => {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  };
+
+  const todosSelecionados =
+    !!contas && contas.length > 0 && contas.every((c) => selecionados.has(c.id));
+
+  const toggleSelecionarTodos = () => {
+    if (!contas) return;
+    if (todosSelecionados) setSelecionados(new Set());
+    else setSelecionados(new Set(contas.map((c) => c.id)));
+  };
+
+  const eliminarSelecionados = async () => {
+    if (selecionados.size === 0) return;
+    if (
+      !window.confirm(
+        `Eliminar ${selecionados.size} conta${selecionados.size === 1 ? "" : "s"} de docente selecionada${
+          selecionados.size === 1 ? "" : "s"
+        }?`
+      )
+    )
+      return;
+    try {
+      await Promise.all(
+        Array.from(selecionados).map((id) =>
+          pedir(`/api/docencia-contas?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+        )
+      );
+      setSelecionados(new Set());
+      carregar();
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Não foi possível eliminar as contas selecionadas.");
       setToastErro(true);
     }
   };
@@ -740,6 +789,28 @@ export default function ContasDocentes({
         <p className={`text-sm font-semibold ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
       )}
 
+      {selecionados.size > 0 && (
+        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-semibold">
+          <span>{selecionados.size} docente(s) selecionado(s)</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void eliminarSelecionados()}
+              className="inline-flex items-center gap-1 bg-crimson hover:bg-crimson/90 text-white px-3 py-1.5 rounded transition-colors font-bold"
+            >
+              <Trash2 size={13} /> Eliminar Selecionados ({selecionados.size})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelecionados(new Set())}
+              className="text-white/70 hover:text-white px-2 py-1"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="gestao-list-card">
         <div className="gestao-list-header flex items-center justify-between">
           <h2>Contas de docente</h2>
@@ -756,12 +827,21 @@ export default function ContasDocentes({
           <div className="md:hidden divide-y divide-navy-100">
             {contas.map((c) => {
               const cadeiras = cadeirasPorConta[c.id];
+              const estaSelecionado = selecionados.has(c.id);
               return (
-                <div key={c.id} className="p-4 space-y-3">
+                <div key={c.id} className={`p-3 space-y-2 ${estaSelecionado ? "bg-sky/10" : ""}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-navy-900">{c.nome || "Sem nome"}</p>
-                      <p className="text-navy-900/70 text-sm truncate">{c.email}</p>
+                    <div className="flex items-start gap-2 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={estaSelecionado}
+                        onChange={() => toggleSelecionar(c.id)}
+                        className="mt-1 w-3.5 h-3.5 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-navy-900">{c.nome || "Sem nome"}</p>
+                        <p className="text-navy-900/70 text-sm truncate">{c.email}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
@@ -821,38 +901,55 @@ export default function ContasDocentes({
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
-                  <th className="px-6 py-3">Nome do Docente</th>
-                  <th className="px-6 py-3">Email</th>
-                  <th className="px-6 py-3 min-w-[180px]">Cursos</th>
-                  <th className="px-6 py-3 min-w-[420px]">Cadeira(s)</th>
-                  <th className="px-6 py-3 text-right">Ações</th>
+                  <th className="px-3 py-2.5 text-center w-9 border-r border-navy-100/60">
+                    <input
+                      type="checkbox"
+                      checked={todosSelecionados}
+                      onChange={toggleSelecionarTodos}
+                      className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-4 py-2.5 border-r border-navy-100/60">Nome do Docente</th>
+                  <th className="px-4 py-2.5 border-r border-navy-100/60">Email</th>
+                  <th className="px-4 py-2.5 min-w-[180px] border-r border-navy-100/60">Cursos</th>
+                  <th className="px-4 py-2.5 min-w-[420px] border-r border-navy-100/60">Cadeira(s)</th>
+                  <th className="px-4 py-2.5 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-100">
                 {contas.map((c) => {
                   const cadeiras = cadeirasPorConta[c.id];
+                  const estaSelecionado = selecionados.has(c.id);
                   return (
                     <Fragment key={c.id}>
-                      <tr className="hover:bg-cream/40 transition-colors">
-                        <td className="px-6 py-4 font-semibold text-navy-900 align-top">
+                      <tr className={`transition-colors ${estaSelecionado ? "bg-sky/10" : "hover:bg-cream/40"}`}>
+                        <td className="px-3 py-2.5 text-center align-top border-r border-navy-100/60">
+                          <input
+                            type="checkbox"
+                            checked={estaSelecionado}
+                            onChange={() => toggleSelecionar(c.id)}
+                            className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-2.5 font-semibold text-navy-900 align-top border-r border-navy-100/60">
                           {c.nome || "Sem nome"}
                         </td>
-                        <td className="px-6 py-4 text-navy-900/70 align-top">{c.email}</td>
-                        <td className="px-6 py-4 align-top">
+                        <td className="px-4 py-2.5 text-navy-900/70 align-top border-r border-navy-100/60">{c.email}</td>
+                        <td className="px-4 py-2.5 align-top border-r border-navy-100/60">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
                             renderColunaCursos(c.id, cadeiras)
                           )}
                         </td>
-                        <td className="px-6 py-4 align-top">
+                        <td className="px-4 py-2.5 align-top border-r border-navy-100/60">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
                             renderColunaCadeiras(c.id, cadeiras)
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right align-top">
+                        <td className="px-4 py-2.5 text-right align-top">
                           <div className="inline-flex items-center gap-2">
                             <button
                               type="button"
@@ -879,7 +976,7 @@ export default function ContasDocentes({
                       </tr>
                       {expandido === c.id && (
                         <tr>
-                          <td colSpan={5} className="p-0">
+                          <td colSpan={6} className="p-0">
                             <CadeirasDocente
                               docente={c}
                               catalogo={catalogo}

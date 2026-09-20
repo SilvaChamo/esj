@@ -282,7 +282,7 @@ export default function ContasAdministradores() {
                       className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
                     />
                   </th>
-                  <th className="p-2 text-center w-10">#</th>
+                  <th className="p-2 text-center w-10 border-r border-navy-100/60">#</th>
                   <th className="p-2.5 text-left w-32 border-r border-navy-100/60">APELIDO</th>
                   <th className="p-2.5 text-left w-36 pr-[15px] border-r border-navy-100/60">NOME</th>
                   <th className="p-2.5 text-left pl-3">EMAIL DE ACESSO</th>
@@ -317,7 +317,7 @@ export default function ContasAdministradores() {
                         />
                       </td>
 
-                      <td className="p-2 text-center font-mono font-bold text-navy-900 text-sm select-none">
+                      <td className="p-2 text-center font-mono font-bold text-navy-900 text-sm select-none border-r border-navy-100/60">
                         {idx + 1}
                       </td>
 
