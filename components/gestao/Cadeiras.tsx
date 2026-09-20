@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookPlus, Pencil, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { BookPlus, Pencil, RotateCcw, Search, Trash2, Users, X } from "lucide-react";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   montarCatalogo,
@@ -13,6 +13,9 @@ import {
   type CadeiraOverride,
   type CadeiraRemovida,
 } from "@/lib/docencia-cadeiras";
+
+type ContaDocente = { id: string; email: string | null; nome: string | null };
+type CadeiraAtribuidaRow = { curso: string; cadeira_codigo: string };
 
 async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -55,6 +58,17 @@ export default function Cadeiras() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastErro, setToastErro] = useState(false);
 
+  // Docentes desta cadeira — mesma lógica recíproca do selector de cadeiras
+  // no formulário de docente (ContasDocentes.tsx), mas ao contrário: aqui
+  // escolhe-se, para UMA cadeira, quais os docentes que a leccionam.
+  const [docentes, setDocentes] = useState<ContaDocente[]>([]);
+  const [docentesCadeiras, setDocentesCadeiras] = useState<Record<string, CadeiraAtribuidaRow[]>>({});
+  const [docentesSelecionados, setDocentesSelecionados] = useState<Set<string>>(new Set());
+  const [buscaDocente, setBuscaDocente] = useState("");
+  // Identidade (curso+código) da cadeira ANTES desta edição — para saber a
+  // que atribuições dos docentes ir buscar/substituir. Null ao criar de raiz.
+  const [identidadeOriginal, setIdentidadeOriginal] = useState<{ curso: string; codigo: string } | null>(null);
+
   const carregarTudo = () => {
     listarCadeirasExtras().then(({ extras, tabelaFalta }) => {
       setExtras(extras);
@@ -65,6 +79,35 @@ export default function Cadeiras() {
 
   useEffect(carregarTudo, []);
 
+  const carregarDocentes = () => {
+    pedir<{ docentes: ContaDocente[] }>("/api/docencia-contas")
+      .then(({ docentes }) => {
+        setDocentes(docentes);
+        return Promise.all(
+          docentes.map((d) =>
+            pedir<{ cadeiras: CadeiraAtribuidaRow[] }>(
+              `/api/docencia-cadeiras?docenteId=${encodeURIComponent(d.id)}`
+            )
+              .then((r) => [d.id, r.cadeiras] as const)
+              .catch(() => [d.id, []] as const)
+          )
+        );
+      })
+      .then((resultados) => {
+        if (resultados) setDocentesCadeiras(Object.fromEntries(resultados));
+      })
+      .catch(() => {
+        /* sem permissão/chave de serviço — o selector de docentes fica só sem opções */
+      });
+  };
+
+  useEffect(carregarDocentes, []);
+
+  const docentesDaCadeira = (curso: string, codigo: string) =>
+    new Set(
+      docentes.filter((d) => (docentesCadeiras[d.id] ?? []).some((c) => c.curso === curso && c.cadeira_codigo === codigo)).map((d) => d.id)
+    );
+
   const abrirModal = () => {
     setEditando(null);
     setCursoNovo(cursoFiltro !== "todos" ? (cursoFiltro as CursoDocenciaSlug) : CURSOS_DOCENCIA[0].slug);
@@ -73,6 +116,9 @@ export default function Cadeiras() {
     setAnoNovo("1");
     setSemestreNovo("1");
     setToast(null);
+    setIdentidadeOriginal(null);
+    setDocentesSelecionados(new Set());
+    setBuscaDocente("");
     setModalAberto(true);
   };
 
@@ -84,6 +130,9 @@ export default function Cadeiras() {
     setAnoNovo(String(extra.ano));
     setSemestreNovo(String(extra.semestre));
     setToast(null);
+    setIdentidadeOriginal({ curso: extra.curso, codigo: extra.codigo });
+    setDocentesSelecionados(docentesDaCadeira(extra.curso, extra.codigo));
+    setBuscaDocente("");
     setModalAberto(true);
   };
 
@@ -92,10 +141,55 @@ export default function Cadeiras() {
     setCursoNovo(curso);
     setNomeNovo(cad.nome);
     setCodigoNovo(cad.codigo);
+    setIdentidadeOriginal({ curso, codigo: cad.codigo });
+    setDocentesSelecionados(docentesDaCadeira(curso, cad.codigo));
+    setBuscaDocente("");
     setAnoNovo(String(cad.ano));
     setSemestreNovo(String(cad.semestre));
     setToast(null);
     setModalAberto(true);
+  };
+
+  /**
+   * Depois de a cadeira ficar gravada, aplica a selecção de docentes: para
+   * cada docente cuja marcação mudou, vai buscar as SUAS cadeiras actuais
+   * (evita pisar o que outra pessoa possa ter alterado entretanto), troca a
+   * entrada desta cadeira e grava de novo — a rota /api/docencia-cadeiras
+   * substitui sempre o conjunto completo de um docente de cada vez.
+   */
+  const reconciliarDocentes = async (curso: string, codigo: string, nome: string, ano: number, semestre: number) => {
+    const antigos = identidadeOriginal ? docentesDaCadeira(identidadeOriginal.curso, identidadeOriginal.codigo) : new Set<string>();
+    const afetados = docentes.filter((d) => antigos.has(d.id) !== docentesSelecionados.has(d.id));
+    if (afetados.length === 0) return;
+
+    await Promise.all(
+      afetados.map(async (d) => {
+        const atual = await pedir<{ cadeiras: (CadeiraAtribuidaRow & { cadeira_nome: string; ano: number | null; semestre: number | null })[] }>(
+          `/api/docencia-cadeiras?docenteId=${encodeURIComponent(d.id)}`
+        );
+        const semEsta = atual.cadeiras.filter(
+          (c) => !(identidadeOriginal && c.curso === identidadeOriginal.curso && c.cadeira_codigo === identidadeOriginal.codigo)
+        );
+        const cadeiras = docentesSelecionados.has(d.id)
+          ? [...semEsta, { curso, cadeira_codigo: codigo, cadeira_nome: nome, ano, semestre }]
+          : semEsta;
+        await pedir("/api/docencia-cadeiras", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            docenteId: d.id,
+            docenteEmail: d.email,
+            cadeiras: cadeiras.map((c) => ({
+              curso: c.curso,
+              codigo: c.cadeira_codigo,
+              nome: c.cadeira_nome,
+              ano: c.ano,
+              semestre: c.semestre,
+            })),
+          }),
+        });
+      })
+    );
   };
 
   const guardarCadeira = async () => {
@@ -109,6 +203,8 @@ export default function Cadeiras() {
     setGuardando(true);
     setToast(null);
     try {
+      const cursoFinal = editando?.tipo === "base" ? editando.curso : cursoNovo;
+      const codigoFinal = editando?.tipo === "base" ? editando.codigoOriginal : codigo;
       if (editando?.tipo === "base") {
         await pedir("/api/cadeiras-base", {
           method: "PUT",
@@ -135,7 +231,14 @@ export default function Cadeiras() {
           }),
         });
       }
+      try {
+        await reconciliarDocentes(cursoFinal, codigoFinal, nome, Number(anoNovo), Number(semestreNovo));
+      } catch (err) {
+        setNotice(err instanceof Error ? err.message : "A cadeira ficou gravada, mas não foi possível actualizar os docentes.");
+        setNoticeErro(true);
+      }
       carregarTudo();
+      carregarDocentes();
       setModalAberto(false);
     } catch (err) {
       setToast(
@@ -493,6 +596,63 @@ export default function Cadeiras() {
                   partes do sistema (atribuições, materiais, notas).
                 </p>
               )}
+
+              <div className="border-t border-navy-100 pt-3">
+                <p className="text-xs font-bold text-navy-900 mb-2 flex items-center gap-1.5">
+                  <Users size={14} className="text-sky" /> Docentes desta cadeira (opcional)
+                </p>
+                {docentes.length === 0 ? (
+                  <p className="text-[11px] text-navy-900/45">Ainda não há contas de docente criadas.</p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-navy-900/40" />
+                      <input
+                        type="text"
+                        value={buscaDocente}
+                        onChange={(e) => setBuscaDocente(e.target.value)}
+                        placeholder="Pesquisar docente por nome ou correio…"
+                        className="w-full border border-navy-100 pl-8 pr-3 h-9 text-xs outline-none focus:border-sky bg-white"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-1 bg-white border border-navy-100 p-2">
+                      {docentes
+                        .filter((d) => {
+                          const q = buscaDocente.trim().toLowerCase();
+                          if (!q) return true;
+                          return (d.nome || "").toLowerCase().includes(q) || (d.email || "").toLowerCase().includes(q);
+                        })
+                        .map((d) => (
+                          <label
+                            key={d.id}
+                            className="flex items-center gap-2 text-xs text-navy-900 px-2 py-1.5 hover:bg-cream/60 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={docentesSelecionados.has(d.id)}
+                              onChange={() =>
+                                setDocentesSelecionados((prev) => {
+                                  const novo = new Set(prev);
+                                  if (novo.has(d.id)) novo.delete(d.id);
+                                  else novo.add(d.id);
+                                  return novo;
+                                })
+                              }
+                            />
+                            <span className="font-semibold">{d.nome || "Sem nome"}</span>
+                            <span className="text-navy-900/40 truncate">{d.email}</span>
+                          </label>
+                        ))}
+                    </div>
+                    {docentesSelecionados.size > 0 && (
+                      <p className="text-[11px] font-semibold text-navy-900/60">
+                        {docentesSelecionados.size} docente{docentesSelecionados.size === 1 ? "" : "s"} atribuído
+                        {docentesSelecionados.size === 1 ? "" : "s"} a esta cadeira.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {toast && (
                 <p className={`text-xs font-semibold ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
