@@ -90,7 +90,11 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Não foi possível carregar os estudantes.");
 
-      setEstudantes(json.estudantes || []);
+      // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
+      const lista = [...(json.estudantes || [])].sort((a, b) =>
+        (a.nome || "").localeCompare(b.nome || "", "pt")
+      );
+      setEstudantes(lista);
     } catch (err) {
       mostrarToast(err instanceof Error ? err.message : "Erro ao carregar estudantes.", "erro");
     } finally {

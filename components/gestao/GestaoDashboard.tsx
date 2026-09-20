@@ -1827,21 +1827,55 @@ function Candidaturas() {
   >([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState("");
+  // Selecção (base para a futura entrada de resultados em lote — ver
+  // sugestão dada ao pedido do utilizador sobre ligar isto à pauta).
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     listInscricoesGestao()
-      .then(setItems)
+      // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
+      .then((rows) => setItems([...rows].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt"))))
       .catch((err) => {
         if (isMissingTable(err)) setMissing(true);
         else setError(cmsError(err));
       });
   }, []);
 
+  const toggleSelecionar = (protocolo: string) => {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(protocolo)) novo.delete(protocolo);
+      else novo.add(protocolo);
+      return novo;
+    });
+  };
+
+  const todosSelecionados = items.length > 0 && items.every((c) => selecionados.has(c.protocolo));
+  const toggleSelecionarTodos = () => {
+    if (todosSelecionados) setSelecionados(new Set());
+    else setSelecionados(new Set(items.map((c) => c.protocolo)));
+  };
+
   return (
     <div className="gestao-list-card">
-      <div className="gestao-list-header flex items-center justify-between">
+      <div className="gestao-list-header flex items-center justify-between gap-3">
         <h2>Candidaturas</h2>
-        <span>{items.length} candidatura{items.length === 1 ? "" : "s"}</span>
+        {selecionados.size > 0 ? (
+          <div className="flex items-center gap-3 normal-case tracking-normal">
+            <span className="text-navy-900/70">
+              {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelecionados(new Set())}
+              className="text-navy-900/50 hover:text-navy-900"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <span>{items.length} candidatura{items.length === 1 ? "" : "s"}</span>
+        )}
       </div>
       {missing && <SchemaInstall />}
       {error && <p className="px-4 py-2 text-sm text-crimson">{error}</p>}
@@ -1851,28 +1885,53 @@ function Candidaturas() {
         <>
           {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-            {items.map((c) => (
-              <div key={c.protocolo} className="bg-white p-3 text-xs space-y-1.5">
-                <p className="font-mono font-bold text-sky">{c.protocolo}</p>
-                <p className="font-semibold text-navy-900">{c.nome}</p>
-                <p className="text-navy-900/70">
-                  {c.curso}
-                  {c.delegacao ? ` · ${c.delegacao}` : ""}
-                </p>
-                {c.email && <p className="text-navy-900/50">{c.email}</p>}
-                <p className="text-navy-900/40 text-[11px]">
-                  {new Date(c.created_at).toLocaleDateString("pt-PT")}
-                </p>
-              </div>
-            ))}
+            {items.map((c, idx) => {
+              const selecionada = selecionados.has(c.protocolo);
+              return (
+                <div key={c.protocolo} className={`p-3 text-xs space-y-1.5 ${selecionada ? "bg-sky/10" : "bg-white"}`}>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selecionada}
+                      onChange={() => toggleSelecionar(c.protocolo)}
+                      className="mt-0.5 w-3.5 h-3.5 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <p>
+                        <span className="text-navy-900/40 font-normal">{idx + 1}.</span>{" "}
+                        <span className="font-mono font-bold text-sky">{c.protocolo}</span>
+                      </p>
+                      <p className="font-semibold text-navy-900">{c.nome}</p>
+                      <p className="text-navy-900/70">
+                        {c.curso}
+                        {c.delegacao ? ` · ${c.delegacao}` : ""}
+                      </p>
+                      {c.email && <p className="text-navy-900/50">{c.email}</p>}
+                      <p className="text-navy-900/40 text-[11px]">
+                        {new Date(c.created_at).toLocaleDateString("pt-PT")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
-                  <th className="px-3 py-2.5 border-r border-navy-100/60">Nº Candidatura</th>
-                  <th className="px-3 py-2.5 border-r border-navy-100/60">Nome</th>
+                  <th className="px-2 py-2.5 text-center w-8 border-r border-navy-100/60">
+                    <input
+                      type="checkbox"
+                      checked={todosSelecionados}
+                      onChange={toggleSelecionarTodos}
+                      className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nº</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nº Candidatura</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nome</th>
                   <th className="px-3 py-2.5">Curso</th>
                   <th className="px-3 py-2.5">Delegação</th>
                   <th className="px-3 py-2.5">E-mail</th>
@@ -1880,22 +1939,39 @@ function Candidaturas() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-100">
-                {items.map((c) => (
-                  <tr key={c.protocolo} className="hover:bg-cream/40 transition-colors">
-                    <td className="px-3 py-2 font-mono font-bold text-sky whitespace-nowrap border-r border-navy-100/60">
-                      {c.protocolo}
-                    </td>
-                    <td className="px-3 py-2 font-semibold text-navy-900 border-r border-navy-100/60">
-                      {c.nome}
-                    </td>
-                    <td className="px-3 py-2 text-navy-900/70">{c.curso}</td>
-                    <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
-                    <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
-                    <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString("pt-PT")}
-                    </td>
-                  </tr>
-                ))}
+                {items.map((c, idx) => {
+                  const selecionada = selecionados.has(c.protocolo);
+                  return (
+                    <tr
+                      key={c.protocolo}
+                      className={`transition-colors ${selecionada ? "bg-sky/10" : "hover:bg-cream/40"}`}
+                    >
+                      <td className="px-2 py-2 text-center border-r border-navy-100/60">
+                        <input
+                          type="checkbox"
+                          checked={selecionada}
+                          onChange={() => toggleSelecionar(c.protocolo)}
+                          className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-navy-900/50 font-mono whitespace-nowrap border-r border-navy-100/60">
+                        {idx + 1}
+                      </td>
+                      <td className="px-2 py-2 font-mono font-bold text-sky whitespace-nowrap border-r border-navy-100/60">
+                        {c.protocolo}
+                      </td>
+                      <td className="px-2 py-2 font-semibold text-navy-900 whitespace-nowrap border-r border-navy-100/60">
+                        {c.nome}
+                      </td>
+                      <td className="px-3 py-2 text-navy-900/70">{c.curso}</td>
+                      <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
+                      <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
+                      <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
+                        {new Date(c.created_at).toLocaleDateString("pt-PT")}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -2006,7 +2082,9 @@ function Subscritores({
   const refresh = () => {
     listNewsletterGestao()
       .then((rows) => {
-        setItems(rows);
+        // Ordem alfabética (A → Z) pelo e-mail (sem campo "nome" nos subscritores).
+        const ordenados = [...rows].sort((a, b) => (a.email || "").localeCompare(b.email || "", "pt"));
+        setItems(ordenados);
         setEscolhidos((prev) => prev.filter((id) => rows.some((r) => r.id === id)));
       })
       .catch((err) => {

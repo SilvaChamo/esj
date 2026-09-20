@@ -73,7 +73,14 @@ export default function ContasAdministradores() {
     setCarregando(true);
     setErroConfig(false);
     pedir<{ administradores: ContaAdministrador[] }>("/api/administradores-contas")
-      .then((r) => setContas(r.administradores))
+      .then((r) =>
+        // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
+        setContas(
+          [...r.administradores].sort((a, b) =>
+            (a.nome || a.email || "").localeCompare(b.nome || b.email || "", "pt")
+          )
+        )
+      )
       .catch((err) => {
         setContas([]);
         if (String(err.message).includes("serviço")) setErroConfig(true);

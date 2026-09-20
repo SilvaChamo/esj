@@ -595,7 +595,14 @@ export default function ContasDocentes({
     setLoading(true);
     setErroConfig(false);
     pedir<{ docentes: ContaDocente[] }>("/api/docencia-contas")
-      .then((r) => setContas(r.docentes))
+      .then((r) =>
+        // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
+        setContas(
+          [...r.docentes].sort((a, b) =>
+            (a.nome || a.email || "").localeCompare(b.nome || b.email || "", "pt")
+          )
+        )
+      )
       .catch((err) => {
         setContas([]);
         if (String(err.message).includes("serviço")) setErroConfig(true);

@@ -41,7 +41,8 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
   const refresh = () => {
     listSituacaoGestao(pesquisa)
       .then((rows) => {
-        setItems(rows);
+        // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
+        setItems([...rows].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt")));
         setMissing(false);
       })
       .catch((err) => {
