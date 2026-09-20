@@ -9,6 +9,7 @@ import {
   REGIME_LABEL,
   REGIMES,
   classificacao,
+  corResultado,
   cursosDoNivel,
   formatNota,
   mediaFinal,
@@ -203,8 +204,8 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                     Média: {formatNota(media)}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded font-semibold ${
-                      resultado === "Admitido" ? "text-leaf bg-leaf/10" : "text-crimson bg-crimson/10"
+                    className={`px-2 py-0.5 rounded font-semibold ${corResultado(resultado).texto} ${
+                      corResultado(resultado).fundo
                     }`}
                   >
                     {resultado}
@@ -268,7 +269,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                   </td>
                   <td
                     className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
-                      resultado === "Admitido" ? "text-leaf" : "text-crimson"
+                      corResultado(resultado).texto
                     }`}
                   >
                     {resultado}

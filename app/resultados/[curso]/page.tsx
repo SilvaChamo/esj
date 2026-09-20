@@ -5,6 +5,7 @@ import BannerInterior from "@/components/BannerInterior";
 import PautaAdmissao from "@/components/PautaAdmissao";
 import { CarregandoTexto } from "@/components/Carregando";
 import {
+  MEDIA_ADMISSAO,
   MEDIA_MINIMA,
   PESO_HISTORIA,
   PESO_PORTUGUES,
@@ -50,8 +51,9 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
         description={
           <>
             Média final = (Português × {PESO_PORTUGUES * 100}%) + (História ×{" "}
-            {PESO_HISTORIA * 100}%). Admitido se a média for igual ou superior a{" "}
-            {formatNota(MEDIA_MINIMA)} valores.
+            {PESO_HISTORIA * 100}%). Admitido com média igual ou superior a {formatNota(MEDIA_ADMISSAO)} valores;
+            entre {formatNota(MEDIA_MINIMA)} e {formatNota(13.9)} fica em lista de suplentes, sujeita a repescagem
+            pelo registo académico.
           </>
         }
         compact

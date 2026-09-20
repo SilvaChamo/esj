@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, Search } from "lucide-react";
 import {
   ANO_LECTIVO,
   REGIME_LABEL,
+  corResultado,
   formatNota,
   tituloPauta,
   type CursoAdmissao,
@@ -114,8 +115,8 @@ export default function PautaAdmissao({
                     Média: {formatNota(linha.media)}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded font-semibold ${
-                      linha.resultado === "Admitido" ? "text-leaf bg-leaf/10" : "text-crimson bg-crimson/10"
+                    className={`px-2 py-0.5 rounded font-semibold ${corResultado(linha.resultado).texto} ${
+                      corResultado(linha.resultado).fundo
                     }`}
                   >
                     {linha.resultado}
@@ -169,7 +170,7 @@ export default function PautaAdmissao({
                 </td>
                 <td
                   className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
-                    linha.resultado === "Admitido" ? "text-leaf" : "text-crimson"
+                    corResultado(linha.resultado).texto
                   }`}
                 >
                   {linha.resultado}

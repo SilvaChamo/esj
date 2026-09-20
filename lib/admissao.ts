@@ -49,6 +49,10 @@ export const CURSOS_POR_NIVEL: Record<Nivel, CursoAdmissao[]> = {
 
 export const PESO_PORTUGUES = 0.5;
 export const PESO_HISTORIA = 0.5;
+// Admite-se directamente com média ≥ 14. Entre 10 e 13,9 fica em lista de
+// suplentes — só passa a Admitido por repescagem, decidida pelo registo
+// académico, nunca automaticamente. Abaixo de 10, não admitido.
+export const MEDIA_ADMISSAO = 14;
 export const MEDIA_MINIMA = 10;
 
 export type FiltroAdmissao = {
@@ -146,8 +150,17 @@ export function mediaFinal(notaPortugues: number, notaHistoria: number) {
   );
 }
 
-export function classificacao(media: number) {
-  return media >= MEDIA_MINIMA ? "Admitido" : "Não admitido";
+export function classificacao(media: number): "Admitido" | "Suplente" | "Não admitido" {
+  if (media >= MEDIA_ADMISSAO) return "Admitido";
+  if (media >= MEDIA_MINIMA) return "Suplente";
+  return "Não admitido";
+}
+
+/** Cores partilhadas para o badge de resultado, usadas na pauta pública e no painel. */
+export function corResultado(resultado: "Admitido" | "Suplente" | "Não admitido") {
+  if (resultado === "Admitido") return { texto: "text-leaf", fundo: "bg-leaf/10" };
+  if (resultado === "Suplente") return { texto: "text-amber-600", fundo: "bg-amber-500/10" };
+  return { texto: "text-crimson", fundo: "bg-crimson/10" };
 }
 
 export function formatNota(n: number) {

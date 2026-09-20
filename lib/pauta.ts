@@ -12,7 +12,7 @@ export type LinhaPauta = {
   notaPortugues: number;
   notaHistoria: number;
   media: number;
-  resultado: "Admitido" | "Não admitido";
+  resultado: "Admitido" | "Suplente" | "Não admitido";
   publicado: boolean;
 };
 

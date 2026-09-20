@@ -51,7 +51,7 @@ import {
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
-import { ANO_LECTIVO, classificacao, codigoCurso, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
+import { ANO_LECTIVO, classificacao, codigoCurso, corResultado, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   cmsError,
@@ -2041,12 +2041,16 @@ function Candidaturas() {
       });
       setResultadoAberto(null);
 
-      // Aprovado (média ≥ 10) e ainda sem conta: atribui logo o número de
-      // estudante seguinte e cria a conta — não é preciso um segundo clique
-      // em "Criar conta" só porque a nota acabou de ficar registada.
+      // Admitido directo (média ≥ 14) e ainda sem conta: atribui logo o
+      // número de estudante seguinte e cria a conta — não é preciso um
+      // segundo clique em "Criar conta" só porque a nota acabou de ficar
+      // registada. Suplente (10 a 13,9) nunca cria conta sozinho — só por
+      // repescagem manual, decidida pelo registo académico (botão
+      // "Repescar" na coluna Conta).
       const media = mediaFinal(np, nh);
+      const resultado = classificacao(media);
       const jaTemConta = Boolean(turmaPorProtocolo[c.protocolo]);
-      if (classificacao(media) === "Admitido" && !jaTemConta) {
+      if (resultado === "Admitido" && !jaTemConta) {
         setCriandoConta((prev) => new Set(prev).add(c.protocolo));
         try {
           const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
@@ -2077,6 +2081,13 @@ function Candidaturas() {
             return novo;
           });
         }
+      } else if (resultado === "Suplente") {
+        setAviso({
+          texto: `Resultado de ${c.nome} gravado — Suplente (média ${media.toFixed(
+            1
+          )}). Sem conta automática; use "Repescar" na coluna Conta se o registo académico decidir admitir.`,
+          erro: false,
+        });
       } else {
         setAviso({ texto: `Resultado de ${c.nome} gravado — já visível na pauta pública.`, erro: false });
       }
@@ -2285,7 +2296,6 @@ function Candidaturas() {
     }
     const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
     const resultado = classificacao(media);
-    const admitido = resultado === "Admitido";
     return (
       <button
         type="button"
@@ -2295,8 +2305,8 @@ function Candidaturas() {
         }}
         title="Clique para corrigir as notas"
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${
-          admitido ? "bg-leaf/10 text-leaf" : "bg-crimson/10 text-crimson"
-        }`}
+          corResultado(resultado).fundo
+        } ${corResultado(resultado).texto}`}
       >
         <Pencil size={10} /> {resultado} ({media.toFixed(1)})
       </button>
@@ -2307,7 +2317,11 @@ function Candidaturas() {
     const pauta = pautaPorProtocolo[c.protocolo];
     if (!pauta) return <span className="text-navy-900/30">—</span>;
     const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
-    if (classificacao(media) !== "Admitido") return <span className="text-navy-900/30">—</span>;
+    const resultado = classificacao(media);
+    // Suplente: só passa a ter conta por repescagem manual (decisão do
+    // registo académico) — nunca automático, mas o botão fica disponível
+    // aqui para essa decisão. Não admitido não tem conta de forma alguma.
+    if (resultado === "Não admitido") return <span className="text-navy-900/30">—</span>;
     const turma = turmaPorProtocolo[c.protocolo];
     if (turma) {
       return <span className="font-mono font-bold text-navy-900">Nº {turma.numero_estudante}</span>;
@@ -2321,9 +2335,10 @@ function Candidaturas() {
           e.stopPropagation();
           void criarConta(c);
         }}
+        title={resultado === "Suplente" ? "Repescagem — criar conta manualmente" : undefined}
         className="inline-flex items-center gap-1 text-sky hover:underline font-semibold disabled:opacity-50"
       >
-        <UserPlus size={11} /> {aCriar ? "A criar…" : "Criar conta"}
+        <UserPlus size={11} /> {aCriar ? "A criar…" : resultado === "Suplente" ? "Repescar" : "Criar conta"}
       </button>
     );
   };
