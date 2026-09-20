@@ -825,12 +825,19 @@ export default function ContasDocentes({
           </p>
         ) : (
           <>
-          <div className="md:hidden divide-y divide-navy-100">
+          {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md), sem
+              scroll horizontal; a tabela completa só aparece a partir de lg. */}
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
             {contas.map((c) => {
               const cadeiras = cadeirasPorConta[c.id];
               const estaSelecionado = selecionados.has(c.id);
               return (
-                <div key={c.id} className={`p-3 space-y-2 ${estaSelecionado ? "bg-sky/10" : ""}`}>
+                <div
+                  key={c.id}
+                  className={`bg-white p-3 space-y-2 ${estaSelecionado ? "bg-sky/10" : ""} ${
+                    expandido === c.id ? "md:col-span-2" : ""
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
                       <input
@@ -898,7 +905,7 @@ export default function ContasDocentes({
             })}
           </div>
 
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
@@ -912,8 +919,8 @@ export default function ContasDocentes({
                   </th>
                   <th className="px-3 py-2.5 w-44 border-r border-navy-100/60">Nome do Docente</th>
                   <th className="px-3 py-2.5 w-52 border-r border-navy-100/60">Email</th>
-                  <th className="px-4 py-2.5 min-w-[180px]">Cursos</th>
-                  <th className="px-4 py-2.5 min-w-[380px]">Cadeira(s)</th>
+                  <th className="pl-4 pr-1.5 py-2.5 min-w-[140px]">Cursos</th>
+                  <th className="pl-1.5 pr-4 py-2.5 min-w-[380px]">Cadeira(s)</th>
                   <th className="px-4 py-2.5 text-right">Ações</th>
                 </tr>
               </thead>
@@ -944,14 +951,14 @@ export default function ContasDocentes({
                         >
                           {c.email}
                         </td>
-                        <td className="px-4 py-2.5 align-top">
+                        <td className="pl-4 pr-1.5 py-2.5 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
                             renderColunaCursos(c.id, cadeiras)
                           )}
                         </td>
-                        <td className="px-4 py-2.5 align-top">
+                        <td className="pl-1.5 pr-4 py-2.5 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (

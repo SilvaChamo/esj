@@ -866,7 +866,7 @@ export default function EstudanteDashboard({
                 </div>
               </div>
 
-              <div className="md:hidden divide-y divide-navy-100">
+              <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
                 {(() => {
                   const cadeirasDoPeriodo = cadeirasCurriculo.filter(
                     (cad) =>
@@ -902,8 +902,8 @@ export default function EstudanteDashboard({
                         key={cad.id}
                         onClick={() => setCadeirasExpandidas((p) => ({ ...p, [cad.id]: !p[cad.id] }))}
                         className={`p-4 space-y-2 cursor-pointer text-xs ${
-                          isReprovado ? "bg-crimson/5" : isFrequencia ? "bg-sky/5" : ""
-                        }`}
+                          isReprovado ? "bg-crimson/5" : isFrequencia ? "bg-sky/5" : "bg-white"
+                        } ${isExpanded ? "md:col-span-2" : ""}`}
                       >
                         <div className="flex items-start gap-2">
                           {isExpanded ? (
@@ -980,7 +980,7 @@ export default function EstudanteDashboard({
                 })()}
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
@@ -1393,9 +1393,9 @@ export default function EstudanteDashboard({
                   ];
                   return (
                     <>
-                      <div className="md:hidden divide-y divide-navy-100">
+                      <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
                         {recibos.map((r) => (
-                          <div key={r.numero} className="p-4 space-y-1.5 text-xs">
+                          <div key={r.numero} className="bg-white p-4 space-y-1.5 text-xs">
                             <p className="font-mono font-bold text-sky">{r.numero}</p>
                             <p className="font-bold font-serif text-navy-900">{r.desc}</p>
                             <div className="flex flex-wrap items-center gap-1.5 text-navy-900/70">
@@ -1414,7 +1414,7 @@ export default function EstudanteDashboard({
                         ))}
                       </div>
 
-                      <div className="hidden md:block overflow-x-auto">
+                      <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
                           <thead>
                             <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
@@ -2304,11 +2304,11 @@ export default function EstudanteDashboard({
                 </div>
               ) : (
                 <>
-                <div className="md:hidden border border-navy-100 rounded divide-y divide-navy-100">
+                <div className="lg:hidden border border-navy-100 rounded grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
                   {pautaCadeiraAtual.map((e, idx) => {
                     const eEu = perfil?.id === e.estudanteId;
                     return (
-                      <div key={e.id} className={`p-3 text-xs space-y-1.5 ${eEu ? "bg-sky/15 font-bold" : ""}`}>
+                      <div key={e.id} className={`p-3 text-xs space-y-1.5 ${eEu ? "bg-sky/15 font-bold" : "bg-white"}`}>
                         <p>
                           <span className="text-navy-900/40 font-normal">{idx + 1}.</span>{" "}
                           <span className="font-mono font-bold text-sky">{e.numeroEstudante}</span>{" "}
@@ -2346,7 +2346,7 @@ export default function EstudanteDashboard({
                   })}
                 </div>
 
-                <div className="hidden md:block overflow-x-auto border border-navy-100 rounded">
+                <div className="hidden lg:block overflow-x-auto border border-navy-100 rounded">
                   <table className="w-full text-left text-xs text-navy-900 border-collapse">
                     <thead>
                       <tr className="bg-navy-900 text-white border-b border-navy-900">

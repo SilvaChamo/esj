@@ -233,7 +233,8 @@ export default function ContasAdministradores() {
           <div className="p-8 text-center text-sm text-navy-900/60">Ainda não há contas de administrador.</div>
         ) : (
           <>
-          <div className="md:hidden divide-y divide-navy-100">
+          {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
             {contas.map((c) => {
               const { apelidoUpper, primeiroNome } = formatarNome(c.nome || c.email || "—");
               const estaSelecionado = selecionados.has(c.id);
@@ -280,7 +281,7 @@ export default function ContasAdministradores() {
             })}
           </div>
 
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">

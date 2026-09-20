@@ -402,7 +402,8 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
           </div>
         ) : (
           <>
-          <div className="md:hidden divide-y divide-navy-100">
+          {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
             {estudantes.map((std) => {
               const { apelidoUpper, primeiroNome } = formatarNomeEstudante(std.nome);
               const nomeCurso = CURSOS_DOCENCIA.find((c) => c.slug === std.curso)?.titulo || std.curso;
@@ -479,7 +480,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
             })}
           </div>
 
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">

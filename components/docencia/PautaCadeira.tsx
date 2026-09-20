@@ -387,8 +387,9 @@ export default function PautaCadeira({
         </span>
       </div>
 
-      {/* Cartões (telemóvel) — mesmos campos e cálculo da tabela, em coluna única */}
-      <div className="md:hidden divide-y divide-navy-100">
+      {/* Cartões (telemóvel/tablet) — mesmos campos e cálculo da tabela; 1
+          coluna em telemóvel, 2 em tablet (md). */}
+      <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
         {linhas.map((l, idx) => {
           const calc = calcularResultadoPauta(l.teste1, l.teste2, l.trabalho, l.exame);
           const campo = (
@@ -419,7 +420,7 @@ export default function PautaCadeira({
             </label>
           );
           return (
-            <div key={l.numeroEstudante} className="p-4 space-y-3 text-xs">
+            <div key={l.numeroEstudante} className="bg-white p-4 space-y-3 text-xs">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-mono font-bold text-sky text-[13px]">
@@ -453,7 +454,7 @@ export default function PautaCadeira({
       </div>
 
       {/* Tabela com cabeçalho fixo – scroll feito pela página */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="sticky top-0 z-20">
             <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">

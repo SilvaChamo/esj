@@ -223,13 +223,13 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
           Ainda sem candidatos nesta pauta.
         </div>
       ) : (
-        <div className="md:hidden bg-white border border-navy-100 divide-y divide-navy-100">
+        <div className="lg:hidden bg-navy-100 border border-navy-100 grid grid-cols-1 md:grid-cols-2 gap-px">
           {itemsPagina.map((row, i) => {
             const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
             const resultado = classificacao(media);
             const ordem = (paginaAtual - 1) * porPagina + i + 1;
             return (
-              <div key={row.id} className="p-3 text-xs space-y-1.5">
+              <div key={row.id} className="bg-white p-3 text-xs space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold text-navy-900">
                     <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
@@ -269,7 +269,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         </div>
       )}
 
-      <div className="hidden md:block bg-white border border-navy-100 overflow-x-auto">
+      <div className="hidden lg:block bg-white border border-navy-100 overflow-x-auto">
         <table className="w-full min-w-[760px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
@@ -334,7 +334,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         </table>
       </div>
       {items.length > 0 && (
-        <div className="bg-white md:border-x md:border-b border-navy-100 px-4 py-3 md:border-t-0 border-t flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white lg:border-x lg:border-b border-navy-100 px-4 py-3 lg:border-t-0 border-t flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-navy-900/50">
             {items.length} candidato{items.length === 1 ? "" : "s"} nesta pauta
           </p>

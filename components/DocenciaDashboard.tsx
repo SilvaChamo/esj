@@ -1065,9 +1065,9 @@ export default function DocenciaDashboard({
                 <p className="text-sm text-navy-900/60">Ainda não foram publicados ficheiros.</p>
               ) : (
                 <>
-                <div className="md:hidden divide-y divide-navy-100">
+                <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100 border border-navy-100">
                   {materiais.map((m) => (
-                    <div key={m.id} className="py-3 text-xs space-y-1.5">
+                    <div key={m.id} className="bg-white px-3 py-3 text-xs space-y-1.5">
                       <p className="font-semibold text-navy-900">{m.titulo}</p>
                       <div className="flex flex-wrap items-center gap-1.5 text-navy-900/70">
                         <span>{m.curso.toUpperCase()}</span>
@@ -1093,7 +1093,7 @@ export default function DocenciaDashboard({
                   ))}
                 </div>
 
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden lg:block overflow-x-auto">
                   <table className="w-full text-left text-xs text-navy-900 border-collapse">
                     <thead>
                       <tr className="border-b border-navy-100 bg-cream/60">

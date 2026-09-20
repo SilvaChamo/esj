@@ -687,9 +687,10 @@ export default function Galeria() {
         </div>
       ) : (
         <>
-        <div className="md:hidden bg-white border border-[#ccd0d4] divide-y divide-[#f0f0f1]">
+        {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
+        <div className="lg:hidden bg-[#f0f0f1] border border-[#ccd0d4] grid grid-cols-1 md:grid-cols-2 gap-px">
           {paginatedFiles.map((file) => (
-            <div key={file.name} className="p-3 flex items-center gap-3">
+            <div key={file.name} className="bg-white p-3 flex items-center gap-3">
               <input
                 type="checkbox"
                 checked={selectedIds.has(file.name)}
@@ -728,7 +729,7 @@ export default function Galeria() {
           ))}
         </div>
 
-        <div className="hidden md:block bg-white border border-[#ccd0d4] overflow-x-auto">
+        <div className="hidden lg:block bg-white border border-[#ccd0d4] overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white text-left text-[13px] font-bold border-b border-[#ccd0d4]">

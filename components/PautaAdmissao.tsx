@@ -93,12 +93,12 @@ export default function PautaAdmissao({
       )}
 
       {visiveis.length > 0 && (
-        <div className="md:hidden print:hidden divide-y divide-navy-100">
+        <div className="lg:hidden print:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
           {visiveis.map(({ linha, ordem }, i) => {
             const naPagina = Math.floor(i / porPagina) + 1 === paginaAtual;
             if (!naPagina) return null;
             return (
-              <div key={linha.id} className="px-4 py-2.5 text-xs space-y-1">
+              <div key={linha.id} className="bg-white px-4 py-2.5 text-xs space-y-1">
                 <p className="font-semibold text-navy-900">
                   <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
                   <span className="uppercase">{linha.apelido}</span> {linha.nome}
@@ -128,7 +128,7 @@ export default function PautaAdmissao({
       )}
 
       {visiveis.length > 0 && (
-      <div className="hidden md:block print:block overflow-x-auto">
+      <div className="hidden lg:block print:block overflow-x-auto">
         <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
