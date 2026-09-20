@@ -2012,7 +2012,11 @@ function Subscritores({
   };
 
   const linha =
-    "gestao-list-row grid grid-cols-[auto_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
+    "gestao-list-row grid grid-cols-[auto_2.5rem_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
+  // Colunas separadas por uma linha vertical até ao e-mail (a coluna
+  // identificadora — não há campo "nome" nos subscritores); as restantes
+  // ficam livres, como na lista de docentes.
+  const celulaComLinha = "self-stretch flex items-center border-r border-navy-100/60 pr-2";
 
   return (
     <div className="gestao-list-card">
@@ -2022,17 +2026,20 @@ function Subscritores({
       <ul>
         {items.length > 0 && (
           <li className={`${linha} gestao-list-header`}>
-            <input
-              type="checkbox"
-              checked={todos}
-              ref={(el) => {
-                if (el) el.indeterminate = alguns;
-              }}
-              onChange={() => setEscolhidos(todos ? [] : items.map((s) => s.id))}
-              aria-label="Seleccionar todos"
-            />
+            <span className={celulaComLinha}>
+              <input
+                type="checkbox"
+                checked={todos}
+                ref={(el) => {
+                  if (el) el.indeterminate = alguns;
+                }}
+                onChange={() => setEscolhidos(todos ? [] : items.map((s) => s.id))}
+                aria-label="Seleccionar todos"
+              />
+            </span>
+            <span className={`text-xs font-semibold text-navy-900 ${celulaComLinha}`}>Nº</span>
             {escolhidos.length > 1 ? (
-              <span className="flex items-center gap-3 min-w-0">
+              <span className={`flex items-center gap-3 min-w-0 ${celulaComLinha}`}>
                 <button
                   type="button"
                   disabled={busy}
@@ -2072,22 +2079,25 @@ function Subscritores({
                 </button>
               </span>
             ) : (
-              <span className="text-xs font-semibold text-navy-900">E-mail</span>
+              <span className={`text-xs font-semibold text-navy-900 ${celulaComLinha}`}>E-mail</span>
             )}
             <span className="text-xs font-semibold text-navy-900">Telemóvel</span>
             <span className="text-xs font-semibold text-navy-900">Data de registo</span>
             <span className="text-xs font-semibold text-navy-900 text-right">Acção</span>
           </li>
         )}
-        {items.map((s) => (
+        {items.map((s, i) => (
           <li key={s.id} className={linha}>
-            <input
-              type="checkbox"
-              checked={escolhidos.includes(s.id)}
-              onChange={() => toggleUm(s.id)}
-              aria-label={s.email}
-            />
-            <span className="min-w-0 truncate text-sm text-navy-900">{s.email}</span>
+            <span className={celulaComLinha}>
+              <input
+                type="checkbox"
+                checked={escolhidos.includes(s.id)}
+                onChange={() => toggleUm(s.id)}
+                aria-label={s.email}
+              />
+            </span>
+            <span className={`text-xs text-navy-900/50 font-mono ${celulaComLinha}`}>{i + 1}</span>
+            <span className={`min-w-0 truncate text-sm text-navy-900 ${celulaComLinha}`}>{s.email}</span>
             <span className="text-sm text-navy-900/80">{s.telefone || "—"}</span>
             <span className="text-[11px] text-navy-900/50">
               {new Date(s.created_at).toLocaleDateString("pt-PT")}

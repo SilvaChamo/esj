@@ -192,31 +192,41 @@ export default function ContasAdministradores() {
         </div>
       )}
 
-      {/* Barra de Ações em Lote quando há checkboxes selecionadas */}
-      {selecionados.size > 0 && (
-        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-semibold">
-          <span>{selecionados.size} administrador(es) selecionado(s)</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmarEliminarLote(true)}
-              className="inline-flex items-center gap-1 bg-crimson hover:bg-crimson/90 text-white px-3 py-1.5 rounded transition-colors font-bold"
-            >
-              <Trash2 size={13} /> Eliminar Selecionados ({selecionados.size})
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelecionados(new Set())}
-              className="text-white/70 hover:text-white px-2 py-1"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Tabela de Administradores */}
       <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden">
+        {/* Barra do título faz sempre parte da estrutura — ao seleccionar, só o
+            lado direito troca para as acções em lote, sem inserir um novo
+            bloco que empurre o resto da página. */}
+        {!carregando && contas.length > 0 && (
+          <div className="px-4 py-2.5 border-b border-navy-100 bg-cream/40 flex items-center justify-between gap-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-navy-900/70">Contas de administrador</h2>
+            {selecionados.size > 0 ? (
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-navy-900/70 font-semibold">
+                  {selecionados.size} selecionado{selecionados.size === 1 ? "" : "s"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmarEliminarLote(true)}
+                  className="inline-flex items-center gap-1 text-crimson hover:text-[#b32d2e] font-bold"
+                >
+                  <Trash2 size={12} /> Eliminar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelecionados(new Set())}
+                  className="text-navy-900/50 hover:text-navy-900 font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs font-semibold text-navy-900/50">
+                {contas.length} conta{contas.length === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+        )}
         {carregando ? (
           <div className="p-8 text-center text-sm text-navy-900/60">A carregar lista de administradores…</div>
         ) : contas.length === 0 ? (

@@ -43,6 +43,8 @@ export default function Cadeiras() {
   const [verEliminadas, setVerEliminadas] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [noticeErro, setNoticeErro] = useState(false);
+  // Seleção em lote (checkboxes) — mesma lógica das listas de contas.
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
 
   const eliminadas = useMemo(() => cadeirasBaseRemovidas(overrides), [overrides]);
 
@@ -363,6 +365,79 @@ export default function Cadeiras() {
     }
   };
 
+  const toggleSelecionada = (curso: string, codigo: string) => {
+    const k = `${curso}::${codigo}`;
+    setSelecionadas((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(k)) novo.delete(k);
+      else novo.add(k);
+      return novo;
+    });
+  };
+
+  const toggleTodasNaLista = (itens: { curso: string; codigo: string }[]) => {
+    setSelecionadas((prev) => {
+      const novo = new Set(prev);
+      const todas = itens.every((c) => novo.has(`${c.curso}::${c.codigo}`));
+      itens.forEach((c) => {
+        const k = `${c.curso}::${c.codigo}`;
+        if (todas) novo.delete(k);
+        else novo.add(k);
+      });
+      return novo;
+    });
+  };
+
+  const eliminarSelecionadas = async () => {
+    if (selecionadas.size === 0) return;
+    if (!window.confirm(`Eliminar/esconder ${selecionadas.size} cadeira(s) selecionada(s)?`)) return;
+    const extrasPorChaveAtual = new Map(extras.map((e) => [`${e.curso}::${e.codigo}`, e]));
+    const alvos = catalogo
+      .flatMap((g) => g.cadeiras.map((c) => ({ curso: g.curso, codigo: c.codigo })))
+      .filter((c) => selecionadas.has(`${c.curso}::${c.codigo}`));
+    try {
+      await Promise.all(
+        alvos.map((c) => {
+          const extra = extrasPorChaveAtual.get(`${c.curso}::${c.codigo}`);
+          return extra
+            ? pedir(`/api/cadeiras-adicionais?id=${encodeURIComponent(extra.id)}`, { method: "DELETE" })
+            : pedir(
+                `/api/cadeiras-base?curso=${encodeURIComponent(c.curso)}&codigo=${encodeURIComponent(c.codigo)}`,
+                { method: "DELETE" }
+              );
+        })
+      );
+      setSelecionadas(new Set());
+      carregarTudo();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Não foi possível eliminar as cadeiras selecionadas.");
+      setNoticeErro(true);
+    }
+  };
+
+  const reporSelecionadas = async () => {
+    if (selecionadas.size === 0) return;
+    const alvos = eliminadas.filter((c) => selecionadas.has(`${c.curso}::${c.codigo}`));
+    try {
+      await Promise.all(
+        alvos.map((c) =>
+          pedir("/api/cadeiras-base", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ curso: c.curso, codigo: c.codigo }),
+          })
+        )
+      );
+      setNotice(`${alvos.length} cadeira${alvos.length === 1 ? "" : "s"} reposta${alvos.length === 1 ? "" : "s"} no catálogo.`);
+      setNoticeErro(false);
+      setSelecionadas(new Set());
+      carregarTudo();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Não foi possível repor as cadeiras selecionadas.");
+      setNoticeErro(true);
+    }
+  };
+
   const q = busca.trim().toLowerCase();
   const extrasPorChave = new Map(extras.map((e) => [`${e.curso}::${e.codigo}`, e]));
 
@@ -374,8 +449,44 @@ export default function Cadeiras() {
 
       <div className="bg-white border border-navy-100">
         <div className="px-6 py-4 border-b border-navy-100 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-          <h2 className="font-serif text-lg font-bold text-navy-900">Cadeiras</h2>
-          <div className="flex flex-col sm:flex-row gap-2">
+          {/* Título faz sempre parte da estrutura — ao seleccionar, as acções
+              em lote aparecem ao lado dele, sem inserir um bloco novo que
+              empurre o resto da página. */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="font-serif text-lg font-bold text-navy-900">Cadeiras</h2>
+            {selecionadas.size > 0 && (
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-navy-900/60 font-semibold">
+                  {selecionadas.size} selecionada{selecionadas.size === 1 ? "" : "s"}
+                </span>
+                {verEliminadas ? (
+                  <button
+                    type="button"
+                    onClick={() => void reporSelecionadas()}
+                    className="inline-flex items-center gap-1 text-leaf hover:text-leaf/80 font-bold"
+                  >
+                    <RotateCcw size={12} /> Repor
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void eliminarSelecionadas()}
+                    className="inline-flex items-center gap-1 text-crimson hover:text-[#b32d2e] font-bold"
+                  >
+                    <Trash2 size={12} /> Eliminar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelecionadas(new Set())}
+                  className="text-navy-900/50 hover:text-navy-900 font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
             <div className="relative w-full sm:w-64">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-navy-900/40" />
               <input
@@ -386,10 +497,13 @@ export default function Cadeiras() {
                 className="w-full border border-navy-100 pl-8 pr-3 h-9 text-xs outline-none focus:border-sky bg-white"
               />
             </div>
+            {/* Selectores sem largura fixa — mostram sempre o texto completo
+                (nomes de cursos mais longos, como "Biblioteconomia e
+                Documentação", deixavam de caber). */}
             <select
               value={cursoFiltro}
               onChange={(e) => setCursoFiltro(e.target.value)}
-              className="border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white sm:w-56"
+              className="w-full sm:w-auto border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white"
             >
               <option value="todos">Todos os cursos</option>
               {CURSOS_DOCENCIA.map((c) => (
@@ -398,23 +512,10 @@ export default function Cadeiras() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={() => setVerEliminadas((v) => !v)}
-              title={verEliminadas ? "Ver cadeiras do catálogo" : "Ver cadeiras eliminadas"}
-              className={`shrink-0 inline-flex items-center justify-center gap-1.5 h-9 px-3 text-xs font-bold border transition-colors ${
-                verEliminadas
-                  ? "bg-crimson/10 border-crimson/30 text-crimson"
-                  : "border-navy-100 text-navy-900/50 hover:text-crimson hover:border-crimson/30"
-              }`}
-            >
-              <Trash2 size={14} />
-              {eliminadas.length > 0 && <span>{eliminadas.length}</span>}
-            </button>
             <select
               value={anoFiltro}
               onChange={(e) => setAnoFiltro(e.target.value)}
-              className="border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white sm:w-28"
+              className="w-full sm:w-auto border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white"
             >
               <option value="todos">Todos os anos</option>
               {[1, 2, 3, 4].map((a) => (
@@ -426,7 +527,7 @@ export default function Cadeiras() {
             <select
               value={semestreFiltro}
               onChange={(e) => setSemestreFiltro(e.target.value)}
-              className="border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white sm:w-36"
+              className="w-full sm:w-auto border border-navy-100 px-3 h-9 text-xs outline-none focus:border-sky bg-white"
             >
               <option value="todos">Todos os semestres</option>
               {[1, 2].map((s) => (
@@ -435,6 +536,24 @@ export default function Cadeiras() {
                 </option>
               ))}
             </select>
+            {/* Botão "ver eliminadas" tirado de entre os selectores — fica no
+                fim da barra de filtros. */}
+            <button
+              type="button"
+              onClick={() => {
+                setVerEliminadas((v) => !v);
+                setSelecionadas(new Set());
+              }}
+              title={verEliminadas ? "Ver cadeiras do catálogo" : "Ver cadeiras eliminadas"}
+              className={`shrink-0 inline-flex items-center justify-center gap-1.5 h-9 px-3 text-xs font-bold border transition-colors ${
+                verEliminadas
+                  ? "bg-crimson/10 border-crimson/30 text-crimson"
+                  : "border-navy-100 text-navy-900/50 hover:text-crimson hover:border-crimson/30"
+              }`}
+            >
+              <Trash2 size={14} />
+              {eliminadas.length > 0 && <span>{eliminadas.length}</span>}
+            </button>
           </div>
         </div>
 
@@ -462,10 +581,20 @@ export default function Cadeiras() {
                 if (lista.length === 0) {
                   return <p className="text-xs text-navy-900/45 italic">Sem cadeiras eliminadas.</p>;
                 }
+                const todasSelecionadas = lista.every((c) => selecionadas.has(`${c.curso}::${c.codigo}`));
                 return (
                   <div className="border border-navy-100">
-                    <div className="hidden sm:grid grid-cols-[90px_1fr_110px_60px_92px_70px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
-                      <span>Código</span>
+                    <div className="hidden sm:grid grid-cols-[24px_28px_90px_1fr_110px_60px_92px_70px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
+                      <span className="flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={todasSelecionadas}
+                          onChange={() => toggleTodasNaLista(lista)}
+                          className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                        />
+                      </span>
+                      <span>Nº</span>
+                      <span className="border-r border-navy-100/60 pr-3">Código</span>
                       <span>Nome</span>
                       <span>Curso</span>
                       <span>Ano</span>
@@ -473,31 +602,48 @@ export default function Cadeiras() {
                       <span className="text-right">Gestão</span>
                     </div>
                     <div className="divide-y divide-navy-100">
-                      {lista.map((cad) => (
-                        <div
-                          key={`${cad.curso}::${cad.codigo}`}
-                          className="flex items-start justify-between gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[90px_1fr_110px_60px_92px_70px] sm:items-center sm:py-2 text-xs"
-                        >
-                          <div className="min-w-0 sm:contents">
-                            <span className="font-mono text-navy-900/50 block sm:inline">{cad.codigo}</span>
-                            <span className="text-navy-900/70 block sm:inline truncate">{cad.nome}</span>
-                            <span className="text-navy-900/40 block sm:inline">{cad.cursoNome}</span>
-                            <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
-                            <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>
+                      {lista.map((cad, idx) => {
+                        const chave = `${cad.curso}::${cad.codigo}`;
+                        const selecionada = selecionadas.has(chave);
+                        return (
+                          <div
+                            key={chave}
+                            className={`flex items-start gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[24px_28px_90px_1fr_110px_60px_92px_70px] sm:items-center sm:py-2 text-xs ${
+                              selecionada ? "bg-sky/5" : ""
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selecionada}
+                              onChange={() => toggleSelecionada(cad.curso, cad.codigo)}
+                              className="mt-0.5 sm:mt-0 w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0 sm:justify-self-center"
+                            />
+                            <span className="text-navy-900/40 font-mono text-[11px] shrink-0 sm:text-center">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0 flex-1 sm:contents">
+                              <span className="font-mono text-navy-900/50 block sm:inline sm:border-r sm:border-navy-100/60 sm:pr-2">
+                                {cad.codigo}
+                              </span>
+                              <span className="text-navy-900/70 block sm:inline truncate">{cad.nome}</span>
+                              <span className="text-navy-900/40 block sm:inline">{cad.cursoNome}</span>
+                              <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
+                              <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>
+                            </div>
+                            <span className="flex items-center justify-end shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => void reporBase(cad)}
+                                title="Repor cadeira no catálogo"
+                                aria-label={`Repor ${cad.nome}`}
+                                className="shrink-0 inline-flex items-center gap-1 p-1.5 text-navy-900/40 hover:text-leaf transition-colors"
+                              >
+                                <RotateCcw size={13} />
+                              </button>
+                            </span>
                           </div>
-                          <span className="flex items-center justify-end shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => void reporBase(cad)}
-                              title="Repor cadeira no catálogo"
-                              aria-label={`Repor ${cad.nome}`}
-                              className="shrink-0 inline-flex items-center gap-1 p-1.5 text-navy-900/40 hover:text-leaf transition-colors"
-                            >
-                              <RotateCcw size={13} />
-                            </button>
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -511,6 +657,9 @@ export default function Cadeiras() {
                     .filter((c) => semestreFiltro === "todos" || String(c.semestre) === semestreFiltro)
                     .sort((a, b) => a.ano - b.ano || a.semestre - b.semestre || a.nome.localeCompare(b.nome, "pt"));
                   if (cadeiras.length === 0) return null;
+                  const todasSelecionadasGrupo = cadeiras.every((c) =>
+                    selecionadas.has(`${grupo.curso}::${c.codigo}`)
+                  );
                   return (
                     <div key={grupo.curso}>
                       <p className="text-[11px] font-bold uppercase tracking-widest text-sky mb-2">
@@ -518,23 +667,49 @@ export default function Cadeiras() {
                         <span className="text-navy-900/40 normal-case font-semibold">({cadeiras.length})</span>
                       </p>
                       <div className="border border-navy-100">
-                        <div className="hidden sm:grid grid-cols-[80px_1fr_60px_92px_76px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
-                          <span>Código</span>
+                        <div className="hidden sm:grid grid-cols-[24px_28px_80px_1fr_60px_92px_76px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
+                          <span className="flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={todasSelecionadasGrupo}
+                              onChange={() =>
+                                toggleTodasNaLista(cadeiras.map((c) => ({ curso: grupo.curso, codigo: c.codigo })))
+                              }
+                              className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                            />
+                          </span>
+                          <span>Nº</span>
+                          <span className="border-r border-navy-100/60 pr-3">Código</span>
                           <span>Nome</span>
                           <span>Ano</span>
                           <span>Semestre</span>
                           <span className="text-right">Gestão</span>
                         </div>
                         <div className="divide-y divide-navy-100">
-                          {cadeiras.map((cad) => {
+                          {cadeiras.map((cad, idx) => {
                             const extra = extrasPorChave.get(`${grupo.curso}::${cad.codigo}`);
+                            const chave = `${grupo.curso}::${cad.codigo}`;
+                            const selecionada = selecionadas.has(chave);
                             return (
                               <div
                                 key={cad.id}
-                                className="flex items-start justify-between gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[80px_1fr_60px_92px_76px] sm:items-center sm:py-2 text-xs"
+                                className={`flex items-start gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[24px_28px_80px_1fr_60px_92px_76px] sm:items-center sm:py-2 text-xs ${
+                                  selecionada ? "bg-sky/5" : ""
+                                }`}
                               >
-                                <div className="min-w-0 sm:contents">
-                                  <span className="font-mono text-navy-900/50 block sm:inline">{cad.codigo}</span>
+                                <input
+                                  type="checkbox"
+                                  checked={selecionada}
+                                  onChange={() => toggleSelecionada(grupo.curso, cad.codigo)}
+                                  className="mt-0.5 sm:mt-0 w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0 sm:justify-self-center"
+                                />
+                                <span className="text-navy-900/40 font-mono text-[11px] shrink-0 sm:text-center">
+                                  {idx + 1}
+                                </span>
+                                <div className="min-w-0 flex-1 sm:contents">
+                                  <span className="font-mono text-navy-900/50 block sm:inline sm:border-r sm:border-navy-100/60 sm:pr-2">
+                                    {cad.codigo}
+                                  </span>
                                   <span className="text-navy-900 block sm:inline truncate">{cad.nome}</span>
                                   <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
                                   <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>

@@ -530,7 +530,7 @@ export default function ContasDocentes({
           )}
         </div>
         {aberto && cursos.length > 2 && (
-          <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             {cursos.slice(2).map(renderTag)}
           </div>
         )}
@@ -575,7 +575,7 @@ export default function ContasDocentes({
           )}
         </div>
         {aberta && cadeiras.length > 2 && (
-          <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             {cadeiras.slice(2).map(renderTag)}
           </div>
         )}
@@ -789,32 +789,33 @@ export default function ContasDocentes({
         <p className={`text-sm font-semibold ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
       )}
 
-      {selecionados.size > 0 && (
-        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-semibold">
-          <span>{selecionados.size} docente(s) selecionado(s)</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void eliminarSelecionados()}
-              className="inline-flex items-center gap-1 bg-crimson hover:bg-crimson/90 text-white px-3 py-1.5 rounded transition-colors font-bold"
-            >
-              <Trash2 size={13} /> Eliminar Selecionados ({selecionados.size})
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelecionados(new Set())}
-              className="text-white/70 hover:text-white px-2 py-1"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="gestao-list-card">
-        <div className="gestao-list-header flex items-center justify-between">
+        {/* Barra do título faz sempre parte da estrutura — ao seleccionar, só o
+            lado direito troca para as acções em lote, sem inserir um novo
+            bloco que empurre o resto da página. */}
+        <div className="gestao-list-header flex items-center justify-between gap-3">
           <h2>Contas de docente</h2>
-          <span>{contas?.length ?? 0} conta{contas?.length === 1 ? "" : "s"}</span>
+          {selecionados.size > 0 ? (
+            <div className="flex items-center gap-3 normal-case tracking-normal">
+              <span className="text-navy-900/70">{selecionados.size} selecionado{selecionados.size === 1 ? "" : "s"}</span>
+              <button
+                type="button"
+                onClick={() => void eliminarSelecionados()}
+                className="inline-flex items-center gap-1 text-crimson hover:text-[#b32d2e] font-bold"
+              >
+                <Trash2 size={12} /> Eliminar
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelecionados(new Set())}
+                className="text-navy-900/50 hover:text-navy-900"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <span>{contas?.length ?? 0} conta{contas?.length === 1 ? "" : "s"}</span>
+          )}
         </div>
         {loading ? (
           <p className="px-6 py-8 text-sm text-navy-900/55">A carregar…</p>
@@ -901,7 +902,7 @@ export default function ContasDocentes({
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
-                  <th className="px-3 py-2.5 text-center w-9 border-r border-navy-100/60">
+                  <th className="px-2 py-2.5 text-center w-8 border-r border-navy-100/60">
                     <input
                       type="checkbox"
                       checked={todosSelecionados}
@@ -909,10 +910,10 @@ export default function ContasDocentes({
                       className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
                     />
                   </th>
-                  <th className="px-4 py-2.5 border-r border-navy-100/60">Nome do Docente</th>
-                  <th className="px-4 py-2.5 border-r border-navy-100/60">Email</th>
-                  <th className="px-4 py-2.5 min-w-[180px] border-r border-navy-100/60">Cursos</th>
-                  <th className="px-4 py-2.5 min-w-[420px] border-r border-navy-100/60">Cadeira(s)</th>
+                  <th className="px-3 py-2.5 w-44 border-r border-navy-100/60">Nome do Docente</th>
+                  <th className="px-3 py-2.5 w-52 border-r border-navy-100/60">Email</th>
+                  <th className="px-4 py-2.5 min-w-[180px]">Cursos</th>
+                  <th className="px-4 py-2.5 min-w-[380px]">Cadeira(s)</th>
                   <th className="px-4 py-2.5 text-right">Ações</th>
                 </tr>
               </thead>
@@ -923,7 +924,7 @@ export default function ContasDocentes({
                   return (
                     <Fragment key={c.id}>
                       <tr className={`transition-colors ${estaSelecionado ? "bg-sky/10" : "hover:bg-cream/40"}`}>
-                        <td className="px-3 py-2.5 text-center align-top border-r border-navy-100/60">
+                        <td className="px-2 py-2.5 text-center align-top border-r border-navy-100/60">
                           <input
                             type="checkbox"
                             checked={estaSelecionado}
@@ -931,18 +932,26 @@ export default function ContasDocentes({
                             className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
                           />
                         </td>
-                        <td className="px-4 py-2.5 font-semibold text-navy-900 align-top border-r border-navy-100/60">
+                        <td
+                          className="px-3 py-2.5 w-44 font-semibold text-navy-900 align-top border-r border-navy-100/60 truncate max-w-[11rem]"
+                          title={c.nome || "Sem nome"}
+                        >
                           {c.nome || "Sem nome"}
                         </td>
-                        <td className="px-4 py-2.5 text-navy-900/70 align-top border-r border-navy-100/60">{c.email}</td>
-                        <td className="px-4 py-2.5 align-top border-r border-navy-100/60">
+                        <td
+                          className="px-3 py-2.5 w-52 text-navy-900/70 align-top border-r border-navy-100/60 truncate max-w-[13rem]"
+                          title={c.email || ""}
+                        >
+                          {c.email}
+                        </td>
+                        <td className="px-4 py-2.5 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
                             renderColunaCursos(c.id, cadeiras)
                           )}
                         </td>
-                        <td className="px-4 py-2.5 align-top border-r border-navy-100/60">
+                        <td className="px-4 py-2.5 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
