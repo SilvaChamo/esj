@@ -866,7 +866,121 @@ export default function EstudanteDashboard({
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="md:hidden divide-y divide-navy-100">
+                {(() => {
+                  const cadeirasDoPeriodo = cadeirasCurriculo.filter(
+                    (cad) =>
+                      cad.ano === anoSelecionado &&
+                      (semestreSelecionado === 0 || cad.semestre === semestreSelecionado)
+                  );
+                  if (cadeirasDoPeriodo.length === 0) {
+                    return (
+                      <p className="p-8 text-center text-navy-900/50 italic font-medium text-xs">
+                        Nenhuma disciplina registrada para o {anoSelecionado}º Ano {semestreSelecionado > 0 ? `(${semestreSelecionado}º Semestre)` : ""}.
+                      </p>
+                    );
+                  }
+                  return cadeirasDoPeriodo.map((cad) => {
+                    const isExpanded = cadeirasExpandidas[cad.id];
+                    const notaReal = (minhasNotas ?? []).find((n) => n.cadeiraCodigo === cad.codigo);
+                    const notaFinalEfetiva = notaReal?.mediaFinal ?? cad.notaFinal ?? null;
+                    const temNota = notaFinalEfetiva !== null && notaFinalEfetiva !== undefined;
+                    const notaStr = temNota ? `${Number(notaFinalEfetiva).toFixed(1)} V` : "—";
+                    const res = notaReal?.resultado ?? cad.resultado ?? "Aprovado";
+                    const isAprovado = res === "Aprovado";
+                    const isFrequencia = res === "Em Frequência";
+                    const isReprovado = res === "Reprovado" || res === "Excluído";
+                    const lancadaPeloDocente = Boolean(notaReal);
+                    const t1 =
+                      notaReal?.teste1 ?? cad.teste1 ?? (temNota ? Number((Number(notaFinalEfetiva) - 0.5).toFixed(1)) : 14.0);
+                    const t2 =
+                      notaReal?.teste2 ?? cad.teste2 ?? (temNota ? Number((Number(notaFinalEfetiva) + 0.5).toFixed(1)) : 14.5);
+                    const trab =
+                      notaReal?.trabalho ?? cad.trabalho ?? (temNota ? Number(Number(notaFinalEfetiva).toFixed(1)) : 15.0);
+                    return (
+                      <div
+                        key={cad.id}
+                        onClick={() => setCadeirasExpandidas((p) => ({ ...p, [cad.id]: !p[cad.id] }))}
+                        className={`p-4 space-y-2 cursor-pointer text-xs ${
+                          isReprovado ? "bg-crimson/5" : isFrequencia ? "bg-sky/5" : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {isExpanded ? (
+                            <ChevronDown size={16} className="text-navy-900/60 shrink-0 mt-0.5" />
+                          ) : (
+                            <ChevronRight size={16} className="text-navy-900/60 shrink-0 mt-0.5" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold font-serif text-sm text-navy-900">
+                              {cad.nome}{" "}
+                              <span className="text-[10px] text-navy-900/40 font-mono font-normal">({cad.codigo})</span>
+                            </p>
+                            <p className="text-navy-900/60 mt-0.5">
+                              {cad.ano}º Ano · {cad.semestre}º Semestre
+                            </p>
+                            {lancadaPeloDocente && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-leaf bg-leaf/10 border border-leaf/30 px-1.5 py-0.5 rounded mt-1">
+                                <CheckCircle2 size={10} /> Lançada
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 pl-6">
+                          <span
+                            className={`font-bold font-mono px-2 py-0.5 rounded text-[11px] ${
+                              isReprovado ? "text-crimson bg-crimson/10" : isFrequencia ? "text-sky bg-sky/10" : "text-navy-900 bg-navy-900/5"
+                            }`}
+                          >
+                            {notaStr}
+                          </span>
+                          {isAprovado && (
+                            <span className="inline-flex items-center gap-1 bg-leaf/10 border border-leaf/30 text-leaf font-bold px-2 py-0.5 rounded text-[11px]">
+                              <CheckCircle2 size={11} /> Aprovado
+                            </span>
+                          )}
+                          {isFrequencia && (
+                            <span className="inline-flex items-center gap-1 bg-sky/10 border border-sky/30 text-sky font-bold px-2 py-0.5 rounded text-[11px]">
+                              <Clock size={11} /> Em Frequência
+                            </span>
+                          )}
+                          {isReprovado && (
+                            <span className="inline-flex items-center gap-1 bg-crimson/10 border border-crimson/30 text-crimson font-bold px-2 py-0.5 rounded text-[11px]">
+                              <AlertTriangle size={11} /> {res}
+                            </span>
+                          )}
+                        </div>
+                        {isExpanded && (
+                          <div className="grid grid-cols-2 gap-2 pl-6 pt-1">
+                            <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
+                              <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste (30%)</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{t1.toFixed(1)} V</span>
+                            </div>
+                            <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
+                              <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste (30%)</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{t2.toFixed(1)} V</span>
+                            </div>
+                            <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
+                              <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Trabalho (40%)</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{trab.toFixed(1)} V</span>
+                            </div>
+                            <div className={`p-2.5 bg-white rounded border shadow-sm ${isReprovado ? "border-crimson/40" : "border-leaf/40"}`}>
+                              <span className={`text-[10px] uppercase font-bold block ${isReprovado ? "text-crimson" : "text-leaf"}`}>
+                                Média Final
+                              </span>
+                              <span className={`font-mono font-bold text-sm ${isReprovado ? "text-crimson" : "text-leaf"}`}>
+                                {notaStr}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
@@ -1242,86 +1356,103 @@ export default function EstudanteDashboard({
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
-                        <th className="p-4">N.º do Recibo</th>
-                        <th className="p-4">Descrição do Serviço / Mês</th>
-                        <th className="p-4 text-center">Data do Pagamento</th>
-                        <th className="p-4 text-center">Valor Pago</th>
-                        <th className="p-4 text-center">Método</th>
-                        <th className="p-4 text-right">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-navy-100 font-medium text-navy-900">
-                      <tr className="hover:bg-cream/40 transition-colors">
-                        <td className="p-4 font-mono font-bold text-sky">REC-2026-00412</td>
-                        <td className="p-4 font-bold font-serif">Taxa de Matrícula & Inscrição 2026</td>
-                        <td className="p-4 text-center text-navy-900/70">12/01/2026</td>
-                        <td className="p-4 text-center font-mono font-bold">1.500,00 MT</td>
-                        <td className="p-4 text-center"><span className="px-2 py-0.5 bg-navy-900/10 text-navy-900 font-bold rounded text-[10px]">Millennium BIM</span></td>
-                        <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSucessoFin("Recibo REC-2026-00412 transferido com sucesso!")}
-                            className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                          >
-                            <Download size={13} /> Baixar Recibo PDF
-                          </button>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-cream/40 transition-colors">
-                        <td className="p-4 font-mono font-bold text-sky">REC-2026-01102</td>
-                        <td className="p-4 font-bold font-serif">Propina Mensal — Fevereiro 2026</td>
-                        <td className="p-4 text-center text-navy-900/70">03/02/2026</td>
-                        <td className="p-4 text-center font-mono font-bold">3.200,00 MT</td>
-                        <td className="p-4 text-center"><span className="px-2 py-0.5 bg-leaf/10 text-leaf font-bold rounded text-[10px]">M-Pesa</span></td>
-                        <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSucessoFin("Recibo REC-2026-01102 transferido com sucesso!")}
-                            className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                          >
-                            <Download size={13} /> Baixar Recibo PDF
-                          </button>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-cream/40 transition-colors">
-                        <td className="p-4 font-mono font-bold text-sky">REC-2026-02450</td>
-                        <td className="p-4 font-bold font-serif">Propina Mensal — Março 2026</td>
-                        <td className="p-4 text-center text-navy-900/70">04/03/2026</td>
-                        <td className="p-4 text-center font-mono font-bold">3.200,00 MT</td>
-                        <td className="p-4 text-center"><span className="px-2 py-0.5 bg-leaf/10 text-leaf font-bold rounded text-[10px]">M-Pesa</span></td>
-                        <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSucessoFin("Recibo REC-2026-02450 transferido com sucesso!")}
-                            className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                          >
-                            <Download size={13} /> Baixar Recibo PDF
-                          </button>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-cream/40 transition-colors">
-                        <td className="p-4 font-mono font-bold text-sky">REC-2026-08991</td>
-                        <td className="p-4 font-bold font-serif">Propina Mensal — Abril a Setembro 2026 (Pacote Semestral)</td>
-                        <td className="p-4 text-center text-navy-900/70">05/04/2026</td>
-                        <td className="p-4 text-center font-mono font-bold">19.200,00 MT</td>
-                        <td className="p-4 text-center"><span className="px-2 py-0.5 bg-navy-900/10 text-navy-900 font-bold rounded text-[10px]">BCI Net</span></td>
-                        <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSucessoFin("Recibo REC-2026-08991 transferido com sucesso!")}
-                            className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                          >
-                            <Download size={13} /> Baixar Recibo PDF
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                {(() => {
+                  const recibos = [
+                    {
+                      numero: "REC-2026-00412",
+                      desc: "Taxa de Matrícula & Inscrição 2026",
+                      data: "12/01/2026",
+                      valor: "1.500,00 MT",
+                      metodo: "Millennium BIM",
+                      metodoCor: "bg-navy-900/10 text-navy-900",
+                    },
+                    {
+                      numero: "REC-2026-01102",
+                      desc: "Propina Mensal — Fevereiro 2026",
+                      data: "03/02/2026",
+                      valor: "3.200,00 MT",
+                      metodo: "M-Pesa",
+                      metodoCor: "bg-leaf/10 text-leaf",
+                    },
+                    {
+                      numero: "REC-2026-02450",
+                      desc: "Propina Mensal — Março 2026",
+                      data: "04/03/2026",
+                      valor: "3.200,00 MT",
+                      metodo: "M-Pesa",
+                      metodoCor: "bg-leaf/10 text-leaf",
+                    },
+                    {
+                      numero: "REC-2026-08991",
+                      desc: "Propina Mensal — Abril a Setembro 2026 (Pacote Semestral)",
+                      data: "05/04/2026",
+                      valor: "19.200,00 MT",
+                      metodo: "BCI Net",
+                      metodoCor: "bg-navy-900/10 text-navy-900",
+                    },
+                  ];
+                  return (
+                    <>
+                      <div className="md:hidden divide-y divide-navy-100">
+                        {recibos.map((r) => (
+                          <div key={r.numero} className="p-4 space-y-1.5 text-xs">
+                            <p className="font-mono font-bold text-sky">{r.numero}</p>
+                            <p className="font-bold font-serif text-navy-900">{r.desc}</p>
+                            <div className="flex flex-wrap items-center gap-1.5 text-navy-900/70">
+                              <span>{r.data}</span>
+                              <span className="font-mono font-bold text-navy-900">{r.valor}</span>
+                              <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${r.metodoCor}`}>{r.metodo}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSucessoFin(`Recibo ${r.numero} transferido com sucesso!`)}
+                              className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                            >
+                              <Download size={13} /> Baixar Recibo PDF
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
+                              <th className="p-4">N.º do Recibo</th>
+                              <th className="p-4">Descrição do Serviço / Mês</th>
+                              <th className="p-4 text-center">Data do Pagamento</th>
+                              <th className="p-4 text-center">Valor Pago</th>
+                              <th className="p-4 text-center">Método</th>
+                              <th className="p-4 text-right">Ação</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-navy-100 font-medium text-navy-900">
+                            {recibos.map((r) => (
+                              <tr key={r.numero} className="hover:bg-cream/40 transition-colors">
+                                <td className="p-4 font-mono font-bold text-sky">{r.numero}</td>
+                                <td className="p-4 font-bold font-serif">{r.desc}</td>
+                                <td className="p-4 text-center text-navy-900/70">{r.data}</td>
+                                <td className="p-4 text-center font-mono font-bold">{r.valor}</td>
+                                <td className="p-4 text-center">
+                                  <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${r.metodoCor}`}>{r.metodo}</span>
+                                </td>
+                                <td className="p-4 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSucessoFin(`Recibo ${r.numero} transferido com sucesso!`)}
+                                    className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                                  >
+                                    <Download size={13} /> Baixar Recibo PDF
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -2172,7 +2303,50 @@ export default function EstudanteDashboard({
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto border border-navy-100 rounded">
+                <>
+                <div className="md:hidden border border-navy-100 rounded divide-y divide-navy-100">
+                  {pautaCadeiraAtual.map((e, idx) => {
+                    const eEu = perfil?.id === e.estudanteId;
+                    return (
+                      <div key={e.id} className={`p-3 text-xs space-y-1.5 ${eEu ? "bg-sky/15 font-bold" : ""}`}>
+                        <p>
+                          <span className="text-navy-900/40 font-normal">{idx + 1}.</span>{" "}
+                          <span className="font-mono font-bold text-sky">{e.numeroEstudante}</span>{" "}
+                          {e.nomeEstudante} {eEu && "(Você)"}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded bg-cream text-navy-900/70">
+                            T1: {e.teste1?.toFixed(1) ?? "-"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-cream text-navy-900/70">
+                            T2: {e.teste2?.toFixed(1) ?? "-"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-cream text-navy-900/70">
+                            Trab.: {e.trabalho?.toFixed(1) ?? "-"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-cream text-navy-900/70">
+                            Exame: {e.exameNormal?.toFixed(1) ?? "-"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-navy-900/10 text-navy-900 font-bold">
+                            MF: {e.mediaFinal?.toFixed(1) ?? "-"}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.resultado === "Aprovado"
+                              ? "bg-leaf/20 text-leaf"
+                              : e.resultado === "Reprovado" || e.resultado === "Excluído"
+                                ? "bg-crimson/20 text-crimson"
+                                : "bg-amber-100 text-amber-800"
+                              }`}
+                          >
+                            {e.resultado}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto border border-navy-100 rounded">
                   <table className="w-full text-left text-xs text-navy-900 border-collapse">
                     <thead>
                       <tr className="bg-navy-900 text-white border-b border-navy-900">
@@ -2222,6 +2396,7 @@ export default function EstudanteDashboard({
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
           </div>

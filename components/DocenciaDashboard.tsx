@@ -1064,7 +1064,36 @@ export default function DocenciaDashboard({
               {!materiais || materiais.length === 0 ? (
                 <p className="text-sm text-navy-900/60">Ainda não foram publicados ficheiros.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                <div className="md:hidden divide-y divide-navy-100">
+                  {materiais.map((m) => (
+                    <div key={m.id} className="py-3 text-xs space-y-1.5">
+                      <p className="font-semibold text-navy-900">{m.titulo}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 text-navy-900/70">
+                        <span>{m.curso.toUpperCase()}</span>
+                        <span>· {m.cadeira}</span>
+                        <span className="px-2 py-0.5 bg-sky/10 text-sky font-bold rounded">
+                          {labelTipoMaterial(m.tipo)}
+                        </span>
+                      </div>
+                      <p className="text-navy-900/50">{m.autor || "Docente"}</p>
+                      <div className="space-x-3">
+                        <button type="button" onClick={() => setLer(m)} className="text-sky hover:underline font-bold">
+                          Ver
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => eliminarMaterial(m)}
+                          className="text-crimson hover:underline font-bold"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-xs text-navy-900 border-collapse">
                     <thead>
                       <tr className="border-b border-navy-100 bg-cream/60">
@@ -1109,6 +1138,7 @@ export default function DocenciaDashboard({
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
           </div>
