@@ -401,10 +401,43 @@ export async function listInscricoesGestao() {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
     .from("inscricoes")
-    .select("protocolo, nome, email, telefone, curso, delegacao, created_at")
+    .select("protocolo, nome, email, telefone, curso, turno, nivel, delegacao, created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
   if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Resultados da pauta de admissão já ligados a uma candidatura (coluna
+ * candidatura_protocolo — ver supabase/candidatura-pauta-numeracao.sql).
+ * Falha graciosamente (devolve []) se a migração ainda não tiver corrido, o
+ * mesmo padrão usado para outras tabelas/colunas opcionais no painel.
+ */
+export async function listPautaLigadaACandidaturas() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("pauta_admissao")
+    .select("id, candidatura_protocolo, nota_portugues, nota_historia, publicado")
+    .not("candidatura_protocolo", "is", null);
+  if (error) {
+    if (isMissingTable(error)) return [];
+    throw error;
+  }
+  return data ?? [];
+}
+
+/** Contas de estudante já criadas a partir de uma candidatura (mesma migração acima). */
+export async function listTurmaLigadaACandidaturas() {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("turma_estudantes")
+    .select("numero_estudante, candidatura_protocolo")
+    .not("candidatura_protocolo", "is", null);
+  if (error) {
+    if (isMissingTable(error)) return [];
+    throw error;
+  }
   return data ?? [];
 }
 
@@ -524,9 +557,10 @@ export async function savePautaLinha(input: {
   notaPortugues: number;
   notaHistoria: number;
   publicado: boolean;
+  candidaturaProtocolo?: string;
 }) {
   const supabase = createBrowserSupabase();
-  const row = {
+  const row: Record<string, unknown> = {
     ano_lectivo: input.anoLectivo,
     nivel: input.nivel,
     curso: input.curso,
@@ -538,13 +572,23 @@ export async function savePautaLinha(input: {
     publicado: input.publicado,
     updated_at: new Date().toISOString(),
   };
+  if (input.candidaturaProtocolo) row.candidatura_protocolo = input.candidaturaProtocolo;
   if (input.id) {
     const { error } = await supabase.from("pauta_admissao").update(row).eq("id", input.id);
     if (error) throw error;
     return;
   }
-  const { error } = await supabase.from("pauta_admissao").insert(row);
+  const { error, data } = await supabase.from("pauta_admissao").insert(row).select("id").maybeSingle();
+  // Se a coluna candidatura_protocolo ainda não existir (migração por
+  // correr), tenta gravar sem ela em vez de falhar o lançamento da nota.
+  if (error && input.candidaturaProtocolo && isMissingTable(error)) {
+    delete row.candidatura_protocolo;
+    const retry = await supabase.from("pauta_admissao").insert(row);
+    if (retry.error) throw retry.error;
+    return;
+  }
   if (error) throw error;
+  return data?.id as string | undefined;
 }
 
 export async function deletePautaLinha(id: string) {

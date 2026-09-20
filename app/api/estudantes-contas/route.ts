@@ -134,6 +134,10 @@ export async function POST(request: Request) {
     const regime = String(body?.regime || "diurno");
     const ano = Number(body?.ano) || 1;
     const emailInput = String(body?.email || "").trim();
+    // Preenchido quando a conta nasce de uma candidatura admitida (ver
+    // Candidaturas → "Criar conta") — liga a turma à candidatura de origem,
+    // para nunca duplicar a conta do mesmo candidato.
+    const candidaturaProtocolo = String(body?.candidaturaProtocolo || "").trim() || null;
 
     if (!numeroEstudante || !nome) {
       return NextResponse.json({ error: "Número e nome do estudante são obrigatórios." }, { status: 400 });
@@ -150,16 +154,23 @@ export async function POST(request: Request) {
     const passwordTemporaria = gerarPasswordAleatoria();
 
     // Registar na tabela turma_estudantes se ainda não existir
-    await admin.from("turma_estudantes").upsert(
-      {
-        numero_estudante: numeroEstudante,
-        nome,
-        curso,
-        regime,
-        ano,
-      },
-      { onConflict: "numero_estudante,curso" }
-    );
+    const turmaUpsert: Record<string, unknown> = {
+      numero_estudante: numeroEstudante,
+      nome,
+      curso,
+      regime,
+      ano,
+    };
+    if (candidaturaProtocolo) turmaUpsert.candidatura_protocolo = candidaturaProtocolo;
+    const { error: turmaUpsertErr } = await admin
+      .from("turma_estudantes")
+      .upsert(turmaUpsert, { onConflict: "numero_estudante,curso" });
+    // Se a coluna candidatura_protocolo ainda não existir (migração por
+    // correr), tenta outra vez sem ela em vez de falhar a criação da conta.
+    if (turmaUpsertErr && candidaturaProtocolo) {
+      delete turmaUpsert.candidatura_protocolo;
+      await admin.from("turma_estudantes").upsert(turmaUpsert, { onConflict: "numero_estudante,curso" });
+    }
 
     const { data: userCreated, error: createErr } = await admin.auth.admin.createUser({
       email: emailInput,

@@ -26,6 +26,7 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
+  Pencil,
   ScrollText,
   Send,
   ShieldCheck,
@@ -48,11 +49,16 @@ import {
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
+import { ANO_LECTIVO, classificacao, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
+import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   cmsError,
   isMissingTable,
   listAnunciosGestao,
   listInscricoesGestao,
+  listPautaLigadaACandidaturas,
+  listTurmaLigadaACandidaturas,
+  savePautaLinha,
   listNewsletterGestao,
   deleteNewsletter,
   listTelefonesInscricoes,
@@ -1821,25 +1827,97 @@ function Videos({ onAction }: { onAction: (m: string) => void }) {
   );
 }
 
+type CandidaturaItem = {
+  protocolo: string;
+  nome: string;
+  email: string | null;
+  curso: string;
+  turno: string | null;
+  nivel: string | null;
+  delegacao: string | null;
+  created_at: string;
+};
+
+type PautaLigada = { id: string; nota_portugues: number; nota_historia: number; publicado: boolean };
+type TurmaLigada = { numero_estudante: string };
+
+/** Último termo = apelido (maiúsculas), resto = nome — mesma regra usada nas listas de contas. */
+function separarApelido(nomeCompleto: string): { apelido: string; nome: string } {
+  const partes = nomeCompleto.trim().split(/\s+/);
+  if (partes.length === 1) return { apelido: partes[0], nome: "" };
+  return { apelido: partes[partes.length - 1], nome: partes.slice(0, -1).join(" ") };
+}
+
 function Candidaturas() {
-  const [items, setItems] = useState<
-    { protocolo: string; nome: string; email: string | null; curso: string; delegacao: string | null; created_at: string }[]
-  >([]);
+  const [items, setItems] = useState<CandidaturaItem[]>([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState("");
-  // Selecção (base para a futura entrada de resultados em lote — ver
-  // sugestão dada ao pedido do utilizador sobre ligar isto à pauta).
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [eliminando, setEliminando] = useState(false);
 
-  useEffect(() => {
+  // Resultados de exame e contas de estudante já ligados a cada candidatura
+  // (supabase/candidatura-pauta-numeracao.sql) — dinâmico: assim que se
+  // lança uma nota aqui, o Admitido/Não admitido e a pauta pública em
+  // /resultados actualizam-se sozinhos, sem reescrever nada.
+  const [pautaPorProtocolo, setPautaPorProtocolo] = useState<Record<string, PautaLigada>>({});
+  const [turmaPorProtocolo, setTurmaPorProtocolo] = useState<Record<string, TurmaLigada>>({});
+
+  const [resultadoAberto, setResultadoAberto] = useState<string | null>(null);
+  const [notaPortugues, setNotaPortugues] = useState("");
+  const [notaHistoria, setNotaHistoria] = useState("");
+  const [guardandoResultado, setGuardandoResultado] = useState(false);
+  const [criandoConta, setCriandoConta] = useState<Set<string>>(new Set());
+  const [aviso, setAviso] = useState<{ texto: string; erro: boolean } | null>(null);
+
+  // Modal "Numeração" — a secretaria digita o número inicial UMA vez por
+  // curso/regime; o sistema gera os seguintes sozinho a partir daí.
+  const [modalNumeracaoAberto, setModalNumeracaoAberto] = useState(false);
+  const [numCurso, setNumCurso] = useState<CursoDocenciaSlug>(CURSOS_DOCENCIA[0].slug);
+  const [numRegime, setNumRegime] = useState<"diurno" | "pos-laboral">("diurno");
+  const [numAtual, setNumAtual] = useState<string | null>(null);
+  const [numInicial, setNumInicial] = useState("");
+  const [numBusy, setNumBusy] = useState(false);
+  const [numMsg, setNumMsg] = useState<{ texto: string; erro: boolean } | null>(null);
+
+  const carregar = () => {
     listInscricoesGestao()
-      // Ordem alfabética (A → Z) pelo nome — igual em todas as listas do painel.
-      .then((rows) => setItems([...rows].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt"))))
+      .then((rows) =>
+        setItems(
+          [...rows].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt")) as CandidaturaItem[]
+        )
+      )
       .catch((err) => {
         if (isMissingTable(err)) setMissing(true);
         else setError(cmsError(err));
       });
-  }, []);
+    listPautaLigadaACandidaturas()
+      .then((rows) => {
+        const mapa: Record<string, PautaLigada> = {};
+        for (const r of rows) {
+          if (r.candidatura_protocolo) {
+            mapa[r.candidatura_protocolo] = {
+              id: r.id,
+              nota_portugues: Number(r.nota_portugues),
+              nota_historia: Number(r.nota_historia),
+              publicado: r.publicado,
+            };
+          }
+        }
+        setPautaPorProtocolo(mapa);
+      })
+      .catch(() => {});
+    listTurmaLigadaACandidaturas()
+      .then((rows) => {
+        const mapa: Record<string, TurmaLigada> = {};
+        for (const r of rows) {
+          if (r.candidatura_protocolo) mapa[r.candidatura_protocolo] = { numero_estudante: r.numero_estudante };
+        }
+        setTurmaPorProtocolo(mapa);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(carregar, []);
 
   const toggleSelecionar = (protocolo: string) => {
     setSelecionados((prev) => {
@@ -1856,15 +1934,305 @@ function Candidaturas() {
     else setSelecionados(new Set(items.map((c) => c.protocolo)));
   };
 
+  const eliminarSelecionados = async () => {
+    if (selecionados.size === 0) return;
+    if (
+      !window.confirm(
+        `Eliminar ${selecionados.size} candidatura${selecionados.size === 1 ? "" : "s"}? Esta acção não pode ser desfeita.`
+      )
+    )
+      return;
+    setEliminando(true);
+    try {
+      const res = await fetch("/api/candidaturas", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ protocolos: Array.from(selecionados) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Não foi possível eliminar.");
+      setSelecionados(new Set());
+      carregar();
+    } catch (err) {
+      setAviso({ texto: err instanceof Error ? err.message : "Não foi possível eliminar.", erro: true });
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  const abrirResultado = (c: CandidaturaItem) => {
+    const pauta = pautaPorProtocolo[c.protocolo];
+    setNotaPortugues(pauta ? String(pauta.nota_portugues) : "");
+    setNotaHistoria(pauta ? String(pauta.nota_historia) : "");
+    setResultadoAberto(c.protocolo);
+  };
+
+  const guardarResultado = async (c: CandidaturaItem) => {
+    const np = Number(notaPortugues);
+    const nh = Number(notaHistoria);
+    if (Number.isNaN(np) || Number.isNaN(nh) || np < 0 || np > 20 || nh < 0 || nh > 20) {
+      setAviso({ texto: "Indique as duas notas, entre 0 e 20.", erro: true });
+      return;
+    }
+    const cursoInfo = cursoPorTitulo(c.curso);
+    if (!cursoInfo) {
+      setAviso({ texto: `Curso "${c.curso}" não reconhecido — não foi possível gravar.`, erro: true });
+      return;
+    }
+    const { apelido, nome } = separarApelido(c.nome);
+    setGuardandoResultado(true);
+    try {
+      await savePautaLinha({
+        id: pautaPorProtocolo[c.protocolo]?.id,
+        anoLectivo: ANO_LECTIVO,
+        nivel: c.nivel || "Licenciatura",
+        curso: cursoInfo.nome,
+        regime: c.turno || "Diurno",
+        apelido: apelido || c.nome,
+        nome,
+        notaPortugues: np,
+        notaHistoria: nh,
+        // Publicado de imediato — a pauta pública em /resultados passa a
+        // reflectir este lançamento sem passo extra.
+        publicado: true,
+        candidaturaProtocolo: c.protocolo,
+      });
+      setResultadoAberto(null);
+      setAviso({ texto: `Resultado de ${c.nome} gravado — já visível na pauta pública.`, erro: false });
+      carregar();
+    } catch (err) {
+      setAviso({ texto: err instanceof Error ? err.message : "Não foi possível gravar o resultado.", erro: true });
+    } finally {
+      setGuardandoResultado(false);
+    }
+  };
+
+  const criarConta = async (c: CandidaturaItem) => {
+    const cursoInfo = cursoPorTitulo(c.curso);
+    if (!cursoInfo) {
+      setAviso({ texto: `Curso "${c.curso}" não reconhecido — não foi possível criar a conta.`, erro: true });
+      return;
+    }
+    if (!c.email) {
+      setAviso({ texto: `A candidatura de ${c.nome} não tem e-mail — não é possível criar a conta.`, erro: true });
+      return;
+    }
+    const regime = c.turno === "Pós-laboral" ? "pos-laboral" : "diurno";
+    setCriandoConta((prev) => new Set(prev).add(c.protocolo));
+    setAviso(null);
+    try {
+      const numRes = await fetch("/api/numeracao-estudantes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ curso: cursoInfo.slug, regime }),
+      });
+      const numJson = await numRes.json();
+      if (!numRes.ok) throw new Error(numJson.error || "Não foi possível gerar o número de estudante.");
+      const numeroEstudante = numJson.numeroAtribuido as string;
+
+      const contaRes = await fetch("/api/estudantes-contas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "criar_unico",
+          numeroEstudante,
+          nome: c.nome,
+          curso: cursoInfo.slug,
+          regime,
+          ano: 1,
+          email: c.email,
+          candidaturaProtocolo: c.protocolo,
+        }),
+      });
+      const contaJson = await contaRes.json();
+      if (!contaRes.ok) throw new Error(contaJson.error || "Não foi possível criar a conta.");
+
+      setTurmaPorProtocolo((prev) => ({ ...prev, [c.protocolo]: { numero_estudante: numeroEstudante } }));
+      setAviso({
+        texto: contaJson.passwordTemporaria
+          ? `Conta criada — nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${contaJson.passwordTemporaria}`
+          : `Conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
+        erro: false,
+      });
+    } catch (err) {
+      setAviso({ texto: err instanceof Error ? err.message : "Não foi possível criar a conta.", erro: true });
+    } finally {
+      setCriandoConta((prev) => {
+        const novo = new Set(prev);
+        novo.delete(c.protocolo);
+        return novo;
+      });
+    }
+  };
+
+  const abrirNumeracao = () => {
+    setModalNumeracaoAberto(true);
+    setNumMsg(null);
+    setNumInicial("");
+  };
+
+  useEffect(() => {
+    if (!modalNumeracaoAberto) return;
+    setNumAtual(null);
+    fetch(`/api/numeracao-estudantes?curso=${numCurso}&regime=${numRegime}`)
+      .then((r) => r.json())
+      .then((j) => setNumAtual(j.proximoNumero ?? null))
+      .catch(() => setNumAtual(null));
+  }, [modalNumeracaoAberto, numCurso, numRegime]);
+
+  const guardarNumeracao = async () => {
+    if (!numInicial.trim()) {
+      setNumMsg({ texto: "Indique o número inicial.", erro: true });
+      return;
+    }
+    setNumBusy(true);
+    setNumMsg(null);
+    try {
+      const res = await fetch("/api/numeracao-estudantes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ curso: numCurso, regime: numRegime, numeroInicial: numInicial.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Não foi possível guardar.");
+      setNumAtual(json.proximoNumero);
+      setNumInicial("");
+      setNumMsg({ texto: "Número inicial guardado.", erro: false });
+    } catch (err) {
+      setNumMsg({ texto: err instanceof Error ? err.message : "Erro ao guardar.", erro: true });
+    } finally {
+      setNumBusy(false);
+    }
+  };
+
+  /** Badge/acção da coluna "Resultado" + "Conta", partilhado entre cartão e tabela. */
+  const colunaResultado = (c: CandidaturaItem) => {
+    const pauta = pautaPorProtocolo[c.protocolo];
+    if (resultadoAberto === c.protocolo) {
+      return (
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="number"
+            min={0}
+            max={20}
+            step={0.1}
+            value={notaPortugues}
+            onChange={(e) => setNotaPortugues(e.target.value)}
+            placeholder="Port."
+            title="Nota de Português"
+            className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
+          />
+          <input
+            type="number"
+            min={0}
+            max={20}
+            step={0.1}
+            value={notaHistoria}
+            onChange={(e) => setNotaHistoria(e.target.value)}
+            placeholder="Hist."
+            title="Nota de História"
+            className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
+          />
+          <button
+            type="button"
+            disabled={guardandoResultado}
+            onClick={() => void guardarResultado(c)}
+            className="text-leaf hover:text-leaf/80 font-bold disabled:opacity-50"
+          >
+            {guardandoResultado ? "…" : "Guardar"}
+          </button>
+          <button type="button" onClick={() => setResultadoAberto(null)} className="text-navy-900/40 hover:text-navy-900">
+            Cancelar
+          </button>
+        </div>
+      );
+    }
+    if (!pauta) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            abrirResultado(c);
+          }}
+          className="text-sky hover:underline font-semibold"
+        >
+          Lançar resultado
+        </button>
+      );
+    }
+    const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
+    const resultado = classificacao(media);
+    const admitido = resultado === "Admitido";
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          abrirResultado(c);
+        }}
+        title="Clique para corrigir as notas"
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${
+          admitido ? "bg-leaf/10 text-leaf" : "bg-crimson/10 text-crimson"
+        }`}
+      >
+        <Pencil size={10} /> {resultado} ({media.toFixed(1)})
+      </button>
+    );
+  };
+
+  const colunaConta = (c: CandidaturaItem) => {
+    const pauta = pautaPorProtocolo[c.protocolo];
+    if (!pauta) return <span className="text-navy-900/30">—</span>;
+    const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
+    if (classificacao(media) !== "Admitido") return <span className="text-navy-900/30">—</span>;
+    const turma = turmaPorProtocolo[c.protocolo];
+    if (turma) {
+      return <span className="font-mono font-bold text-navy-900">Nº {turma.numero_estudante}</span>;
+    }
+    const aCriar = criandoConta.has(c.protocolo);
+    return (
+      <button
+        type="button"
+        disabled={aCriar}
+        onClick={(e) => {
+          e.stopPropagation();
+          void criarConta(c);
+        }}
+        className="inline-flex items-center gap-1 text-sky hover:underline font-semibold disabled:opacity-50"
+      >
+        <UserPlus size={11} /> {aCriar ? "A criar…" : "Criar conta"}
+      </button>
+    );
+  };
+
   return (
+    <>
     <div className="gestao-list-card">
       <div className="gestao-list-header flex items-center justify-between gap-3">
-        <h2>Candidaturas</h2>
+        <h2 className="flex items-center gap-3">
+          Candidaturas
+          <button
+            type="button"
+            onClick={abrirNumeracao}
+            className="normal-case tracking-normal text-[11px] font-semibold text-sky hover:underline"
+          >
+            Numeração de estudantes
+          </button>
+        </h2>
         {selecionados.size > 0 ? (
           <div className="flex items-center gap-3 normal-case tracking-normal">
             <span className="text-navy-900/70">
               {selecionados.size} selecionada{selecionados.size === 1 ? "" : "s"}
             </span>
+            <button
+              type="button"
+              disabled={eliminando}
+              onClick={() => void eliminarSelecionados()}
+              className="inline-flex items-center gap-1 text-crimson hover:text-[#b32d2e] font-bold disabled:opacity-50"
+            >
+              <Trash2 size={12} /> {eliminando ? "A eliminar…" : "Eliminar"}
+            </button>
             <button
               type="button"
               onClick={() => setSelecionados(new Set())}
@@ -1879,6 +2247,9 @@ function Candidaturas() {
       </div>
       {missing && <SchemaInstall />}
       {error && <p className="px-4 py-2 text-sm text-crimson">{error}</p>}
+      {aviso && (
+        <p className={`px-4 py-2 text-xs font-semibold ${aviso.erro ? "text-crimson" : "text-leaf"}`}>{aviso.texto}</p>
+      )}
       {items.length === 0 && !error && !missing ? (
         <p className="px-6 py-8 text-sm text-navy-900/55 italic">Ainda não há candidaturas.</p>
       ) : items.length === 0 ? null : (
@@ -1907,6 +2278,10 @@ function Candidaturas() {
                         {c.delegacao ? ` · ${c.delegacao}` : ""}
                       </p>
                       {c.email && <p className="text-navy-900/50">{c.email}</p>}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {colunaResultado(c)}
+                        {colunaConta(c)}
+                      </div>
                       <p className="text-navy-900/40 text-[11px]">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </p>
@@ -1935,6 +2310,8 @@ function Candidaturas() {
                   <th className="px-3 py-2.5">Curso</th>
                   <th className="px-3 py-2.5">Delegação</th>
                   <th className="px-3 py-2.5">E-mail</th>
+                  <th className="px-3 py-2.5">Resultado</th>
+                  <th className="px-3 py-2.5">Conta</th>
                   <th className="px-3 py-2.5 text-right">Data</th>
                 </tr>
               </thead>
@@ -1966,6 +2343,8 @@ function Candidaturas() {
                       <td className="px-3 py-2 text-navy-900/70">{c.curso}</td>
                       <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
                       <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{colunaResultado(c)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{colunaConta(c)}</td>
                       <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </td>
@@ -1978,6 +2357,96 @@ function Candidaturas() {
         </>
       )}
     </div>
+
+    {/* MODAL: Numeração de estudantes — fora do gestao-list-card, mesmo
+        padrão de todos os outros popups "fixed" neste painel. */}
+    {modalNumeracaoAberto && (
+      <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
+          <div className="flex items-center justify-between border-b border-navy-100 pb-3">
+            <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
+              <Users size={16} className="text-sky" /> Numeração de estudantes
+            </h3>
+            <button
+              type="button"
+              onClick={() => setModalNumeracaoAberto(false)}
+              className="text-navy-900/50 hover:text-navy-900"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-xs text-navy-900/60 leading-relaxed">
+            Digite o número inicial uma única vez por curso/regime (ex.: <span className="font-mono">20260001MP</span>).
+            A partir daí, ao criar uma conta a partir de uma candidatura admitida, o sistema atribui sempre o número
+            seguinte sozinho — nunca mais se digita um número de estudante à mão.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-navy-900 mb-1">Curso</label>
+              <select
+                value={numCurso}
+                onChange={(e) => setNumCurso(e.target.value as CursoDocenciaSlug)}
+                className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 focus:outline-none focus:border-sky"
+              >
+                {CURSOS_DOCENCIA.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.titulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-navy-900 mb-1">Regime</label>
+              <select
+                value={numRegime}
+                onChange={(e) => setNumRegime(e.target.value as "diurno" | "pos-laboral")}
+                className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 focus:outline-none focus:border-sky"
+              >
+                <option value="diurno">Diurno</option>
+                <option value="pos-laboral">Pós-laboral</option>
+              </select>
+            </div>
+          </div>
+          <p className="text-xs text-navy-900/70">
+            Próximo número guardado:{" "}
+            <span className="font-mono font-bold text-navy-900">{numAtual ?? "ainda não definido"}</span>
+          </p>
+          <div>
+            <label className="block text-xs font-bold text-navy-900 mb-1">
+              {numAtual ? "Substituir por" : "Número inicial"}
+            </label>
+            <input
+              type="text"
+              value={numInicial}
+              onChange={(e) => setNumInicial(e.target.value)}
+              placeholder="Ex.: 20260001MP"
+              className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs font-mono text-navy-900 focus:outline-none focus:border-sky"
+            />
+          </div>
+          {numMsg && (
+            <p className={`text-xs font-semibold ${numMsg.erro ? "text-crimson" : "text-leaf"}`}>{numMsg.texto}</p>
+          )}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-navy-100">
+            <button
+              type="button"
+              onClick={() => setModalNumeracaoAberto(false)}
+              className="px-3 py-2 border border-navy-100 text-xs font-semibold rounded text-navy-900/70 hover:bg-cream"
+            >
+              Fechar
+            </button>
+            <button
+              type="button"
+              disabled={numBusy}
+              onClick={() => void guardarNumeracao()}
+              className="px-4 py-2 bg-sky hover:bg-sky/90 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
+            >
+              {numBusy ? "A guardar…" : "Guardar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
