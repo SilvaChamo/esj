@@ -74,14 +74,59 @@ export async function POST(request: Request) {
   }
 
   if (!numeroActual) {
+    // Primeira reclamação desta conta: se já existir uma linha com este
+    // número (pré-semeada pela secretaria a partir da pauta real, ou já
+    // reclamada por outra conta), recusar — nunca sobrescrever nome/curso/
+    // regime/ano de um número que não é comprovadamente novo. A associação
+    // a um número já existente só a secretaria faz, via /api/estudantes-contas.
+    const { data: existente, error: buscaError } = await admin
+      .from("turma_estudantes")
+      .select("id")
+      .eq("numero_estudante", numeroEstudante)
+      .maybeSingle();
+    if (buscaError) {
+      if (/Could not find the table|PGRST205|schema cache/i.test(buscaError.message)) {
+        return NextResponse.json({ error: "A tabela da turma ainda não existe.", needsSchema: true }, { status: 400 });
+      }
+      return NextResponse.json({ error: buscaError.message }, { status: 400 });
+    }
+    if (existente) {
+      return NextResponse.json(
+        {
+          error:
+            "Este número de estudante já consta da lista da turma. Contacte a secretaria para associar a sua conta.",
+        },
+        { status: 409 }
+      );
+    }
+
     const { error: metaError } = await admin.auth.admin.updateUserById(user.id, {
       app_metadata: { ...user.app_metadata, numero_estudante: numeroEstudante },
     });
     if (metaError) {
       return NextResponse.json({ error: metaError.message }, { status: 400 });
     }
+
+    const { error } = await admin
+      .from("turma_estudantes")
+      .insert({ numero_estudante: numeroEstudante, nome, curso, regime, ano });
+    if (error) {
+      if (/duplicate key|unique/i.test(error.message)) {
+        return NextResponse.json(
+          {
+            error:
+              "Este número de estudante já consta da lista da turma. Contacte a secretaria para associar a sua conta.",
+          },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true });
   }
 
+  // Conta já confirmada com este número (chamada repetida/idempotente) —
+  // pode actualizar a sua própria linha.
   const { error } = await admin.from("turma_estudantes").upsert(
     { numero_estudante: numeroEstudante, nome, curso, regime, ano },
     { onConflict: "numero_estudante,curso" }
