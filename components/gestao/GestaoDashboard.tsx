@@ -991,7 +991,7 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
       {items.length === 0 ? (
         <p className="text-sm text-navy-900/50">Ainda sem editais na base.</p>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {items.map((item) => {
             const tipo = tipoFicheiroEdital(item.file_url);
             return (
@@ -1241,7 +1241,7 @@ function Publicacoes({
           {livro ? "Ainda sem livros na base." : "Ainda sem cartazes na base."}
         </p>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {items.map((item) => (
             <div key={item.id} className="bg-white border border-navy-100">
               <div
@@ -1711,7 +1711,7 @@ function Videos({ onAction }: { onAction: (m: string) => void }) {
       {items.length === 0 ? (
         <p className="text-sm text-navy-900/50">Ainda sem vídeos na base.</p>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {items.map((v) => {
             const src = videoEmbedSrc(v.url);
             return (

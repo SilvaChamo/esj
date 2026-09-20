@@ -464,7 +464,7 @@ export default function Cadeiras() {
                 }
                 return (
                   <div className="border border-navy-100">
-                    <div className="grid grid-cols-[90px_1fr_110px_60px_92px_70px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
+                    <div className="hidden sm:grid grid-cols-[90px_1fr_110px_60px_92px_70px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
                       <span>Código</span>
                       <span>Nome</span>
                       <span>Curso</span>
@@ -476,14 +476,16 @@ export default function Cadeiras() {
                       {lista.map((cad) => (
                         <div
                           key={`${cad.curso}::${cad.codigo}`}
-                          className="grid grid-cols-[90px_1fr_110px_60px_92px_70px] gap-3 items-center px-3 py-2 text-xs"
+                          className="flex items-start justify-between gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[90px_1fr_110px_60px_92px_70px] sm:items-center sm:py-2 text-xs"
                         >
-                          <span className="font-mono text-navy-900/50">{cad.codigo}</span>
-                          <span className="text-navy-900/70">{cad.nome}</span>
-                          <span className="text-navy-900/40">{cad.cursoNome}</span>
-                          <span className="text-navy-900/40">{cad.ano}º ano</span>
-                          <span className="text-navy-900/40">{cad.semestre}º semestre</span>
-                          <span className="flex items-center justify-end">
+                          <div className="min-w-0 sm:contents">
+                            <span className="font-mono text-navy-900/50 block sm:inline">{cad.codigo}</span>
+                            <span className="text-navy-900/70 block sm:inline truncate">{cad.nome}</span>
+                            <span className="text-navy-900/40 block sm:inline">{cad.cursoNome}</span>
+                            <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
+                            <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>
+                          </div>
+                          <span className="flex items-center justify-end shrink-0">
                             <button
                               type="button"
                               onClick={() => void reporBase(cad)}
@@ -516,7 +518,7 @@ export default function Cadeiras() {
                         <span className="text-navy-900/40 normal-case font-semibold">({cadeiras.length})</span>
                       </p>
                       <div className="border border-navy-100">
-                        <div className="grid grid-cols-[80px_1fr_60px_92px_76px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
+                        <div className="hidden sm:grid grid-cols-[80px_1fr_60px_92px_76px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
                           <span>Código</span>
                           <span>Nome</span>
                           <span>Ano</span>
@@ -529,13 +531,15 @@ export default function Cadeiras() {
                             return (
                               <div
                                 key={cad.id}
-                                className="grid grid-cols-[80px_1fr_60px_92px_76px] gap-3 items-center px-3 py-2 text-xs"
+                                className="flex items-start justify-between gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[80px_1fr_60px_92px_76px] sm:items-center sm:py-2 text-xs"
                               >
-                                <span className="font-mono text-navy-900/50">{cad.codigo}</span>
-                                <span className="text-navy-900">{cad.nome}</span>
-                                <span className="text-navy-900/40">{cad.ano}º ano</span>
-                                <span className="text-navy-900/40">{cad.semestre}º semestre</span>
-                                <span className="flex items-center justify-end gap-1">
+                                <div className="min-w-0 sm:contents">
+                                  <span className="font-mono text-navy-900/50 block sm:inline">{cad.codigo}</span>
+                                  <span className="text-navy-900 block sm:inline truncate">{cad.nome}</span>
+                                  <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
+                                  <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>
+                                </div>
+                                <span className="flex items-center justify-end gap-1 shrink-0">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -615,7 +619,7 @@ export default function Cadeiras() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-navy-900 mb-1">Código *</label>
                   <input

@@ -361,9 +361,9 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
       {/* Barra de Ações em Lote quando há checkboxes selecionadas */}
       {selecionados.size > 0 && (
-        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex items-center justify-between gap-3 text-xs font-semibold">
+        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-semibold">
           <span>{selecionados.size} estudante(s) selecionado(s)</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setConfirmarEliminarLote(true)}
@@ -391,7 +391,85 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
             Nenhum estudante encontrado com os filtros selecionados.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-navy-100">
+            {estudantes.map((std) => {
+              const { apelidoUpper, primeiroNome } = formatarNomeEstudante(std.nome);
+              const nomeCurso = CURSOS_DOCENCIA.find((c) => c.slug === std.curso)?.titulo || std.curso;
+              const labelRegime = std.regime === "diurno" ? "Laboral" : "Pós-Laboral";
+              const estaSelecionado = selecionados.has(std.numeroEstudante);
+              return (
+                <div
+                  key={std.numeroEstudante}
+                  className={`p-4 space-y-2 ${estaSelecionado ? "bg-sky/10" : "bg-white"}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={estaSelecionado}
+                        onChange={() => toggleSelecionar(std.numeroEstudante)}
+                        className="mt-1 w-3.5 h-3.5 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-mono font-bold text-sky text-sm">{std.numeroEstudante}</p>
+                        <p className="font-bold text-navy-900 uppercase text-sm truncate">
+                          {apelidoUpper} {primeiroNome && <span className="font-normal normal-case">{primeiroNome}</span>}
+                        </p>
+                        <p className="font-mono text-xs text-navy-900/60 truncate">{std.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        title="Editar Estudante"
+                        onClick={() => abrirEditarModal(std)}
+                        className="p-1.5 text-sky hover:bg-sky/10 rounded transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Eliminar Estudante"
+                        onClick={() => setEstudanteEliminando(std)}
+                        className="p-1.5 text-crimson hover:bg-crimson/10 rounded transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-navy-900/5 text-navy-900/70 border border-navy-100">
+                      {nomeCurso}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-navy-900/5 text-navy-900/70 border border-navy-100">
+                      {std.ano}º ano
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        std.regime === "diurno"
+                          ? "bg-sky/10 text-sky border border-sky/20"
+                          : "bg-navy-900/10 text-navy-900 border border-navy-900/20"
+                      }`}
+                    >
+                      {labelRegime}
+                    </span>
+                    {std.temConta ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-leaf/10 text-leaf border border-leaf/30 rounded text-[10px] font-bold uppercase">
+                        <UserCheck size={11} /> Ativa
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded text-[10px] font-bold uppercase">
+                        <AlertTriangle size={11} /> Pendente
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">
@@ -537,6 +615,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
@@ -589,7 +668,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-navy-900 mb-1">Apelido *</label>
                   <input
@@ -614,7 +693,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-navy-900 mb-1">Curso</label>
                   <select
@@ -698,7 +777,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
             </div>
 
             <form onSubmit={submeterEditar} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-navy-900 mb-1">Apelido *</label>
                   <input
@@ -734,7 +813,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-navy-900 mb-1">Curso</label>
                   <select

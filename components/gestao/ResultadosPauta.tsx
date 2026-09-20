@@ -218,7 +218,58 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         </button>
       </form>
 
-      <div className="bg-white border border-navy-100 overflow-x-auto">
+      {items.length === 0 ? (
+        <div className="bg-white border border-navy-100 px-5 py-8 text-center text-navy-900/50 text-xs">
+          Ainda sem candidatos nesta pauta.
+        </div>
+      ) : (
+        <div className="md:hidden bg-white border border-navy-100 divide-y divide-navy-100">
+          {itemsPagina.map((row, i) => {
+            const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
+            const resultado = classificacao(media);
+            const ordem = (paginaAtual - 1) * porPagina + i + 1;
+            return (
+              <div key={row.id} className="p-3 text-xs space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-navy-900">
+                    <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
+                    <span className="uppercase">{row.apelido}</span> {row.nome}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void remover(row.id)}
+                    title="Remover"
+                    className="shrink-0 text-crimson hover:text-navy-900 transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                    Português: {formatNota(Number(row.nota_portugues))}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                    História: {formatNota(Number(row.nota_historia))}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900 font-semibold">
+                    Média: {formatNota(media)}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded font-semibold ${
+                      resultado === "Admitido" ? "text-leaf bg-leaf/10" : "text-crimson bg-crimson/10"
+                    }`}
+                  >
+                    {resultado}
+                    {!row.publicado ? " · rascunho" : ""}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="hidden md:block bg-white border border-navy-100 overflow-x-auto">
         <table className="w-full min-w-[760px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
@@ -233,13 +284,6 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-5 py-6 md:py-8 text-center text-navy-900/50">
-                  Ainda sem candidatos nesta pauta.
-                </td>
-              </tr>
-            )}
             {itemsPagina.map((row, i) => {
               const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
               const resultado = classificacao(media);
@@ -288,51 +332,51 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             })}
           </tbody>
         </table>
-        {items.length > 0 && (
-          <div className="px-4 py-3 border-t border-navy-100 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-navy-900/50">
-              {items.length} candidato{items.length === 1 ? "" : "s"} nesta pauta
-            </p>
-            {totalPaginas > 1 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={paginaAtual === 1}
-                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                  className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
-                  aria-label="Página anterior"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setPagina(n)}
-                    aria-current={n === paginaAtual ? "page" : undefined}
-                    className={`flex h-8 w-8 items-center justify-center text-xs font-bold ${
-                      n === paginaAtual
-                        ? "bg-navy-800 text-white"
-                        : "border border-navy-100 text-navy-900 hover:border-sky"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  disabled={paginaAtual === totalPaginas}
-                  onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                  className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
-                  aria-label="Página seguinte"
-                >
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+      {items.length > 0 && (
+        <div className="bg-white md:border-x md:border-b border-navy-100 px-4 py-3 md:border-t-0 border-t flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-navy-900/50">
+            {items.length} candidato{items.length === 1 ? "" : "s"} nesta pauta
+          </p>
+          {totalPaginas > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={paginaAtual === 1}
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+                aria-label="Página anterior"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPagina(n)}
+                  aria-current={n === paginaAtual ? "page" : undefined}
+                  className={`flex h-8 w-8 items-center justify-center text-xs font-bold ${
+                    n === paginaAtual
+                      ? "bg-navy-800 text-white"
+                      : "border border-navy-100 text-navy-900 hover:border-sky"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={paginaAtual === totalPaginas}
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                className="flex h-8 w-8 items-center justify-center border border-navy-100 text-navy-900 disabled:opacity-30 hover:border-sky"
+                aria-label="Página seguinte"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

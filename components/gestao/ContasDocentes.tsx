@@ -492,6 +492,95 @@ export default function ContasDocentes({
     return slugs.map((slug) => CURSOS_DOCENCIA.find((c) => c.slug === slug)?.titulo ?? slug);
   };
 
+  /**
+   * "Cursos"/"Cadeira(s)" partilhados entre a tabela (desktop) e os cartões
+   * (telemóvel) — mesma lógica de colapso (2 visíveis + chevron), só as
+   * restantes é que aparecem ao expandir.
+   */
+  const renderColunaCursos = (docenteId: string, cadeiras: CadeiraAtribuidaRow[]) => {
+    const cursos = cursosDoDocente(cadeiras);
+    if (cursos.length === 0) {
+      return <span className="text-xs text-navy-900/40 italic">Nenhum</span>;
+    }
+    const aberto = cursosAbertos.has(docenteId);
+    const primeiros = cursos.slice(0, 2);
+    const renderTag = (nome: string) => (
+      <span
+        key={nome}
+        className="shrink-0 whitespace-nowrap inline-block px-2 py-0.5 bg-sky/10 text-sky text-[11px] font-semibold rounded border border-sky/30"
+      >
+        {nome}
+      </span>
+    );
+    return (
+      <div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {primeiros.map(renderTag)}
+          {cursos.length > 2 && (
+            <button
+              type="button"
+              onClick={() => alternarCursosAbertos(docenteId)}
+              title={aberto ? "Fechar lista" : "Ver todos os cursos"}
+              className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold text-navy-900/60 hover:text-navy-900 transition-colors"
+            >
+              {aberto ? <ChevronUp size={12} /> : <>+{cursos.length - 2} <ChevronDown size={12} /></>}
+            </button>
+          )}
+        </div>
+        {aberto && cursos.length > 2 && (
+          <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
+            {cursos.slice(2).map(renderTag)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderColunaCadeiras = (docenteId: string, cadeiras: CadeiraAtribuidaRow[]) => {
+    if (cadeiras.length === 0) {
+      return <span className="text-xs text-navy-900/40 italic">Nenhuma atribuída</span>;
+    }
+    const aberta = cadeirasAbertas.has(docenteId);
+    const primeiras = cadeiras.slice(0, 2);
+    const renderTag = (cad: CadeiraAtribuidaRow) => {
+      const ano = anoCadeira(catalogo, cad.curso, cad.cadeira_codigo);
+      return (
+        <button
+          key={`${cad.curso}::${cad.cadeira_codigo}`}
+          type="button"
+          title={`${cad.cadeira_codigo} — ver estudantes desta cadeira`}
+          onClick={() => ano !== null && onVerEstudantesCadeira?.(cad.curso, ano)}
+          disabled={ano === null || !onVerEstudantesCadeira}
+          className="shrink-0 whitespace-nowrap inline-block px-2 py-0.5 bg-leaf/10 text-leaf text-[11px] font-semibold rounded border border-leaf/30 hover:bg-leaf/20 hover:underline disabled:hover:no-underline disabled:cursor-default transition-colors"
+        >
+          {nomeCadeira(catalogo, cad.curso, cad.cadeira_codigo)}
+        </button>
+      );
+    };
+    return (
+      <div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {primeiras.map(renderTag)}
+          {cadeiras.length > 2 && (
+            <button
+              type="button"
+              onClick={() => alternarCadeirasAbertas(docenteId)}
+              title={aberta ? "Fechar lista" : "Ver todas as cadeiras"}
+              className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold text-navy-900/60 hover:text-navy-900 transition-colors"
+            >
+              {aberta ? <ChevronUp size={12} /> : <>+{cadeiras.length - 2} <ChevronDown size={12} /></>}
+            </button>
+          )}
+        </div>
+        {aberta && cadeiras.length > 2 && (
+          <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
+            {cadeiras.slice(2).map(renderTag)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   useEffect(() => {
     listarCadeirasExtras().then(({ extras, tabelaFalta }) => {
       setExtras(extras);
@@ -663,7 +752,72 @@ export default function ContasDocentes({
             Ainda não há contas de docente.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-navy-100">
+            {contas.map((c) => {
+              const cadeiras = cadeirasPorConta[c.id];
+              return (
+                <div key={c.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-navy-900">{c.nome || "Sem nome"}</p>
+                      <p className="text-navy-900/70 text-sm truncate">{c.email}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandido((v) => (v === c.id ? null : c.id))}
+                        title="Gerir cadeiras deste docente"
+                        aria-label={`Gerir ${c.email}`}
+                        className={`shrink-0 p-2 transition-colors ${
+                          expandido === c.id ? "text-sky" : "text-navy-900/40 hover:text-sky"
+                        }`}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void eliminar(c)}
+                        title="Eliminar conta"
+                        aria-label={`Eliminar ${c.email}`}
+                        className="shrink-0 p-2 text-crimson hover:bg-cream transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy-900/40 mb-1">Cursos</p>
+                    {cadeiras === undefined ? (
+                      <span className="text-xs text-navy-900/40">A carregar…</span>
+                    ) : (
+                      renderColunaCursos(c.id, cadeiras)
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy-900/40 mb-1">Cadeira(s)</p>
+                    {cadeiras === undefined ? (
+                      <span className="text-xs text-navy-900/40">A carregar…</span>
+                    ) : (
+                      renderColunaCadeiras(c.id, cadeiras)
+                    )}
+                  </div>
+                  {expandido === c.id && (
+                    <CadeirasDocente
+                      docente={c}
+                      catalogo={catalogo}
+                      extrasTabelaFalta={extrasTabelaFalta}
+                      onCadeiraAdicionada={(extra) => setExtras((prev) => [...prev, extra])}
+                      onFechar={() => setExpandido(null)}
+                      onGuardado={() => recarregarCadeirasDeConta(c.id)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
@@ -688,105 +842,14 @@ export default function ContasDocentes({
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
                           ) : (
-                            (() => {
-                              const cursos = cursosDoDocente(cadeiras);
-                              if (cursos.length === 0) {
-                                return <span className="text-xs text-navy-900/40 italic">Nenhum</span>;
-                              }
-                              const aberto = cursosAbertos.has(c.id);
-                              const primeiros = cursos.slice(0, 2);
-                              const renderTag = (nome: string) => (
-                                <span
-                                  key={nome}
-                                  className="shrink-0 whitespace-nowrap inline-block px-2 py-0.5 bg-sky/10 text-sky text-[11px] font-semibold rounded border border-sky/30"
-                                >
-                                  {nome}
-                                </span>
-                              );
-                              return (
-                                <div>
-                                  <div className="flex flex-nowrap items-center gap-1.5">
-                                    {primeiros.map(renderTag)}
-                                    {cursos.length > 2 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => alternarCursosAbertos(c.id)}
-                                        title={aberto ? "Fechar lista" : "Ver todos os cursos"}
-                                        className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold text-navy-900/60 hover:text-navy-900 transition-colors"
-                                      >
-                                        {aberto ? (
-                                          <ChevronUp size={12} />
-                                        ) : (
-                                          <>
-                                            +{cursos.length - 2} <ChevronDown size={12} />
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-                                  </div>
-                                  {aberto && cursos.length > 2 && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
-                                      {cursos.slice(2).map(renderTag)}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()
+                            renderColunaCursos(c.id, cadeiras)
                           )}
                         </td>
                         <td className="px-6 py-4 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
-                          ) : cadeiras.length === 0 ? (
-                            <span className="text-xs text-navy-900/40 italic">Nenhuma atribuída</span>
                           ) : (
-                            (() => {
-                              const aberta = cadeirasAbertas.has(c.id);
-                              const primeiras = cadeiras.slice(0, 2);
-                              const renderTag = (cad: CadeiraAtribuidaRow) => {
-                                const ano = anoCadeira(catalogo, cad.curso, cad.cadeira_codigo);
-                                return (
-                                  <button
-                                    key={`${cad.curso}::${cad.cadeira_codigo}`}
-                                    type="button"
-                                    title={`${cad.cadeira_codigo} — ver estudantes desta cadeira`}
-                                    onClick={() => ano !== null && onVerEstudantesCadeira?.(cad.curso, ano)}
-                                    disabled={ano === null || !onVerEstudantesCadeira}
-                                    className="shrink-0 whitespace-nowrap inline-block px-2 py-0.5 bg-leaf/10 text-leaf text-[11px] font-semibold rounded border border-leaf/30 hover:bg-leaf/20 hover:underline disabled:hover:no-underline disabled:cursor-default transition-colors"
-                                  >
-                                    {nomeCadeira(catalogo, cad.curso, cad.cadeira_codigo)}
-                                  </button>
-                                );
-                              };
-                              return (
-                                <div>
-                                  <div className="flex flex-nowrap items-center gap-1.5">
-                                    {primeiras.map(renderTag)}
-                                    {cadeiras.length > 2 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => alternarCadeirasAbertas(c.id)}
-                                        title={aberta ? "Fechar lista" : "Ver todas as cadeiras"}
-                                        className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold text-navy-900/60 hover:text-navy-900 transition-colors"
-                                      >
-                                        {aberta ? (
-                                          <ChevronUp size={12} />
-                                        ) : (
-                                          <>
-                                            +{cadeiras.length - 2} <ChevronDown size={12} />
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-                                  </div>
-                                  {aberta && cadeiras.length > 2 && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
-                                      {cadeiras.slice(2).map(renderTag)}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()
+                            renderColunaCadeiras(c.id, cadeiras)
                           )}
                         </td>
                         <td className="px-6 py-4 text-right align-top">
@@ -834,6 +897,7 @@ export default function ContasDocentes({
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

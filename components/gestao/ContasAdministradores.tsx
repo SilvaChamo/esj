@@ -194,9 +194,9 @@ export default function ContasAdministradores() {
 
       {/* Barra de Ações em Lote quando há checkboxes selecionadas */}
       {selecionados.size > 0 && (
-        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex items-center justify-between gap-3 text-xs font-semibold">
+        <div className="bg-navy-900 text-white p-3 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-semibold">
           <span>{selecionados.size} administrador(es) selecionado(s)</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setConfirmarEliminarLote(true)}
@@ -222,7 +222,55 @@ export default function ContasAdministradores() {
         ) : contas.length === 0 ? (
           <div className="p-8 text-center text-sm text-navy-900/60">Ainda não há contas de administrador.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-navy-100">
+            {contas.map((c) => {
+              const { apelidoUpper, primeiroNome } = formatarNome(c.nome || c.email || "—");
+              const estaSelecionado = selecionados.has(c.id);
+              return (
+                <div key={c.id} className={`p-4 space-y-2 ${estaSelecionado ? "bg-sky/10" : "bg-white"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={estaSelecionado}
+                        disabled={c.souEu}
+                        title={c.souEu ? "Não pode eliminar a sua própria conta" : undefined}
+                        onChange={() => toggleSelecionar(c.id)}
+                        className="mt-1 w-3.5 h-3.5 rounded-[2px] border-navy-300 accent-sky cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-bold text-navy-900 uppercase text-sm truncate">
+                          {apelidoUpper} {primeiroNome && <span className="font-normal normal-case">{primeiroNome}</span>}
+                        </p>
+                        <p className="font-mono text-xs text-navy-900/60 truncate">{c.email}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      title={c.souEu ? "Não pode eliminar a sua própria conta" : "Eliminar Administrador"}
+                      disabled={c.souEu}
+                      onClick={() => setContaEliminando(c)}
+                      className="shrink-0 p-1.5 text-crimson hover:bg-crimson/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  {c.souEu ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky/10 text-sky border border-sky/30 rounded text-[11px] font-bold">
+                      <ShieldCheck size={11} /> A sua conta
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-leaf/10 text-leaf border border-leaf/30 rounded text-[11px] font-bold">
+                      <UserCheck size={11} /> Ativa
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">
@@ -316,6 +364,7 @@ export default function ContasAdministradores() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>

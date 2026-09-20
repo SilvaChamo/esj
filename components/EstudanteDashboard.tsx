@@ -1364,7 +1364,7 @@ export default function EstudanteDashboard({
                       <label className="block text-xs font-bold text-navy-900 mb-1">
                         Método de Pagamento Online *
                       </label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => setMetodoPagamento("mpesa")}
