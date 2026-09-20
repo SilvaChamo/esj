@@ -686,7 +686,49 @@ export default function Galeria() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-[#ccd0d4] overflow-x-auto">
+        <>
+        <div className="md:hidden bg-white border border-[#ccd0d4] divide-y divide-[#f0f0f1]">
+          {paginatedFiles.map((file) => (
+            <div key={file.name} className="p-3 flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectedIds.has(file.name)}
+                onChange={() => toggleSelect(file.name)}
+                className="shrink-0"
+              />
+              <div className="w-14 h-14 border border-[#ccd0d4] bg-[#f0f0f1] flex-shrink-0">
+                <img src={file.url} className="w-full h-full object-cover" alt="" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <button
+                  onClick={() => openDetails(file)}
+                  className="text-[#2271b1] font-bold hover:text-[#135e96] text-left truncate block w-full text-[13px]"
+                >
+                  {file.name.split("/").pop()}
+                </button>
+                <p className="text-[#50575e] text-xs">
+                  {file.mimeType || "-"}
+                  {file.createdAt ? ` · ${new Date(file.createdAt).toLocaleDateString("pt-PT")}` : ""}
+                </p>
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  <button onClick={() => openDetails(file)} className="text-[#2271b1] hover:underline">
+                    Editar
+                  </button>
+                  <span className="text-[#ccd0d4]">|</span>
+                  <button onClick={() => deleteSingle(file.name)} className="text-[#d63638] hover:underline">
+                    Lixeira
+                  </button>
+                  <span className="text-[#ccd0d4]">|</span>
+                  <button onClick={() => copyUrl(file)} className="text-[#2271b1] hover:underline">
+                    Ver
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block bg-white border border-[#ccd0d4] overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white text-left text-[13px] font-bold border-b border-[#ccd0d4]">
@@ -752,6 +794,7 @@ export default function Galeria() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {selectedFile && (

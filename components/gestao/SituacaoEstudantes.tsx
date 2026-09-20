@@ -212,65 +212,99 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
         />
       </div>
 
-      <div className="gestao-list-card overflow-x-auto">
-        <table className="w-full min-w-[760px] text-xs">
-          <thead>
-            <tr className="gestao-list-header text-left">
-              <th className="px-3 py-2">N.º Estudante</th>
-              <th className="px-3 py-2">Nome</th>
-              <th className="px-3 py-2">Curso / Regime</th>
-              <th className="px-3 py-2 text-center">Situação</th>
-              <th className="px-3 py-2">Observação</th>
-              <th className="px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-6 md:py-8 text-center text-navy-900/50">
-                  Ainda sem estudantes registados.
-                </td>
+      {items.length === 0 ? (
+        <div className="gestao-list-card px-5 py-8 text-center text-navy-900/50 text-xs">
+          Ainda sem estudantes registados.
+        </div>
+      ) : (
+        <>
+        <div className="md:hidden gestao-list-card divide-y divide-navy-100">
+          {items.map((row) => {
+            const cursoLabel = CURSOS_DOCENCIA.find((c) => c.slug === row.curso)?.titulo || row.curso;
+            const regimeLabel = REGIMES.find((r) => r.valor === row.regime)?.label || row.regime;
+            return (
+              <div key={row.id} onClick={() => editar(row)} className="p-3 text-xs space-y-1.5 cursor-pointer">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono font-semibold text-sky">{row.numero_estudante}</p>
+                    <p className="text-navy-900 font-semibold">{row.nome}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void remover(row.id);
+                    }}
+                    title="Remover"
+                    className="shrink-0 gestao-list-action text-crimson hover:border-crimson/30 hover:text-crimson"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                <p className="text-navy-900/70">{[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}</p>
+                <p className={`font-semibold ${row.regularizado ? "text-leaf" : "text-crimson"}`}>
+                  {row.regularizado ? "Regularizado" : "Não regularizado"}
+                </p>
+                {row.observacao && <p className="text-navy-900/60">{row.observacao}</p>}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block gestao-list-card overflow-x-auto">
+          <table className="w-full min-w-[760px] text-xs">
+            <thead>
+              <tr className="gestao-list-header text-left">
+                <th className="px-3 py-2">N.º Estudante</th>
+                <th className="px-3 py-2">Nome</th>
+                <th className="px-3 py-2">Curso / Regime</th>
+                <th className="px-3 py-2 text-center">Situação</th>
+                <th className="px-3 py-2">Observação</th>
+                <th className="px-3 py-2"></th>
               </tr>
-            )}
-            {items.map((row) => {
-              const cursoLabel = CURSOS_DOCENCIA.find((c) => c.slug === row.curso)?.titulo || row.curso;
-              const regimeLabel = REGIMES.find((r) => r.valor === row.regime)?.label || row.regime;
-              return (
-                <tr
-                  key={row.id}
-                  onClick={() => editar(row)}
-                  className="gestao-list-row cursor-pointer"
-                >
-                  <td className="px-3 py-2 font-mono font-semibold text-sky">{row.numero_estudante}</td>
-                  <td className="px-3 py-2 text-navy-900">{row.nome}</td>
-                  <td className="px-3 py-2 text-navy-900/70">
-                    {[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}
-                  </td>
-                  <td className="px-3 py-2 text-center whitespace-nowrap font-semibold">
-                    <span className={row.regularizado ? "text-leaf" : "text-crimson"}>
-                      {row.regularizado ? "Regularizado" : "Não regularizado"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-navy-900/60">{row.observacao || "—"}</td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void remover(row.id);
-                      }}
-                      title="Remover"
-                      className="gestao-list-action text-crimson hover:border-crimson/30 hover:text-crimson"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {items.map((row) => {
+                const cursoLabel = CURSOS_DOCENCIA.find((c) => c.slug === row.curso)?.titulo || row.curso;
+                const regimeLabel = REGIMES.find((r) => r.valor === row.regime)?.label || row.regime;
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => editar(row)}
+                    className="gestao-list-row cursor-pointer"
+                  >
+                    <td className="px-3 py-2 font-mono font-semibold text-sky">{row.numero_estudante}</td>
+                    <td className="px-3 py-2 text-navy-900">{row.nome}</td>
+                    <td className="px-3 py-2 text-navy-900/70">
+                      {[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-center whitespace-nowrap font-semibold">
+                      <span className={row.regularizado ? "text-leaf" : "text-crimson"}>
+                        {row.regularizado ? "Regularizado" : "Não regularizado"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-navy-900/60">{row.observacao || "—"}</td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void remover(row.id);
+                        }}
+                        title="Remover"
+                        className="gestao-list-action text-crimson hover:border-crimson/30 hover:text-crimson"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        </>
+      )}
     </div>
   );
 }

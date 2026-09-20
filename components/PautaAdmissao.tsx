@@ -84,7 +84,51 @@ export default function PautaAdmissao({
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      {visiveis.length === 0 && (
+        <p className="px-5 sm:px-8 py-6 md:py-8 text-center text-navy-900/50 text-xs">
+          {linhas.length === 0
+            ? "Ainda não há resultados publicados para este curso e regime."
+            : "Nenhum nome corresponde à procura."}
+        </p>
+      )}
+
+      {visiveis.length > 0 && (
+        <div className="md:hidden print:hidden divide-y divide-navy-100">
+          {visiveis.map(({ linha, ordem }, i) => {
+            const naPagina = Math.floor(i / porPagina) + 1 === paginaAtual;
+            if (!naPagina) return null;
+            return (
+              <div key={linha.id} className="px-4 py-2.5 text-xs space-y-1">
+                <p className="font-semibold text-navy-900">
+                  <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
+                  <span className="uppercase">{linha.apelido}</span> {linha.nome}
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                    Português: {formatNota(linha.notaPortugues)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                    História: {formatNota(linha.notaHistoria)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900 font-semibold">
+                    Média: {formatNota(linha.media)}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded font-semibold ${
+                      linha.resultado === "Admitido" ? "text-leaf bg-leaf/10" : "text-crimson bg-crimson/10"
+                    }`}
+                  >
+                    {linha.resultado}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {visiveis.length > 0 && (
+      <div className="hidden md:block print:block overflow-x-auto">
         <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
@@ -98,15 +142,6 @@ export default function PautaAdmissao({
             </tr>
           </thead>
           <tbody>
-            {visiveis.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-5 py-6 md:py-8 text-center text-navy-900/50">
-                  {linhas.length === 0
-                    ? "Ainda não há resultados publicados para este curso e regime."
-                    : "Nenhum nome corresponde à procura."}
-                </td>
-              </tr>
-            )}
             {visiveis.map(({ linha, ordem }, i) => {
               const naPagina = Math.floor(i / porPagina) + 1 === paginaAtual;
               return (
@@ -145,6 +180,7 @@ export default function PautaAdmissao({
           </tbody>
         </table>
       </div>
+      )}
 
       {totalPaginas > 1 && (
         <div className="px-5 sm:px-8 py-4 border-t border-navy-100 flex items-center justify-center gap-1.5 print:hidden">

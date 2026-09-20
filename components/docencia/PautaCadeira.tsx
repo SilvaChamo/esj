@@ -132,6 +132,24 @@ export function calcularResultadoPauta(
   };
 }
 
+/** Badge do resultado — partilhado entre a tabela (desktop) e os cartões (telemóvel). */
+function badgeResultado(resultado: ResultadoNota) {
+  const estilos: Record<ResultadoNota, string> = {
+    Dispensado: "bg-leaf/10 text-leaf border-leaf/30",
+    Aprovado: "bg-leaf/10 text-leaf border-leaf/30",
+    Admitido: "bg-sky/10 text-sky border-sky/30",
+    "Recorrência": "bg-amber-500/10 text-amber-600 border-amber-500/30",
+    "Em Frequência": "bg-slate-100 text-slate-600 border-transparent",
+    Reprovado: "bg-crimson/10 text-crimson border-crimson/30",
+    "Excluído": "bg-crimson/10 text-crimson border-crimson/30",
+  };
+  return (
+    <span className={`px-2 py-0.5 font-bold rounded text-[11px] border inline-block ${estilos[resultado]}`}>
+      {resultado}
+    </span>
+  );
+}
+
 export default function PautaCadeira({
   curso,
   cadeiraCodigo,
@@ -369,8 +387,73 @@ export default function PautaCadeira({
         </span>
       </div>
 
+      {/* Cartões (telemóvel) — mesmos campos e cálculo da tabela, em coluna única */}
+      <div className="md:hidden divide-y divide-navy-100">
+        {linhas.map((l, idx) => {
+          const calc = calcularResultadoPauta(l.teste1, l.teste2, l.trabalho, l.exame);
+          const campo = (
+            label: string,
+            valor: string,
+            campoNome: "teste1" | "teste2" | "trabalho" | "exame",
+            disabled = false
+          ) => (
+            <label className="block">
+              <span className="block text-[10px] font-bold uppercase tracking-wide text-navy-900/45 mb-1">
+                {label}
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                step={0.1}
+                disabled={disabled}
+                value={valor}
+                onChange={(e) => actualizarLinhaEGuardar(l.numeroEstudante, { [campoNome]: e.target.value })}
+                className={`w-full p-2 text-center rounded text-xs font-semibold focus:outline-none ${
+                  disabled
+                    ? "bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed"
+                    : "bg-white border border-navy-100 focus:border-sky"
+                }`}
+                placeholder={disabled ? "—" : "0-20"}
+              />
+            </label>
+          );
+          return (
+            <div key={l.numeroEstudante} className="p-4 space-y-3 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-mono font-bold text-sky text-[13px]">
+                    <span className="text-navy-900/40 font-normal">{idx + 1}.</span> {l.numeroEstudante}
+                  </p>
+                  <p className="font-bold text-navy-900 uppercase tracking-wide">
+                    {l.apelido} <span className="font-normal normal-case">{l.primeiroNome}</span>
+                  </p>
+                </div>
+                {badgeResultado(calc.resultado)}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {campo("1º Teste", l.teste1, "teste1")}
+                {campo("2º Teste", l.teste2, "teste2")}
+                {campo("Trabalho", l.trabalho, "trabalho")}
+                {campo("Exame", l.exame, "exame", !calc.podeExame)}
+              </div>
+              <p className="font-mono font-bold">
+                Média:{" "}
+                {calc.mediaFinal !== null ? (
+                  <span className={calc.mediaFinal >= 10 ? "text-leaf" : "text-crimson"}>
+                    {calc.mediaFinal.toFixed(1)}
+                  </span>
+                ) : (
+                  <span className="text-navy-900/30">—</span>
+                )}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Tabela com cabeçalho fixo – scroll feito pela página */}
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead className="sticky top-0 z-20">
             <tr className="bg-cream border-b-2 border-navy-100 text-navy-900/70 text-[11px] font-bold uppercase tracking-wider">
@@ -487,43 +570,7 @@ export default function PautaCadeira({
                   </td>
 
                   {/* Resultado Calculado Automaticamente */}
-                  <td className="p-2 text-center whitespace-nowrap">
-                    {calc.resultado === "Dispensado" && (
-                      <span className="px-2 py-0.5 bg-leaf/10 text-leaf font-bold rounded text-[11px] border border-leaf/30 inline-block">
-                        Dispensado
-                      </span>
-                    )}
-                    {calc.resultado === "Aprovado" && (
-                      <span className="px-2 py-0.5 bg-leaf/10 text-leaf font-bold rounded text-[11px] border border-leaf/30 inline-block">
-                        Aprovado
-                      </span>
-                    )}
-                    {calc.resultado === "Admitido" && (
-                      <span className="px-2 py-0.5 bg-sky/10 text-sky font-bold rounded text-[11px] border border-sky/30 inline-block">
-                        Admitido
-                      </span>
-                    )}
-                    {calc.resultado === "Recorrência" && (
-                      <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 font-bold rounded text-[11px] border border-amber-500/30 inline-block">
-                        Recorrência
-                      </span>
-                    )}
-                    {calc.resultado === "Em Frequência" && (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-medium rounded text-[11px] inline-block">
-                        Em Frequência
-                      </span>
-                    )}
-                    {calc.resultado === "Reprovado" && (
-                      <span className="px-2 py-0.5 bg-crimson/10 text-crimson font-bold rounded text-[11px] border border-crimson/30 inline-block">
-                        Reprovado
-                      </span>
-                    )}
-                    {calc.resultado === "Excluído" && (
-                      <span className="px-2 py-0.5 bg-crimson/10 text-crimson font-bold rounded text-[11px] border border-crimson/30 inline-block">
-                        Excluído
-                      </span>
-                    )}
-                  </td>
+                  <td className="p-2 text-center whitespace-nowrap">{badgeResultado(calc.resultado)}</td>
                 </tr>
               );
             })}

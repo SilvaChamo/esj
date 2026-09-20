@@ -319,7 +319,45 @@ export default function Documentos() {
           Ainda sem documentos. Carregue o primeiro.
         </div>
       ) : (
-        <div className="bg-white border border-[#ccd0d4] overflow-x-auto">
+        <>
+        <div className="md:hidden bg-white border border-[#ccd0d4] divide-y divide-[#f0f0f1]">
+          {files.map((file) => (
+            <div
+              key={file.name}
+              className={`p-3 flex items-center gap-3 ${selectedIds.has(file.name) ? "bg-[#f0f6fc]" : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(file.name)}
+                onChange={() => toggleSelect(file.name)}
+                className="shrink-0"
+              />
+              <FileText className="w-5 h-5 text-[#787c82] shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[#1d2327] text-[13px] truncate">{file.name.split("/").pop()}</p>
+                <p className="text-[#50575e] text-xs">
+                  {rotuloTipo(file)} · {formatSize(file.size || 0)}
+                  {file.createdAt ? ` · ${new Date(file.createdAt).toLocaleDateString("pt-PT")}` : ""}
+                </p>
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  <button type="button" onClick={() => setLer(file)} className="text-[#2271b1] hover:underline">
+                    Ver
+                  </button>
+                  <span className="text-[#ccd0d4]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => void remove(file.name)}
+                    className="text-[#d63638] hover:underline"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block bg-white border border-[#ccd0d4] overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-white text-left text-[13px] font-bold border-b border-[#ccd0d4]">
@@ -386,6 +424,7 @@ export default function Documentos() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {ler && (
