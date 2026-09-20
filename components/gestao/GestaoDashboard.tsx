@@ -1998,7 +1998,39 @@ function Candidaturas() {
         candidaturaProtocolo: c.protocolo,
       });
       setResultadoAberto(null);
-      setAviso({ texto: `Resultado de ${c.nome} gravado — já visível na pauta pública.`, erro: false });
+
+      // Aprovado (média ≥ 10) e ainda sem conta: atribui logo o número de
+      // estudante seguinte e cria a conta — não é preciso um segundo clique
+      // em "Criar conta" só porque a nota acabou de ficar registada.
+      const media = mediaFinal(np, nh);
+      const jaTemConta = Boolean(turmaPorProtocolo[c.protocolo]);
+      if (classificacao(media) === "Admitido" && !jaTemConta) {
+        setCriandoConta((prev) => new Set(prev).add(c.protocolo));
+        try {
+          const { numeroEstudante, passwordTemporaria } = await criarContaNucleo(c);
+          setAviso({
+            texto: passwordTemporaria
+              ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${passwordTemporaria}`
+              : `${c.nome} admitido/a — conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
+            erro: false,
+          });
+        } catch (err) {
+          setAviso({
+            texto: `Resultado de ${c.nome} gravado (Admitido), mas a conta não foi criada automaticamente: ${
+              err instanceof Error ? err.message : "erro desconhecido"
+            }. Use o botão "Criar conta" para tentar de novo.`,
+            erro: true,
+          });
+        } finally {
+          setCriandoConta((prev) => {
+            const novo = new Set(prev);
+            novo.delete(c.protocolo);
+            return novo;
+          });
+        }
+      } else {
+        setAviso({ texto: `Resultado de ${c.nome} gravado — já visível na pauta pública.`, erro: false });
+      }
       carregar();
     } catch (err) {
       setAviso({ texto: err instanceof Error ? err.message : "Não foi possível gravar o resultado.", erro: true });
@@ -2007,50 +2039,56 @@ function Candidaturas() {
     }
   };
 
-  const criarConta = async (c: CandidaturaItem) => {
+  /**
+   * Núcleo da criação de conta: gera o número seguinte e cria a conta de
+   * estudante. Lança em caso de erro — quem chama decide como mostrar a
+   * mensagem (usado tanto pelo botão "Criar conta" como automaticamente
+   * assim que um resultado passa a "Admitido").
+   */
+  const criarContaNucleo = async (c: CandidaturaItem) => {
     const cursoInfo = cursoPorTitulo(c.curso);
-    if (!cursoInfo) {
-      setAviso({ texto: `Curso "${c.curso}" não reconhecido — não foi possível criar a conta.`, erro: true });
-      return;
-    }
-    if (!c.email) {
-      setAviso({ texto: `A candidatura de ${c.nome} não tem e-mail — não é possível criar a conta.`, erro: true });
-      return;
-    }
+    if (!cursoInfo) throw new Error(`Curso "${c.curso}" não reconhecido — não foi possível criar a conta.`);
+    if (!c.email) throw new Error(`A candidatura de ${c.nome} não tem e-mail — não é possível criar a conta.`);
     const regime = c.turno === "Pós-laboral" ? "pos-laboral" : "diurno";
+
+    const numRes = await fetch("/api/numeracao-estudantes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ curso: cursoInfo.slug, regime }),
+    });
+    const numJson = await numRes.json();
+    if (!numRes.ok) throw new Error(numJson.error || "Não foi possível gerar o número de estudante.");
+    const numeroEstudante = numJson.numeroAtribuido as string;
+
+    const contaRes = await fetch("/api/estudantes-contas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "criar_unico",
+        numeroEstudante,
+        nome: c.nome,
+        curso: cursoInfo.slug,
+        regime,
+        ano: 1,
+        email: c.email,
+        candidaturaProtocolo: c.protocolo,
+      }),
+    });
+    const contaJson = await contaRes.json();
+    if (!contaRes.ok) throw new Error(contaJson.error || "Não foi possível criar a conta.");
+
+    setTurmaPorProtocolo((prev) => ({ ...prev, [c.protocolo]: { numero_estudante: numeroEstudante } }));
+    return { numeroEstudante, passwordTemporaria: contaJson.passwordTemporaria as string | null };
+  };
+
+  const criarConta = async (c: CandidaturaItem) => {
     setCriandoConta((prev) => new Set(prev).add(c.protocolo));
     setAviso(null);
     try {
-      const numRes = await fetch("/api/numeracao-estudantes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ curso: cursoInfo.slug, regime }),
-      });
-      const numJson = await numRes.json();
-      if (!numRes.ok) throw new Error(numJson.error || "Não foi possível gerar o número de estudante.");
-      const numeroEstudante = numJson.numeroAtribuido as string;
-
-      const contaRes = await fetch("/api/estudantes-contas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "criar_unico",
-          numeroEstudante,
-          nome: c.nome,
-          curso: cursoInfo.slug,
-          regime,
-          ano: 1,
-          email: c.email,
-          candidaturaProtocolo: c.protocolo,
-        }),
-      });
-      const contaJson = await contaRes.json();
-      if (!contaRes.ok) throw new Error(contaJson.error || "Não foi possível criar a conta.");
-
-      setTurmaPorProtocolo((prev) => ({ ...prev, [c.protocolo]: { numero_estudante: numeroEstudante } }));
+      const { numeroEstudante, passwordTemporaria } = await criarContaNucleo(c);
       setAviso({
-        texto: contaJson.passwordTemporaria
-          ? `Conta criada — nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${contaJson.passwordTemporaria}`
+        texto: passwordTemporaria
+          ? `Conta criada — nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${passwordTemporaria}`
           : `Conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
         erro: false,
       });
