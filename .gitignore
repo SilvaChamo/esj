@@ -11,3 +11,4 @@ tsconfig.tsbuildinfo
 modern-company-time-line-template
 HTML/
 .playwright-mcp/
+.vercel

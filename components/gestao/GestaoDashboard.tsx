@@ -7,6 +7,7 @@ import {
   Bell,
   Book,
   BookOpen,
+  BookPlus,
   Calendar,
   CalendarDays,
   ChevronRight,
@@ -27,9 +28,11 @@ import {
   PanelLeftOpen,
   ScrollText,
   Send,
+  ShieldCheck,
   Trash2,
   Upload,
   UserCheck,
+  UserPlus,
   Users,
   Video,
   LogOut,
@@ -84,6 +87,9 @@ import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
 import ContasDocentes from "@/components/gestao/ContasDocentes";
+import ContasEstudantes from "@/components/gestao/ContasEstudantes";
+import ContasAdministradores from "@/components/gestao/ContasAdministradores";
+import Cadeiras from "@/components/gestao/Cadeiras";
 import SituacaoEstudantes from "@/components/gestao/SituacaoEstudantes";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
@@ -107,7 +113,10 @@ type Section =
   | "videos"
   | "documentos"
   | "subscritores"
+  | "cadeiras"
   | "docentes"
+  | "estudantes"
+  | "administradores"
   | "situacao"
   | "bib-jj"
   | "bib-pm"
@@ -183,9 +192,18 @@ const NAV: NavEntry[] = [
       { id: "documentos", label: "Documentos", icon: FileText },
     ],
   },
-  { id: "subscritores", label: "Subscritores", icon: Mail },
-  { id: "docentes", label: "Contas de docentes", icon: GraduationCap },
+  { id: "cadeiras", label: "Cadeiras", icon: BookPlus },
   { id: "situacao", label: "Situação dos estudantes", icon: UserCheck },
+  {
+    label: "Contas",
+    icon: Users,
+    children: [
+      { id: "docentes", label: "Docentes", icon: GraduationCap },
+      { id: "estudantes", label: "Estudantes", icon: Users },
+      { id: "administradores", label: "Administradores", icon: ShieldCheck },
+      { id: "subscritores", label: "Subscritores", icon: Mail },
+    ],
+  },
 ];
 
 function sectionLabel(section: Section): string {
@@ -216,6 +234,11 @@ export default function GestaoDashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [smsBloqueado, setSmsBloqueado] = useState<{ telefones: string[] } | null>(null);
   const [eventosTab, setEventosTab] = useState<"coloquio" | "livro">("coloquio");
+  // Filtro inicial da lista de estudantes quando se chega lá a partir de uma
+  // cadeira específica na lista de docentes (ver comentário em verEstudantesCadeira).
+  const [filtroEstudantesInicial, setFiltroEstudantesInicial] = useState<{ curso: string; ano: number } | null>(
+    null
+  );
 
   useEffect(() => {
     const active = groupOf(section);
@@ -226,6 +249,7 @@ export default function GestaoDashboard() {
   // primeiro item — o chevron, à parte, só expande/colapsa sem navegar.
   const goToGroup = (label: string, firstId: Section) => {
     setSmsBloqueado(null);
+    setFiltroEstudantesInicial(null);
     setOpenGroup(label);
     setSection(firstId);
     setIsMobileMenuOpen(false);
@@ -237,8 +261,17 @@ export default function GestaoDashboard() {
 
   const goToLeaf = (id: Section) => {
     setSmsBloqueado(null);
+    setFiltroEstudantesInicial(null);
     setSection(id);
     setIsMobileMenuOpen(false);
+  };
+
+  // Clicar numa cadeira na lista de docentes leva à lista de estudantes já
+  // filtrada por curso + ano dessa cadeira (turma_estudantes não guarda a
+  // cadeira em si, só curso/regime/ano — é a mesma turma usada na pauta do docente).
+  const verEstudantesCadeira = (curso: string, ano: number) => {
+    setFiltroEstudantesInicial({ curso, ano });
+    setSection("estudantes");
   };
 
   useEffect(() => {
@@ -457,13 +490,17 @@ export default function GestaoDashboard() {
           isCollapsed ? "lg:ml-20" : "lg:ml-[240px]"
         }`}
       >
-        <header className="bg-white border-b border-navy-100 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-navy-100 px-4 sm:px-8 py-3 flex items-center justify-between gap-4 shadow-sm">
           <div>
             <h1 className="font-serif text-xl font-bold text-navy-900">
               {sectionLabel(section)}
             </h1>
             {section === "noticias" ? (
               <p className="mt-0.5 text-[15px] font-bold text-sky">Adicionar notícia</p>
+            ) : section === "estudantes" ? (
+              <p className="mt-0.5 text-xs text-navy-900/60 font-medium">
+                Gestão de Contas de Estudantes · Visualize e garanta o acesso dos estudantes por curso/regime
+              </p>
             ) : (
               <p className="mt-0.5 text-[11px] font-bold tracking-widest text-sky">SECRETARIA ACADÉMICA</p>
             )}
@@ -559,6 +596,46 @@ export default function GestaoDashboard() {
                 Baixar PDF
               </button>
             )}
+            {section === "estudantes" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("btn-criar-estudante-modal")?.click()}
+                className="inline-flex items-center gap-1.5 bg-sky hover:bg-sky/90 text-white font-bold text-xs px-3.5 py-2 rounded shadow-sm transition-colors whitespace-nowrap"
+              >
+                <UserPlus size={14} />
+                Criar Conta
+              </button>
+            )}
+            {section === "docentes" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("btn-criar-docente-modal")?.click()}
+                className="inline-flex items-center gap-1.5 bg-sky hover:bg-sky/90 text-white font-bold text-xs px-3.5 py-2 rounded shadow-sm transition-colors whitespace-nowrap"
+              >
+                <UserPlus size={14} />
+                Adicionar Docente
+              </button>
+            )}
+            {section === "administradores" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("btn-criar-administrador-modal")?.click()}
+                className="inline-flex items-center gap-1.5 bg-sky hover:bg-sky/90 text-white font-bold text-xs px-3.5 py-2 rounded shadow-sm transition-colors whitespace-nowrap"
+              >
+                <UserPlus size={14} />
+                Adicionar Administrador
+              </button>
+            )}
+            {section === "cadeiras" && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("btn-criar-cadeira-modal")?.click()}
+                className="inline-flex items-center gap-1.5 bg-sky hover:bg-sky/90 text-white font-bold text-xs px-3.5 py-2 rounded shadow-sm transition-colors whitespace-nowrap"
+              >
+                <BookPlus size={14} />
+                Adicionar Cadeira
+              </button>
+            )}
             <button
               type="button"
               onClick={sair}
@@ -596,12 +673,13 @@ export default function GestaoDashboard() {
           </div>
         )}
 
-        <main className="flex-1 px-4 sm:px-8 py-8">
+        <main className="flex-1 px-4 sm:px-8 py-4 sm:py-5">
           {needsSchema && <SchemaInstall />}
           {section === "painel" && (
             <Painel
               onGo={(id) => {
                 setSmsBloqueado(null);
+                setFiltroEstudantesInicial(null);
                 setSection(id);
               }}
               userEmail={userEmail}
@@ -631,7 +709,10 @@ export default function GestaoDashboard() {
           {section === "folha" && <FolhaAcademica onAction={showNote} />}
           {section === "videos" && <Videos onAction={showNote} />}
           {section === "documentos" && <Documentos />}
-          {section === "docentes" && <ContasDocentes />}
+          {section === "cadeiras" && <Cadeiras />}
+          {section === "docentes" && <ContasDocentes onVerEstudantesCadeira={verEstudantesCadeira} />}
+          {section === "estudantes" && <ContasEstudantes filtroInicial={filtroEstudantesInicial} />}
+          {section === "administradores" && <ContasAdministradores />}
           {section === "situacao" && <SituacaoEstudantes onAction={showNote} />}
           {section === "candidaturas" && <Candidaturas />}
           {section === "anuncios" && (

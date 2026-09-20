@@ -7,7 +7,15 @@ import { eSuperAdmin, rotuloAutorConta } from "@/lib/gestao-auth";
 
 export const dynamic = "force-dynamic";
 
-const RESULTADOS_VALIDOS = ["Aprovado", "Em Frequência", "Reprovado", "Excluído"];
+const RESULTADOS_VALIDOS = [
+  "Dispensado",
+  "Admitido",
+  "Recorrência",
+  "Aprovado",
+  "Em Frequência",
+  "Reprovado",
+  "Excluído",
+];
 
 function sessaoSupabase() {
   const cookieStore = cookies();
@@ -44,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const estudanteId = String(body?.estudanteId || "");
+  let estudanteId = String(body?.estudanteId || "");
   const numeroEstudante = String(body?.numeroEstudante || "").trim();
   const nomeEstudante = String(body?.nomeEstudante || "").trim();
   const curso = String(body?.curso || "");
@@ -54,7 +62,7 @@ export async function POST(request: Request) {
   const semestre = Number(body?.semestre) || null;
   const resultado = String(body?.resultado || "Em Frequência");
 
-  if (!estudanteId || !numeroEstudante || !nomeEstudante || !curso || !cadeiraCodigo || !cadeiraNome) {
+  if (!numeroEstudante || !nomeEstudante || !curso || !cadeiraCodigo || !cadeiraNome) {
     return NextResponse.json({ error: "Preencha o estudante e a cadeira." }, { status: 400 });
   }
   if (!RESULTADOS_VALIDOS.includes(resultado)) {
@@ -85,39 +93,87 @@ export async function POST(request: Request) {
     );
   }
 
+  // Resolver a conta pelo número de estudante — NUNCA criar uma conta nova
+  // aqui: um login com email/password adivinháveis a partir do número de
+  // estudante (visível em qualquer pauta) seria uma conta que qualquer
+  // colega ou docente conseguiria calcular e usar. Se o estudante ainda não
+  // se registou, o docente é avisado a pedir-lhe para se registar em /entrar
+  // (esse registo já o liga à turma automaticamente).
+  if (!estudanteId) {
+    const { data: lista } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existente = (lista?.users || []).find(
+      (u) =>
+        u.user_metadata?.numero_estudante === numeroEstudante ||
+        u.user_metadata?.numeroEstudante === numeroEstudante
+    );
+    if (existente) estudanteId = existente.id;
+  }
+
+  if (!estudanteId) {
+    return NextResponse.json(
+      {
+        error:
+          "Este estudante ainda não tem conta registada no site — peça-lhe para se registar em /entrar antes de lançar a nota.",
+      },
+      { status: 404 }
+    );
+  }
+
   const teste1 = numOuNull(body?.teste1);
   const teste2 = numOuNull(body?.teste2);
   const trabalho = numOuNull(body?.trabalho);
   const exameNormal = numOuNull(body?.exameNormal);
   const mediaInformada = numOuNull(body?.mediaFinal);
-  const mediaCalculada =
+
+  const mf =
     teste1 !== null && teste2 !== null && trabalho !== null
       ? Math.round((teste1 * 0.3 + teste2 * 0.3 + trabalho * 0.4) * 10) / 10
       : null;
+
+  const mediaCalculada =
+    exameNormal !== null && mf !== null
+      ? Math.round((mf * 0.5 + exameNormal * 0.5) * 10) / 10
+      : mf;
+
   const mediaFinal = mediaInformada ?? mediaCalculada;
 
-  const { error } = await admin.from("estudantes_notas").upsert(
-    {
-      estudante_id: estudanteId,
-      numero_estudante: numeroEstudante,
-      nome_estudante: nomeEstudante,
-      curso,
-      cadeira_codigo: cadeiraCodigo,
-      cadeira_nome: cadeiraNome,
-      ano,
-      semestre,
-      teste1,
-      teste2,
-      trabalho,
-      exame_normal: exameNormal,
-      media_final: mediaFinal,
-      resultado,
-      docente_id: user.id,
-      docente_nome: rotuloAutorConta(user),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "estudante_id,curso,cadeira_codigo" }
-  );
+  const tentarUpsert = async (resVal: string) => {
+    return await admin.from("estudantes_notas").upsert(
+      {
+        estudante_id: estudanteId,
+        numero_estudante: numeroEstudante,
+        nome_estudante: nomeEstudante,
+        curso,
+        cadeira_codigo: cadeiraCodigo,
+        cadeira_nome: cadeiraNome,
+        ano,
+        semestre,
+        teste1,
+        teste2,
+        trabalho,
+        exame_normal: exameNormal,
+        media_final: mediaFinal,
+        resultado: resVal,
+        docente_id: user.id,
+        docente_nome: rotuloAutorConta(user),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "estudante_id,curso,cadeira_codigo" }
+    );
+  };
+
+  let { error } = await tentarUpsert(resultado);
+
+  // Fallback se a tabela no Postgres ainda tiver a check constraint antiga
+  if (error && /check constraint|estudantes_notas_resultado_check/i.test(error.message)) {
+    let fallback = "Em Frequência";
+    if (resultado === "Dispensado" || resultado === "Aprovado") fallback = "Aprovado";
+    else if (resultado === "Reprovado" || resultado === "Excluído") fallback = "Reprovado";
+    else fallback = "Em Frequência";
+
+    const retry = await tentarUpsert(fallback);
+    error = retry.error;
+  }
 
   if (error) {
     if (/Could not find the table|PGRST205|schema cache/i.test(error.message)) {

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Fragment, FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  Clock,
   ExternalLink,
   Eye,
   FileText,
@@ -43,12 +44,13 @@ import {
   type TipoMaterialDocencia,
 } from "@/lib/docencia";
 import { listarMinhasCadeiras, type CadeiraAtribuida } from "@/lib/docencia-cadeiras";
+import PautaCadeira from "@/components/docencia/PautaCadeira";
 import { listarPautaCadeira, type NotaEstudante, type ResultadoNota } from "@/lib/notas";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 import LeitorDocumento from "@/components/LeitorDocumento";
 
 type Section = "materiais" | "partilhar" | "gerir" | "cadeiras" | "notas";
-type Acesso = "a-verificar" | "negado" | "permitido";
+type Acesso = "a-verificar" | "negado" | "permitido" | "erro";
 
 type EstudanteBusca = {
   id: string;
@@ -80,8 +82,11 @@ export default function DocenciaDashboard({
   const [needsSchema, setNeedsSchema] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Cadeiras atribuídas ao docente autenticado
+  // Cadeiras atribuídas ao docente autenticado. `null` só passa a significar
+  // "tabela não existe" depois de cadeirasCarregando ficar false — enquanto
+  // ainda está a carregar, null não deve mostrar o aviso de criar tabela.
   const [minhasCadeiras, setMinhasCadeiras] = useState<CadeiraAtribuida[] | null>(null);
+  const [cadeirasCarregando, setCadeirasCarregando] = useState(true);
 
   // Filtros de materiais
   const [curso, setCurso] = useState<CursoDocenciaSlug>(CURSOS_DOCENCIA[0].slug);
@@ -98,6 +103,7 @@ export default function DocenciaDashboard({
 
   // Formulário de lançamento de notas
   const [cadeiraNotaSel, setCadeiraNotaSel] = useState("");
+  const [regimeNotaSel, setRegimeNotaSel] = useState<"diurno" | "pos-laboral">("diurno");
   const [buscaEstudante, setBuscaEstudante] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState<EstudanteBusca[]>([]);
   const [buscandoEstudante, setBuscandoEstudante] = useState(false);
@@ -111,27 +117,44 @@ export default function DocenciaDashboard({
   const [notaToast, setNotaToast] = useState<string | null>(null);
   const [notaToastErro, setNotaToastErro] = useState(false);
   const [pautaCadeiraAtual, setPautaCadeiraAtual] = useState<NotaEstudante[] | null>(null);
+  const [notasExpandidas, setNotasExpandidas] = useState<Record<string, boolean>>({});
+
+  const verificarSessao = () => {
+    setAcesso("a-verificar");
+    const supabase = createBrowserSupabase();
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        const user = data.user;
+        if (user) {
+          setAcesso("permitido");
+          setUserEmail(user.email ?? null);
+          setSouSuperAdmin(eSuperAdmin(user));
+          setAutor(eSuperAdmin(user) ? "Administrador" : nomeDeUser(user));
+          setAutorId(user.id);
+          listarMinhasCadeiras()
+            .then(setMinhasCadeiras)
+            .catch(() => setMinhasCadeiras([]))
+            .finally(() => setCadeirasCarregando(false));
+        } else {
+          // Sessão confirmada como inexistente (não um erro) — permitir
+          // visualização como visitante/docente em teste.
+          setAcesso("permitido");
+          setUserEmail("docente@esj.ac.mz");
+          setAutor("Docente ESJ");
+          setCadeirasCarregando(false);
+        }
+      })
+      .catch(() => {
+        // Falha a VERIFICAR a sessão (ex.: rede) — não é o mesmo que "sem
+        // sessão", por isso nunca cai em "permitido": nega o acesso e deixa
+        // tentar novamente, em vez de ficar preso ou abrir sem confirmar.
+        setAcesso("erro");
+      });
+  };
 
   useEffect(() => {
-    const supabase = createBrowserSupabase();
-    void supabase.auth.getUser().then(({ data }) => {
-      const user = data.user;
-      if (user) {
-        setAcesso("permitido");
-        setUserEmail(user.email ?? null);
-        setSouSuperAdmin(eSuperAdmin(user));
-        setAutor(eSuperAdmin(user) ? "Administrador" : nomeDeUser(user));
-        setAutorId(user.id);
-        listarMinhasCadeiras()
-          .then(setMinhasCadeiras)
-          .catch(() => setMinhasCadeiras([]));
-      } else {
-        // Permitir visualização como visitante/docente em teste
-        setAcesso("permitido");
-        setUserEmail("docente@esj.ac.mz");
-        setAutor("Docente ESJ");
-      }
-    });
+    verificarSessao();
   }, []);
 
   const carregarMateriais = () => {
@@ -208,6 +231,14 @@ export default function DocenciaDashboard({
     if (!Number.isFinite(t1) || !Number.isFinite(t2) || !Number.isFinite(tr)) return null;
     return Math.round((t1 * 0.3 + t2 * 0.3 + tr * 0.4) * 10) / 10;
   }, [teste1Form, teste2Form, trabalhoForm]);
+
+  // Auto-seleccionar a primeira cadeira quando as cadeiras carregam
+  useEffect(() => {
+    if (cadeiraNotaSel === "" && minhasCadeiras && minhasCadeiras.length > 0) {
+      const primeira = minhasCadeiras[0];
+      setCadeiraNotaSel(`${primeira.curso}::${primeira.cadeiraCodigo}`);
+    }
+  }, [minhasCadeiras]);
 
   useEffect(() => {
     if (!cadeiraNotaInfo) {
@@ -633,7 +664,7 @@ export default function DocenciaDashboard({
           </div>
         )}
 
-        {minhasCadeiras === null && (
+        {!cadeirasCarregando && minhasCadeiras === null && (
           <div className="p-6 md:p-8">
             <SchemaInstall
               sqlPath="/docencia-cadeiras.sql"
@@ -782,7 +813,7 @@ export default function DocenciaDashboard({
 
         {/* SECÇÃO: MINHAS CADEIRAS */}
         {section === "cadeiras" && (
-          <div className="p-6 md:p-8 space-y-6 max-w-4xl">
+          <div className="p-6 md:p-8 space-y-8">
             {souSuperAdmin && (
               <div className="p-4 bg-sky/10 border border-sky/30 rounded text-xs font-semibold text-navy-900">
                 Como administrador, tem acesso a todos os cursos e cadeiras, independentemente de atribuição.
@@ -829,7 +860,7 @@ export default function DocenciaDashboard({
 
         {/* SECÇÃO: LANÇAR NOTAS */}
         {section === "notas" && (
-          <div className="p-6 md:p-8 space-y-6 max-w-4xl">
+          <div className="p-6 md:p-8 space-y-6">
             {(!minhasCadeiras || minhasCadeiras.length === 0) && !souSuperAdmin ? (
               <div className="bg-white border border-navy-100 p-12 text-center">
                 <ClipboardList size={36} className="mx-auto text-navy-900/30 mb-3" />
@@ -842,225 +873,49 @@ export default function DocenciaDashboard({
               </div>
             ) : (
               <>
-                <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold text-navy-900 mb-1.5">
-                      Cadeira *
-                    </label>
-                    <select
-                      value={cadeiraNotaSel}
-                      onChange={(e) => {
-                        setCadeiraNotaSel(e.target.value);
-                        limparFormularioNota();
-                      }}
-                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                    >
-                      <option value="">— Selecione a cadeira —</option>
-                      {(minhasCadeiras ?? []).map((c) => (
-                        <option key={c.id} value={`${c.curso}::${c.cadeiraCodigo}`}>
-                          {c.cadeiraNome} ({c.cadeiraCodigo}) — {CURSOS_DOCENCIA.find((cur) => cur.slug === c.curso)?.titulo}
-                        </option>
-                      ))}
-                    </select>
+                <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Cadeira *
+                      </label>
+                      <select
+                        value={cadeiraNotaSel}
+                        onChange={(e) => setCadeiraNotaSel(e.target.value)}
+                        className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                      >
+                        <option value="">— Selecione a cadeira —</option>
+                        {(minhasCadeiras ?? []).map((c) => (
+                          <option key={c.id} value={`${c.curso}::${c.cadeiraCodigo}`}>
+                            {c.cadeiraNome} ({c.cadeiraCodigo}) — {CURSOS_DOCENCIA.find((cur) => cur.slug === c.curso)?.titulo}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                        Regime
+                      </label>
+                      <select
+                        value={regimeNotaSel}
+                        onChange={(e) => setRegimeNotaSel(e.target.value as "diurno" | "pos-laboral")}
+                        className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                      >
+                        <option value="diurno">Laboral (Diurno)</option>
+                        <option value="pos-laboral">Pós-Laboral</option>
+                      </select>
+                    </div>
                   </div>
-
-                  {cadeiraNotaInfo && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-navy-900 mb-1.5">
-                          Estudante *
-                        </label>
-                        {estudanteSel ? (
-                          <div className="flex items-center justify-between gap-3 p-3 bg-sky/10 border border-sky/30 rounded">
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-navy-900 truncate">{estudanteSel.nome || estudanteSel.email}</p>
-                              <p className="text-xs text-navy-900/60">
-                                Nº {estudanteSel.numeroEstudante || "—"} {estudanteSel.email ? `· ${estudanteSel.email}` : ""}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={limparFormularioNota}
-                              className="shrink-0 text-xs font-bold text-navy-900/60 hover:text-crimson"
-                            >
-                              Trocar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-900/40" />
-                            <input
-                              type="text"
-                              value={buscaEstudante}
-                              onChange={(e) => setBuscaEstudante(e.target.value)}
-                              placeholder="Pesquisar por nome, número ou e-mail do estudante…"
-                              className="w-full pl-9 pr-3 p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                            />
-                            {buscandoEstudante && (
-                              <p className="mt-1 text-[11px] text-navy-900/50">A pesquisar…</p>
-                            )}
-                            {resultadosBusca.length > 0 && (
-                              <ul className="mt-2 border border-navy-100 rounded divide-y divide-navy-100 bg-white shadow-sm max-h-56 overflow-y-auto">
-                                {resultadosBusca.map((e) => (
-                                  <li key={e.id}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEstudanteSel(e);
-                                        setBuscaEstudante("");
-                                        setResultadosBusca([]);
-                                      }}
-                                      className="w-full text-left px-3 py-2.5 hover:bg-cream/60 transition-colors"
-                                    >
-                                      <p className="text-sm font-semibold text-navy-900">{e.nome || e.email}</p>
-                                      <p className="text-[11px] text-navy-900/55">
-                                        Nº {e.numeroEstudante || "—"} · {e.email}
-                                      </p>
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {estudanteSel && (
-                        <form onSubmit={lancarNota} className="space-y-4 pt-2 border-t border-navy-100">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
-                            <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">1º Teste</label>
-                              <input
-                                type="number"
-                                min={0}
-                                max={20}
-                                step={0.1}
-                                value={teste1Form}
-                                onChange={(e) => setTeste1Form(e.target.value)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">2º Teste</label>
-                              <input
-                                type="number"
-                                min={0}
-                                max={20}
-                                step={0.1}
-                                value={teste2Form}
-                                onChange={(e) => setTeste2Form(e.target.value)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Trabalho</label>
-                              <input
-                                type="number"
-                                min={0}
-                                max={20}
-                                step={0.1}
-                                value={trabalhoForm}
-                                onChange={(e) => setTrabalhoForm(e.target.value)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Exame (opc.)</label>
-                              <input
-                                type="number"
-                                min={0}
-                                max={20}
-                                step={0.1}
-                                value={exameForm}
-                                onChange={(e) => setExameForm(e.target.value)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <div className="min-w-[160px]">
-                              <label className="block text-[11px] font-bold text-navy-900/70 mb-1">Resultado</label>
-                              <select
-                                value={resultadoForm}
-                                onChange={(e) => setResultadoForm(e.target.value as ResultadoNota)}
-                                className="w-full p-2.5 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
-                              >
-                                {RESULTADOS_NOTA.map((r) => (
-                                  <option key={r} value={r}>
-                                    {r}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            {mediaCalculada !== null && (
-                              <div className="text-xs font-bold text-navy-900">
-                                Média calculada (30/30/40): <span className="text-leaf font-mono text-sm">{mediaCalculada.toFixed(1)}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {notaToast && (
-                            <p className={`text-xs font-semibold flex items-center gap-1.5 ${notaToastErro ? "text-crimson" : "text-leaf"}`}>
-                              {notaToastErro ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
-                              {notaToast}
-                            </p>
-                          )}
-
-                          <button
-                            type="submit"
-                            disabled={notaBusy}
-                            className="inline-flex items-center gap-2 bg-leaf hover:bg-crimson text-white text-xs font-bold px-6 py-3 rounded transition-colors disabled:opacity-50"
-                          >
-                            <Save size={16} />
-                            <span>{notaBusy ? "A publicar…" : "Lançar Nota"}</span>
-                          </button>
-                        </form>
-                      )}
-                    </>
-                  )}
                 </div>
 
-                {cadeiraNotaInfo && pautaCadeiraAtual && pautaCadeiraAtual.length > 0 && (
-                  <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-navy-100 bg-cream/70">
-                      <h3 className="font-serif text-lg font-bold text-navy-900">
-                        Notas já lançadas — {cadeiraNotaInfo.cadeiraNome}
-                      </h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
-                            <th className="p-3">Nº</th>
-                            <th className="p-3">Estudante</th>
-                            <th className="p-3 text-center">Média Final</th>
-                            <th className="p-3 text-center">Resultado</th>
-                            <th className="p-3 text-right">Ação</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-navy-100 text-navy-900">
-                          {pautaCadeiraAtual.map((n) => (
-                            <tr key={n.id} className="hover:bg-cream/40 transition-colors">
-                              <td className="p-3 font-mono font-bold text-sky">{n.numeroEstudante}</td>
-                              <td className="p-3 font-semibold">{n.nomeEstudante}</td>
-                              <td className="p-3 text-center font-mono font-bold">{n.mediaFinal?.toFixed(1) ?? "—"}</td>
-                              <td className="p-3 text-center">{n.resultado}</td>
-                              <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => carregarNotaExistente(n)}
-                                  className="text-sky hover:underline font-bold"
-                                >
-                                  Editar
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                {cadeiraNotaInfo && (
+                  <PautaCadeira
+                    curso={cadeiraNotaInfo.curso}
+                    cadeiraCodigo={cadeiraNotaInfo.cadeiraCodigo}
+                    cadeiraNome={cadeiraNotaInfo.cadeiraNome}
+                    ano={cadeiraNotaInfo.ano}
+                    regime={regimeNotaSel}
+                  />
                 )}
               </>
             )}

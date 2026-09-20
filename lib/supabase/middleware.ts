@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
+import { eSuperAdmin, eDocente } from "@/lib/gestao-auth";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,23 +33,24 @@ export async function updateSession(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
-  const role = String(user?.user_metadata?.role || "").toLowerCase();
-  const soDocente = !!user && (role === "docente" || role === "professor");
+  const admin = eSuperAdmin(user);
+  const soDocente = eDocente(user) && !admin;
 
   if ((path.startsWith("/gestao") || path.startsWith("/docencia")) && !user) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/entrar";
     return NextResponse.redirect(redirect);
   }
-  // Conta de docente: só tem acesso à secção Docência, não ao painel de gestão.
-  if (path.startsWith("/gestao") && soDocente) {
+  // Só super-admin tem acesso ao painel de gestão — docente vai para a
+  // secção Docência, qualquer outra conta (estudante) vai para o dela.
+  if (path.startsWith("/gestao") && !admin) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/docencia/partilhar";
+    redirect.pathname = soDocente ? "/docencia/partilhar" : "/estudantes";
     return NextResponse.redirect(redirect);
   }
   if (path === "/entrar" && user) {
     const redirect = request.nextUrl.clone();
-    redirect.pathname = soDocente ? "/docencia/partilhar" : "/gestao";
+    redirect.pathname = admin ? "/gestao" : soDocente ? "/docencia/partilhar" : "/estudantes";
     return NextResponse.redirect(redirect);
   }
 

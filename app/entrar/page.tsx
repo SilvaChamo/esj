@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useState } from "react";
 import { Eye, EyeOff, GraduationCap, UserCheck, BookOpen } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { eDocente } from "@/lib/gestao-auth";
+import { eDocente, eSuperAdmin } from "@/lib/gestao-auth";
 import { savePerfilActual, type PerfilUtilizador } from "@/lib/auth-perfil";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import type { RegimeCurso } from "@/lib/curriculo";
+import { adicionarEstudanteTurma } from "@/lib/turma";
 
 const floatingLabelClass =
   "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-navy-900/55 transition-all duration-150 pointer-events-none" +
@@ -79,6 +80,7 @@ export default function EntrarPage() {
   const [numeroEstudante, setNumeroEstudante] = useState("");
   const [cursoRegisto, setCursoRegisto] = useState<CursoDocenciaSlug>("jornalismo");
   const [regimeRegisto, setRegimeRegisto] = useState<RegimeCurso>("diurno");
+  const [anoRegisto, setAnoRegisto] = useState<1 | 2 | 3 | 4>(1);
   const [departamento, setDepartamento] = useState("Jornalismo e Comunicação");
 
   const entrar = async (form: HTMLFormElement) => {
@@ -94,7 +96,9 @@ export default function EntrarPage() {
       });
       if (authError) throw authError;
 
-      if (eDocente(data.user)) {
+      if (eSuperAdmin(data.user)) {
+        router.push("/gestao");
+      } else if (eDocente(data.user)) {
         router.push("/docencia");
       } else {
         router.push("/estudantes");
@@ -140,6 +144,19 @@ export default function EntrarPage() {
 
       if (signUpError && !signUpError.message.includes("rate")) {
         // Continuar em modo demonstrativo se auth do Supabase requerer aprovação
+      }
+
+      // Estudante: entra logo na turma real do curso/regime/ano, para o
+      // docente já o encontrar na pauta sem a secretaria o adicionar à mão.
+      // (adicionarEstudanteTurma passa pela chave de serviço, ver lib/turma.ts)
+      if (tipoConta === "estudante" && numeroEstudante.trim()) {
+        void adicionarEstudanteTurma({
+          numeroEstudante: numeroEstudante.trim(),
+          nome: nome.trim(),
+          curso: cursoRegisto,
+          regime: regimeRegisto,
+          ano: anoRegisto,
+        });
       }
 
       // Guardar perfil no armazenamento local do browser
@@ -402,6 +419,21 @@ export default function EntrarPage() {
                         Pós-Laboral
                       </label>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-navy-900 mb-1">Ano que Frequenta *</label>
+                    <select
+                      value={anoRegisto}
+                      onChange={(e) => setAnoRegisto(Number(e.target.value) as 1 | 2 | 3 | 4)}
+                      className="w-full p-3 bg-white border border-navy-100 rounded text-sm text-navy-900 focus:outline-none focus:border-sky"
+                    >
+                      {[1, 2, 3, 4].map((ano) => (
+                        <option key={ano} value={ano}>
+                          {ano}º Ano
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </>
               ) : (

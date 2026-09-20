@@ -11,7 +11,7 @@ export type NotaEstudanteEPauta = {
   mediaFrequencia?: number;
   exameNormal?: number;
   mediaFinal?: number;
-  resultado?: "Admitido" | "Excluído" | "Aprovado" | "Reprovado" | "Pendente";
+  resultado?: "Dispensado" | "Admitido" | "Recorrência" | "Excluído" | "Aprovado" | "Reprovado" | "Pendente";
 };
 
 export type EPautaEletronica = {

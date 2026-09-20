@@ -19,7 +19,7 @@ create table if not exists estudantes_notas (
   exame_normal numeric(4,1),
   media_final numeric(4,1),
   resultado text not null default 'Em Frequência' check (
-    resultado in ('Aprovado', 'Em Frequência', 'Reprovado', 'Excluído')
+    resultado in ('Dispensado', 'Admitido', 'Recorrência', 'Aprovado', 'Em Frequência', 'Reprovado', 'Excluído')
   ),
   docente_id uuid references auth.users(id),
   docente_nome text,

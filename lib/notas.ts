@@ -2,7 +2,14 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { isMissingTable } from "@/lib/cms";
 import type { CursoDocenciaSlug } from "@/lib/docencia";
 
-export type ResultadoNota = "Aprovado" | "Em Frequência" | "Reprovado" | "Excluído";
+export type ResultadoNota =
+  | "Dispensado"
+  | "Admitido"
+  | "Recorrência"
+  | "Aprovado"
+  | "Em Frequência"
+  | "Reprovado"
+  | "Excluído";
 
 export type NotaEstudante = {
   id: string;

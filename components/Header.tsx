@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
-import { eDocente } from "@/lib/gestao-auth";
+import { eDocente, eSuperAdmin } from "@/lib/gestao-auth";
 
 type MenuChild = {
   label: string;
@@ -109,6 +109,7 @@ export default function Header() {
   const [query, setQuery] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [souDocente, setSouDocente] = useState(false);
+  const [souAdmin, setSouAdmin] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -116,10 +117,12 @@ export default function Header() {
       const supabase = createBrowserSupabase();
       void supabase.auth.getUser().then(({ data }) => {
         setLoggedIn(!!data.user);
+        setSouAdmin(eSuperAdmin(data.user));
         setSouDocente(eDocente(data.user));
       });
       const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
         setLoggedIn(!!session?.user);
+        setSouAdmin(eSuperAdmin(session?.user));
         setSouDocente(eDocente(session?.user));
       });
       return () => sub.subscription.unsubscribe();
@@ -187,10 +190,10 @@ export default function Header() {
               >
                 {loggedIn && (
                   <Link
-                    href={souDocente ? "/docencia/partilhar" : "/gestao"}
+                    href={souAdmin ? "/gestao" : souDocente ? "/docencia/partilhar" : "/estudantes"}
                     className="hover:text-sky-300 transition-colors whitespace-nowrap"
                   >
-                    {souDocente ? "Voltar à DOCÊNCIA" : "Voltar ao PAINEL"}
+                    {souAdmin ? "Voltar ao PAINEL" : souDocente ? "Voltar à DOCÊNCIA" : "Voltar ao PORTAL"}
                   </Link>
                 )}
               </div>
