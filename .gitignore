@@ -4,6 +4,7 @@ out
 .DS_Store
 *.pem
 .env
+.env*.production
 .env*.local
 npm-debug.log*
 supabase/.temp

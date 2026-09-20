@@ -1841,7 +1841,7 @@ function Candidaturas() {
     <div className="bg-white border border-navy-100 p-8">
       {missing && <SchemaInstall />}
       {error && <p className="text-sm text-crimson">{error}</p>}
-      <ul className="divide-y divide-navy-100">
+      <ul>
         {items.length === 0 && !error && !missing && (
           <li className="py-3 text-sm text-navy-900/50">Ainda não há candidaturas.</li>
         )}
@@ -2012,16 +2012,16 @@ function Subscritores({
   };
 
   const linha =
-    "p-2.5 grid grid-cols-[auto_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
+    "gestao-list-row grid grid-cols-[auto_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
 
   return (
-    <div className="bg-white border border-navy-100 p-8">
+    <div className="gestao-list-card">
       <button type="button" id="subscritores-baixar-pdf" className="hidden" onClick={baixarPdf} />
       {missing && <SchemaInstall />}
       {error && <p className="text-sm text-crimson">{error}</p>}
-      <ul className="divide-y divide-navy-100">
+      <ul>
         {items.length > 0 && (
-          <li className={linha}>
+          <li className={`${linha} gestao-list-header`}>
             <input
               type="checkbox"
               checked={todos}

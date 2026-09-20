@@ -212,16 +212,16 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
         />
       </div>
 
-      <div className="bg-white border border-navy-100 overflow-x-auto">
+      <div className="gestao-list-card overflow-x-auto">
         <table className="w-full min-w-[760px] text-xs">
           <thead>
-            <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3">N.º Estudante</th>
-              <th className="px-3 py-3">Nome</th>
-              <th className="px-3 py-3">Curso / Regime</th>
-              <th className="px-3 py-3 text-center">Situação</th>
-              <th className="px-3 py-3">Observação</th>
-              <th className="px-3 py-3"></th>
+            <tr className="gestao-list-header text-left">
+              <th className="px-3 py-2">N.º Estudante</th>
+              <th className="px-3 py-2">Nome</th>
+              <th className="px-3 py-2">Curso / Regime</th>
+              <th className="px-3 py-2 text-center">Situação</th>
+              <th className="px-3 py-2">Observação</th>
+              <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -232,16 +232,16 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                 </td>
               </tr>
             )}
-            {items.map((row, i) => {
+            {items.map((row) => {
               const cursoLabel = CURSOS_DOCENCIA.find((c) => c.slug === row.curso)?.titulo || row.curso;
               const regimeLabel = REGIMES.find((r) => r.valor === row.regime)?.label || row.regime;
               return (
                 <tr
                   key={row.id}
                   onClick={() => editar(row)}
-                  className={`border-t border-navy-100 cursor-pointer hover:bg-cream/60 ${i % 2 === 1 ? "bg-cream/40" : ""}`}
+                  className="gestao-list-row cursor-pointer"
                 >
-                  <td className="px-3 py-2 font-mono text-navy-900">{row.numero_estudante}</td>
+                  <td className="px-3 py-2 font-mono font-semibold text-sky">{row.numero_estudante}</td>
                   <td className="px-3 py-2 text-navy-900">{row.nome}</td>
                   <td className="px-3 py-2 text-navy-900/70">
                     {[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}
@@ -260,7 +260,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                         void remover(row.id);
                       }}
                       title="Remover"
-                      className="text-crimson hover:text-navy-900 transition-colors"
+                      className="gestao-list-action text-crimson hover:border-crimson/30 hover:text-crimson"
                     >
                       <Trash2 size={15} />
                     </button>

@@ -631,9 +631,10 @@ export default function ContasDocentes({
         <p className={`text-sm font-semibold ${toastErro ? "text-crimson" : "text-leaf"}`}>{toast}</p>
       )}
 
-      <div className="bg-white border border-navy-100">
-        <div className="px-6 py-4 border-b border-navy-100">
-          <h2 className="font-serif text-lg font-bold text-navy-900">Contas de docente</h2>
+      <div className="gestao-list-card">
+        <div className="gestao-list-header flex items-center justify-between">
+          <h2>Contas de docente</h2>
+          <span>{contas?.length ?? 0} conta{contas?.length === 1 ? "" : "s"}</span>
         </div>
         {loading ? (
           <p className="px-6 py-8 text-sm text-navy-900/55">A carregar…</p>
