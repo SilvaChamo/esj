@@ -726,7 +726,7 @@ export default function ContasDocentes({
                                   </div>
                                   {aberto && cursos.length > 2 && (
                                     <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
-                                      {cursos.map(renderTag)}
+                                      {cursos.slice(2).map(renderTag)}
                                     </div>
                                   )}
                                 </div>
@@ -781,7 +781,7 @@ export default function ContasDocentes({
                                   </div>
                                   {aberta && cadeiras.length > 2 && (
                                     <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
-                                      {cadeiras.map(renderTag)}
+                                      {cadeiras.slice(2).map(renderTag)}
                                     </div>
                                   )}
                                 </div>

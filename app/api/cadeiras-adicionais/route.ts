@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { pedirSuperAdmin } from "@/lib/gestao-api-auth";
+import { CURRICULOS_ESJ } from "@/lib/curriculo";
+import type { CursoDocenciaSlug } from "@/lib/docencia";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,16 @@ const CURSOS_VALIDOS = [
   "relacoes-publicas",
   "biblioteconomia-e-documentacao",
 ];
+
+/**
+ * Impede criar/editar uma cadeira "extra" com um código já usado por uma
+ * cadeira do plano curricular estático (lib/curriculo.ts) nesse curso — caso
+ * contrário o catálogo (montarCatalogo) mostraria a mesma cadeira duas
+ * vezes no selector, com um único checkbox a marcar as duas em simultâneo.
+ */
+function existeNoCurriculoBase(curso: CursoDocenciaSlug, codigo: string): boolean {
+  return CURRICULOS_ESJ[curso].cadeiras.some((c) => c.codigo.toLowerCase() === codigo.toLowerCase());
+}
 
 export async function POST(request: Request) {
   if (!(await pedirSuperAdmin())) {
@@ -41,6 +53,12 @@ export async function POST(request: Request) {
   }
   if (semestre !== 1 && semestre !== 2) {
     return NextResponse.json({ error: "Semestre inválido." }, { status: 400 });
+  }
+  if (existeNoCurriculoBase(curso as CursoDocenciaSlug, codigo)) {
+    return NextResponse.json(
+      { error: "Já existe uma cadeira com este código no plano curricular deste curso." },
+      { status: 400 }
+    );
   }
 
   const { data, error } = await admin
@@ -99,6 +117,12 @@ export async function PUT(request: Request) {
   }
   if (semestre !== 1 && semestre !== 2) {
     return NextResponse.json({ error: "Semestre inválido." }, { status: 400 });
+  }
+  if (existeNoCurriculoBase(curso as CursoDocenciaSlug, codigo)) {
+    return NextResponse.json(
+      { error: "Já existe uma cadeira com este código no plano curricular deste curso." },
+      { status: 400 }
+    );
   }
 
   const { data, error } = await admin
