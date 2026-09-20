@@ -122,6 +122,61 @@ export async function POST(request: Request) {
   return NextResponse.json({ error: error.message }, { status: 400 });
 }
 
+export async function PUT(request: Request) {
+  const user = await pedirSuperAdmin();
+  if (!user) {
+    return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
+  }
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Chave de serviço do Supabase não configurada no servidor." },
+      { status: 503 }
+    );
+  }
+
+  const body = await request.json().catch(() => null);
+  const id = String(body?.id || "").trim();
+  const nome = String(body?.nome || "").trim();
+  const email = String(body?.email || "").trim();
+  const password = String(body?.password || "").trim();
+
+  if (!id) return NextResponse.json({ error: "Indique a conta a atualizar." }, { status: 400 });
+  if (!email || !email.includes("@")) {
+    return NextResponse.json({ error: "Indique um correio válido." }, { status: 400 });
+  }
+  if (password && password.length < 6) {
+    return NextResponse.json(
+      { error: "A palavra-passe deve ter pelo menos 6 caracteres." },
+      { status: 400 }
+    );
+  }
+
+  const { data: existente, error: getErr } = await admin.auth.admin.getUserById(id);
+  if (getErr || !existente.user) {
+    return NextResponse.json({ error: getErr?.message || "Conta não encontrada." }, { status: 400 });
+  }
+
+  const updatePayload: {
+    user_metadata: Record<string, unknown>;
+    email: string;
+    email_confirm: boolean;
+    password?: string;
+  } = {
+    user_metadata: { ...existente.user.user_metadata, role: "administrador", full_name: nome || undefined },
+    email,
+    // Sem isto, o Supabase deixa o e-mail antigo activo à espera de
+    // confirmação por link — uma correcção feita pela secretaria deve
+    // aplicar-se de imediato.
+    email_confirm: true,
+  };
+  if (password) updatePayload.password = password;
+
+  const { error } = await admin.auth.admin.updateUserById(id, updatePayload);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(request: Request) {
   const user = await pedirSuperAdmin();
   if (!user) {

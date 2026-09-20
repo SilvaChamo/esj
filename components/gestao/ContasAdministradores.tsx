@@ -49,6 +49,7 @@ export default function ContasAdministradores() {
 
   // Modais
   const [modalCriarAberto, setModalCriarAberto] = useState(false);
+  const [contaEditando, setContaEditando] = useState<ContaAdministrador | null>(null);
   const [contaEliminando, setContaEliminando] = useState<ContaAdministrador | null>(null);
   const [confirmarEliminarLote, setConfirmarEliminarLote] = useState(false);
 
@@ -57,6 +58,11 @@ export default function ContasAdministradores() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [processando, setProcessando] = useState(false);
+
+  // Formulário de edição
+  const [editNome, setEditNome] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
 
   const mostrarToast = (texto: string, tipo: "sucesso" | "erro" = "sucesso") => {
     setToastMessage({ texto, tipo });
@@ -125,6 +131,38 @@ export default function ContasAdministradores() {
       carregar();
     } catch (err) {
       mostrarToast(err instanceof Error ? err.message : "Não foi possível criar a conta.", "erro");
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const abrirEditarModal = (conta: ContaAdministrador) => {
+    setContaEditando(conta);
+    setEditNome(conta.nome || "");
+    setEditEmail(conta.email || "");
+    setEditPassword("");
+  };
+
+  const submeterEditar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!contaEditando) return;
+    setProcessando(true);
+    try {
+      await pedir("/api/administradores-contas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: contaEditando.id,
+          nome: editNome,
+          email: editEmail,
+          password: editPassword.trim() || undefined,
+        }),
+      });
+      mostrarToast(`Conta de ${editNome || editEmail} atualizada.`);
+      setContaEditando(null);
+      carregar();
+    } catch (err) {
+      mostrarToast(err instanceof Error ? err.message : "Não foi possível atualizar a conta.", "erro");
     } finally {
       setProcessando(false);
     }
@@ -257,15 +295,25 @@ export default function ContasAdministradores() {
                         <p className="font-mono text-xs text-navy-900/60 truncate">{c.email}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      title={c.souEu ? "Não pode eliminar a sua própria conta" : "Eliminar Administrador"}
-                      disabled={c.souEu}
-                      onClick={() => setContaEliminando(c)}
-                      className="shrink-0 p-1.5 text-crimson hover:bg-crimson/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        title="Editar conta"
+                        onClick={() => abrirEditarModal(c)}
+                        className="p-1.5 text-sky hover:bg-sky/10 rounded transition-colors"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        title={c.souEu ? "Não pode eliminar a sua própria conta" : "Eliminar Administrador"}
+                        disabled={c.souEu}
+                        onClick={() => setContaEliminando(c)}
+                        className="p-1.5 text-crimson hover:bg-crimson/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                   {c.souEu ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky/10 text-sky border border-sky/30 rounded text-[11px] font-bold">
@@ -358,6 +406,14 @@ export default function ContasAdministradores() {
 
                       <td className="p-2 text-left whitespace-nowrap">
                         <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            title="Editar conta"
+                            onClick={() => abrirEditarModal(c)}
+                            className="p-1 text-sky hover:bg-sky/10 rounded transition-colors"
+                          >
+                            <Pencil size={14} />
+                          </button>
                           <button
                             type="button"
                             title={c.souEu ? "Não pode eliminar a sua própria conta" : "Eliminar Administrador"}
@@ -468,6 +524,78 @@ export default function ContasAdministradores() {
                   className="px-4 py-2 bg-sky hover:bg-sky/90 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
                 >
                   {processando ? "A criar…" : "Criar Conta"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Conta de Administrador */}
+      {contaEditando && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-navy-100 pb-3">
+              <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
+                <Pencil size={16} className="text-sky" /> Editar Administrador
+              </h3>
+              <button
+                type="button"
+                onClick={() => setContaEditando(null)}
+                className="text-navy-900/50 hover:text-navy-900"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={submeterEditar} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-navy-900 mb-1">Nome completo *</label>
+                <input
+                  type="text"
+                  required
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                  className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 focus:outline-none focus:border-sky"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-navy-900 mb-1">Correio *</label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs font-mono text-navy-900 focus:outline-none focus:border-sky"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-navy-900 mb-1">Repor Palavra-passe (Opcional)</label>
+                <input
+                  type="text"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Preencha apenas se quiser alterar a palavra-passe"
+                  className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs font-mono text-navy-900 focus:outline-none focus:border-sky"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-navy-100">
+                <button
+                  type="button"
+                  onClick={() => setContaEditando(null)}
+                  className="px-3 py-2 border border-navy-100 text-xs font-semibold rounded text-navy-900/70 hover:bg-cream"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={processando}
+                  className="px-4 py-2 bg-sky hover:bg-sky/90 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
+                >
+                  {processando ? "A guardar…" : "Guardar Alterações"}
                 </button>
               </div>
             </form>

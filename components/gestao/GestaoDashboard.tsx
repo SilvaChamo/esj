@@ -1838,25 +1838,69 @@ function Candidaturas() {
   }, []);
 
   return (
-    <div className="bg-white border border-navy-100 p-8">
+    <div className="gestao-list-card">
+      <div className="gestao-list-header flex items-center justify-between">
+        <h2>Candidaturas</h2>
+        <span>{items.length} candidatura{items.length === 1 ? "" : "s"}</span>
+      </div>
       {missing && <SchemaInstall />}
-      {error && <p className="text-sm text-crimson">{error}</p>}
-      <ul>
-        {items.length === 0 && !error && !missing && (
-          <li className="py-3 text-sm text-navy-900/50">Ainda não há candidaturas.</li>
-        )}
-        {items.map((c) => (
-          <li key={c.protocolo} className="py-4">
-            <p className="font-semibold text-navy-900">{c.nome}</p>
-            <p className="text-xs text-sky mt-0.5">{c.protocolo}</p>
-            <p className="text-sm text-navy-900/65 mt-1">
-              {c.curso}
-              {c.delegacao ? ` · ${c.delegacao}` : ""}
-            </p>
-            {c.email && <p className="text-xs text-navy-900/50 mt-1">{c.email}</p>}
-          </li>
-        ))}
-      </ul>
+      {error && <p className="px-4 py-2 text-sm text-crimson">{error}</p>}
+      {items.length === 0 && !error && !missing ? (
+        <p className="px-6 py-8 text-sm text-navy-900/55 italic">Ainda não há candidaturas.</p>
+      ) : items.length === 0 ? null : (
+        <>
+          {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
+            {items.map((c) => (
+              <div key={c.protocolo} className="bg-white p-3 text-xs space-y-1.5">
+                <p className="font-mono font-bold text-sky">{c.protocolo}</p>
+                <p className="font-semibold text-navy-900">{c.nome}</p>
+                <p className="text-navy-900/70">
+                  {c.curso}
+                  {c.delegacao ? ` · ${c.delegacao}` : ""}
+                </p>
+                {c.email && <p className="text-navy-900/50">{c.email}</p>}
+                <p className="text-navy-900/40 text-[11px]">
+                  {new Date(c.created_at).toLocaleDateString("pt-PT")}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
+                  <th className="px-3 py-2.5 border-r border-navy-100/60">Nº Candidatura</th>
+                  <th className="px-3 py-2.5 border-r border-navy-100/60">Nome</th>
+                  <th className="px-3 py-2.5">Curso</th>
+                  <th className="px-3 py-2.5">Delegação</th>
+                  <th className="px-3 py-2.5">E-mail</th>
+                  <th className="px-3 py-2.5 text-right">Data</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {items.map((c) => (
+                  <tr key={c.protocolo} className="hover:bg-cream/40 transition-colors">
+                    <td className="px-3 py-2 font-mono font-bold text-sky whitespace-nowrap border-r border-navy-100/60">
+                      {c.protocolo}
+                    </td>
+                    <td className="px-3 py-2 font-semibold text-navy-900 border-r border-navy-100/60">
+                      {c.nome}
+                    </td>
+                    <td className="px-3 py-2 text-navy-900/70">{c.curso}</td>
+                    <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
+                    <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
+                    <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
+                      {new Date(c.created_at).toLocaleDateString("pt-PT")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2012,7 +2056,7 @@ function Subscritores({
   };
 
   const linha =
-    "gestao-list-row grid grid-cols-[auto_2.5rem_minmax(0,1fr)_10rem_9rem_2.5rem] items-center gap-x-3";
+    "gestao-list-row grid grid-cols-[auto_2.5rem_minmax(0,1fr)_10rem_9rem_3.5rem] items-center gap-x-3";
   // Colunas separadas por uma linha vertical até ao e-mail (a coluna
   // identificadora — não há campo "nome" nos subscritores); as restantes
   // ficam livres, como na lista de docentes.
@@ -2038,13 +2082,16 @@ function Subscritores({
               />
             </span>
             <span className={`text-xs font-semibold text-navy-900 ${celulaComLinha}`}>Nº</span>
-            {escolhidos.length > 1 ? (
-              <span className={`flex items-center gap-3 min-w-0 ${celulaComLinha}`}>
+            {escolhidos.length > 0 ? (
+              <span className={`flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0 ${celulaComLinha}`}>
+                <span className="text-navy-900/70 font-semibold shrink-0">
+                  {escolhidos.length} selecionado{escolhidos.length === 1 ? "" : "s"}
+                </span>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={baixarPdf}
-                  className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                  className="text-[12px] text-sky hover:underline disabled:opacity-50 shrink-0"
                 >
                   Baixar PDF
                 </button>
@@ -2062,7 +2109,7 @@ function Subscritores({
                       }
                       onEnviarSms(telefones);
                     }}
-                    className="text-[12px] text-sky hover:underline disabled:opacity-50"
+                    className="text-[12px] text-sky hover:underline disabled:opacity-50 shrink-0"
                   >
                     Enviar SMS
                   </button>
@@ -2071,11 +2118,18 @@ function Subscritores({
                   type="button"
                   disabled={busy}
                   onClick={() => void eliminar()}
-                  title="Eliminar"
+                  title="Eliminar seleccionados"
                   aria-label="Eliminar seleccionados"
-                  className="text-crimson hover:text-[#b32d2e] disabled:opacity-50 p-0.5"
+                  className="inline-flex items-center gap-1 text-crimson hover:text-[#b32d2e] font-bold disabled:opacity-50 shrink-0"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEscolhidos([])}
+                  className="text-navy-900/50 hover:text-navy-900 font-semibold shrink-0"
+                >
+                  Cancelar
                 </button>
               </span>
             ) : (

@@ -918,7 +918,7 @@ export default function ContasDocentes({
                     />
                   </th>
                   <th className="px-3 py-2.5 w-44 border-r border-navy-100/60">Nome do Docente</th>
-                  <th className="px-3 py-2.5 w-52 border-r border-navy-100/60">Email</th>
+                  <th className="px-3 py-2.5 whitespace-nowrap">Email</th>
                   <th className="pl-4 pr-1.5 py-2.5 min-w-[140px]">Cursos</th>
                   <th className="pl-1.5 pr-4 py-2.5 min-w-[380px]">Cadeira(s)</th>
                   <th className="px-4 py-2.5 text-right">Ações</th>
@@ -945,10 +945,7 @@ export default function ContasDocentes({
                         >
                           {c.nome || "Sem nome"}
                         </td>
-                        <td
-                          className="px-3 py-2.5 w-52 text-navy-900/70 align-top border-r border-navy-100/60 truncate max-w-[13rem]"
-                          title={c.email || ""}
-                        >
+                        <td className="px-3 py-2.5 text-navy-900/70 align-top whitespace-nowrap">
                           {c.email}
                         </td>
                         <td className="pl-4 pr-1.5 py-2.5 align-top">

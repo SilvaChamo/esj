@@ -185,7 +185,7 @@ export default function InscricaoForm() {
         </ol>
       </nav>
 
-      <form noValidate onSubmit={onSubmit} className="border border-navy-100 bg-white min-w-0">
+      <form onSubmit={onSubmit} className="border border-navy-100 bg-white min-w-0">
         <div className="px-4 sm:px-6 md:px-10 py-8 md:py-6 md:py-8 min-w-0">
         <h2 className="font-serif text-2xl font-bold text-navy-900 mb-6">{STEPS[step].title}</h2>
 
@@ -235,9 +235,9 @@ export default function InscricaoForm() {
               </Field>
             )}
             {!lock.curso && (
-              <Field label="Segunda opção">
-                <select name="curso2" className="esj-field">
-                  <option value="">Nenhuma</option>
+              <Field label="Segunda opção" required>
+                <select name="curso2" required={step === 0} className="esj-field">
+                  <option value="">Seleccione o curso</option>
                   {courses.filter((c) => c !== course1).map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -351,8 +351,8 @@ export default function InscricaoForm() {
             <Field label="Telemóvel" required>
               <input name="telefone" type="tel" required={step === 2} autoComplete="tel" className="esj-field" />
             </Field>
-            <Field label="Telemóvel alternativo">
-              <input name="telefone2" type="tel" className="esj-field" />
+            <Field label="Telemóvel alternativo" required>
+              <input name="telefone2" type="tel" required={step === 2} className="esj-field" />
             </Field>
             <Field label="Correio electrónico" required className="md:col-span-2">
               <input name="email" type="email" required={step === 2} autoComplete="email" className="esj-field" />
