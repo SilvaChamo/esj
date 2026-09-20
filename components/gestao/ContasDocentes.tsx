@@ -249,7 +249,11 @@ function SeletorCadeiras({
         </div>
       )}
 
-      <div className="max-h-72 overflow-y-auto space-y-4 bg-white border border-navy-100 p-4">
+      <div
+        className={`max-h-[480px] overflow-y-auto bg-white border border-navy-100 p-4 ${
+          cursoFiltro === "todos" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" : "space-y-4"
+        }`}
+      >
         {catalogo
           .filter((grupo) => cursoFiltro === "todos" || grupo.curso === cursoFiltro)
           .map((grupo) => {
@@ -262,7 +266,7 @@ function SeletorCadeiras({
                 <p className="text-[11px] font-bold uppercase tracking-widest text-sky mb-2">
                   {grupo.cursoNome}
                 </p>
-                <div className="grid sm:grid-cols-2 gap-1.5">
+                <div className={cursoFiltro === "todos" ? "space-y-1" : "grid sm:grid-cols-2 gap-1.5"}>
                   {cadeiras.map((cad) => (
                     <label
                       key={cad.id}
@@ -738,7 +742,7 @@ export default function ContasDocentes({
                           ) : (
                             (() => {
                               const aberta = cadeirasAbertas.has(c.id);
-                              const primeiras = cadeiras.slice(0, 3);
+                              const primeiras = cadeiras.slice(0, 2);
                               const renderTag = (cad: CadeiraAtribuidaRow) => {
                                 const ano = anoCadeira(catalogo, cad.curso, cad.cadeira_codigo);
                                 return (
@@ -758,7 +762,7 @@ export default function ContasDocentes({
                                 <div>
                                   <div className="flex flex-nowrap items-center gap-1.5">
                                     {primeiras.map(renderTag)}
-                                    {cadeiras.length > 3 && (
+                                    {cadeiras.length > 2 && (
                                       <button
                                         type="button"
                                         onClick={() => alternarCadeirasAbertas(c.id)}
@@ -769,13 +773,13 @@ export default function ContasDocentes({
                                           <ChevronUp size={12} />
                                         ) : (
                                           <>
-                                            +{cadeiras.length - 3} <ChevronDown size={12} />
+                                            +{cadeiras.length - 2} <ChevronDown size={12} />
                                           </>
                                         )}
                                       </button>
                                     )}
                                   </div>
-                                  {aberta && cadeiras.length > 3 && (
+                                  {aberta && cadeiras.length > 2 && (
                                     <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
                                       {cadeiras.map(renderTag)}
                                     </div>
