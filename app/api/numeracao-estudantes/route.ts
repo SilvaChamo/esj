@@ -164,10 +164,18 @@ export async function PUT(request: Request) {
  * lectivo: devolve-o e já avança o contador para o seguinte, para a
  * próxima conta criada não repetir. Só é atribuído a candidatos Admitidos
  * (chamado a partir de "Lançar resultado"/"Criar conta") — um reprovado
- * nunca consome número, por isso a sequência nunca fica com buracos. Não é
- * atómico ao nível da base de dados (leitura-depois-escrita), mas a criação
- * de contas é feita uma pessoa de cada vez pela secretaria, nunca em
- * paralelo, por isso é seguro nesta escala.
+ * nunca consome número, por isso a sequência nunca fica com buracos.
+ *
+ * O número nunca fica em falta à espera de alguém o digitar: se ainda não
+ * houver semente para este curso/regime/ano, a própria rota gera-a sozinha
+ * (a partir do último ano usado, ou "{ano}0001" se for a primeira vez) e já
+ * atribui o primeiro número a partir daí — o modal "Numeração de
+ * estudantes" fica só para a secretaria corrigir/ajustar a convenção
+ * se quiser, nunca como passo obrigatório antes de poder aprovar alguém.
+ *
+ * Não é atómico ao nível da base de dados (leitura-depois-escrita), mas a
+ * criação de contas é feita uma pessoa de cada vez pela secretaria, nunca
+ * em paralelo, por isso é seguro nesta escala.
  */
 export async function POST(request: Request) {
   if (!(await pedirAdmin())) {
@@ -197,16 +205,20 @@ export async function POST(request: Request) {
     .eq("ano_lectivo", ano)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  if (!data?.proximo_numero) {
-    return NextResponse.json(
-      {
-        error: `Ainda não há número inicial definido para este curso/regime em ${ano} — indique-o uma vez em Estudantes → Numeração.`,
-      },
-      { status: 400 }
-    );
+
+  let numeroAtribuido = data?.proximo_numero as string | undefined;
+  if (!numeroAtribuido) {
+    const { data: anterior } = await admin
+      .from("numeracao_estudantes")
+      .select("proximo_numero")
+      .eq("curso", curso)
+      .eq("regime", regime)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    numeroAtribuido = sugerirNumeroInicial(ano, anterior?.proximo_numero ?? null);
   }
 
-  const numeroAtribuido = data.proximo_numero;
   let seguinte: string;
   try {
     seguinte = incrementarNumero(numeroAtribuido);
@@ -216,10 +228,10 @@ export async function POST(request: Request) {
 
   const { error: updErr } = await admin
     .from("numeracao_estudantes")
-    .update({ proximo_numero: seguinte, updated_at: new Date().toISOString() })
-    .eq("curso", curso)
-    .eq("regime", regime)
-    .eq("ano_lectivo", ano);
+    .upsert(
+      { curso, regime, ano_lectivo: ano, proximo_numero: seguinte, updated_at: new Date().toISOString() },
+      { onConflict: "curso,regime,ano_lectivo" }
+    );
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 });
 
   return NextResponse.json({ numeroAtribuido, proximoNumero: seguinte });

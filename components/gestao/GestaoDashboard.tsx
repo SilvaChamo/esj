@@ -1864,7 +1864,19 @@ function Candidaturas() {
   const anosDisponiveis = Array.from(
     new Set([ANO_LECTIVO, ...items.map((c) => c.ano_lectivo || ANO_LECTIVO)])
   ).sort((a, b) => b.localeCompare(a));
-  const itemsFiltrados = items.filter((c) => (c.ano_lectivo || ANO_LECTIVO) === anoSelecionado);
+
+  // Filtro por curso — a mesma lista serve os 4 cursos, sem ter de os
+  // procurar a olho no meio de todos.
+  const [cursoSelecionado, setCursoSelecionado] = useState("todos");
+  const cursosDisponiveis = Array.from(new Set(items.map((c) => c.curso).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, "pt")
+  );
+
+  const itemsFiltrados = items.filter(
+    (c) =>
+      (c.ano_lectivo || ANO_LECTIVO) === anoSelecionado &&
+      (cursoSelecionado === "todos" || c.curso === cursoSelecionado)
+  );
 
   // Resultados de exame e contas de estudante já ligados a cada candidatura
   // (supabase/candidatura-pauta-numeracao.sql) — dinâmico: assim que se
@@ -2290,6 +2302,21 @@ function Candidaturas() {
               </option>
             ))}
           </select>
+          <select
+            value={cursoSelecionado}
+            onChange={(e) => {
+              setCursoSelecionado(e.target.value);
+              setSelecionados(new Set());
+            }}
+            className="normal-case tracking-normal text-xs font-bold bg-cream/60 border border-navy-100 rounded px-1.5 py-0.5 text-navy-900 focus:outline-none focus:border-sky max-w-[12rem]"
+          >
+            <option value="todos">Todos os cursos</option>
+            {cursosDisponiveis.map((curso) => (
+              <option key={curso} value={curso}>
+                {curso}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={abrirNumeracao}
@@ -2332,7 +2359,8 @@ function Candidaturas() {
       )}
       {itemsFiltrados.length === 0 && !error && !missing ? (
         <p className="px-6 py-8 text-sm text-navy-900/55 italic">
-          Ainda não há candidaturas em {anoSelecionado}.
+          Ainda não há candidaturas em {anoSelecionado}
+          {cursoSelecionado === "todos" ? "" : ` — ${cursoSelecionado}`}.
         </p>
       ) : itemsFiltrados.length === 0 ? null : (
         <>
@@ -2458,11 +2486,11 @@ function Candidaturas() {
             </button>
           </div>
           <p className="text-xs text-navy-900/60 leading-relaxed">
-            Digite o número inicial uma única vez por curso/regime/ano lectivo (ex.:{" "}
-            <span className="font-mono">20260001MP</span>). A partir daí, ao aprovar uma candidatura, o sistema
-            atribui sempre o número seguinte sozinho — nunca mais se digita um número de estudante à mão. Só
-            candidatos Admitidos consomem número; reprovados nunca abrem um buraco na sequência. Ao virar de ano,
-            cada curso/regime volta a pedir um número inicial — sugerimos um a partir do último ano usado.
+            O número nunca precisa de ser digitado à mão: assim que a primeira candidatura de um curso/regime/ano é
+            aprovada, o sistema gera logo o número inicial sozinho (ex.: <span className="font-mono">20260001MP</span>) e
+            os seguintes seguem a mesma sequência automaticamente. Só candidatos Admitidos consomem número; reprovados
+            nunca abrem um buraco na sequência. Este ecrã é só para corrigir a convenção se for preciso — nunca é um
+            passo obrigatório antes de aprovar alguém.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -2492,12 +2520,14 @@ function Candidaturas() {
             </div>
           </div>
           <p className="text-xs text-navy-900/70">
-            Próximo número guardado em {anoSelecionado}:{" "}
-            <span className="font-mono font-bold text-navy-900">{numAtual ?? "ainda não definido"}</span>
+            Próximo número em {anoSelecionado}:{" "}
+            <span className="font-mono font-bold text-navy-900">
+              {numAtual ?? (numSugestao ? `${numSugestao} (automático ao aprovar)` : "…")}
+            </span>
           </p>
           <div>
             <label className="block text-xs font-bold text-navy-900 mb-1">
-              {numAtual ? "Substituir por" : "Número inicial"}
+              {numAtual ? "Substituir por" : "Ajustar número inicial (opcional)"}
             </label>
             <input
               type="text"
