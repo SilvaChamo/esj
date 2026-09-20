@@ -1,9 +1,10 @@
 import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { ANO_LECTIVO } from "@/lib/admissao";
 
 function protocolNumber() {
   const n = Math.floor(100000 + Math.random() * 900000);
-  return `ESJ-2026-${n}`;
+  return `ESJ-${ANO_LECTIVO}-${n}`;
 }
 
 export async function submitInscricao(
@@ -42,6 +43,7 @@ export async function submitInscricao(
     turno: String(form.get("turno") || "").trim(),
     nivel: String(form.get("nivel") || "Licenciatura").trim(),
     delegacao: String(form.get("delegacao") || "").trim(),
+    ano_lectivo: ANO_LECTIVO,
     documentos,
     dados,
   });

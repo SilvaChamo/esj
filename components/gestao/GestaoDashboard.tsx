@@ -1835,6 +1835,7 @@ type CandidaturaItem = {
   turno: string | null;
   nivel: string | null;
   delegacao: string | null;
+  ano_lectivo?: string | null;
   created_at: string;
 };
 
@@ -1854,6 +1855,16 @@ function Candidaturas() {
   const [error, setError] = useState("");
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [eliminando, setEliminando] = useState(false);
+
+  // Ciclo de admissão em vista — "Candidatura {ano}". Cada candidatura fica
+  // marcada com o ano em que entrou (candidaturas-ano-lectivo.sql); os anos
+  // transactos ficam disponíveis no selector junto ao título, sem se
+  // misturarem com o ciclo actual nem se perderem.
+  const [anoSelecionado, setAnoSelecionado] = useState(ANO_LECTIVO);
+  const anosDisponiveis = Array.from(
+    new Set([ANO_LECTIVO, ...items.map((c) => c.ano_lectivo || ANO_LECTIVO)])
+  ).sort((a, b) => b.localeCompare(a));
+  const itemsFiltrados = items.filter((c) => (c.ano_lectivo || ANO_LECTIVO) === anoSelecionado);
 
   // Resultados de exame e contas de estudante já ligados a cada candidatura
   // (supabase/candidatura-pauta-numeracao.sql) — dinâmico: assim que se
@@ -1875,6 +1886,7 @@ function Candidaturas() {
   const [numCurso, setNumCurso] = useState<CursoDocenciaSlug>(CURSOS_DOCENCIA[0].slug);
   const [numRegime, setNumRegime] = useState<"diurno" | "pos-laboral">("diurno");
   const [numAtual, setNumAtual] = useState<string | null>(null);
+  const [numSugestao, setNumSugestao] = useState<string | null>(null);
   const [numInicial, setNumInicial] = useState("");
   const [numBusy, setNumBusy] = useState(false);
   const [numMsg, setNumMsg] = useState<{ texto: string; erro: boolean } | null>(null);
@@ -1928,10 +1940,11 @@ function Candidaturas() {
     });
   };
 
-  const todosSelecionados = items.length > 0 && items.every((c) => selecionados.has(c.protocolo));
+  const todosSelecionados =
+    itemsFiltrados.length > 0 && itemsFiltrados.every((c) => selecionados.has(c.protocolo));
   const toggleSelecionarTodos = () => {
     if (todosSelecionados) setSelecionados(new Set());
-    else setSelecionados(new Set(items.map((c) => c.protocolo)));
+    else setSelecionados(new Set(itemsFiltrados.map((c) => c.protocolo)));
   };
 
   const eliminarSelecionados = async () => {
@@ -2054,7 +2067,7 @@ function Candidaturas() {
     const numRes = await fetch("/api/numeracao-estudantes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ curso: cursoInfo.slug, regime }),
+      body: JSON.stringify({ curso: cursoInfo.slug, regime, ano: c.ano_lectivo || ANO_LECTIVO }),
     });
     const numJson = await numRes.json();
     if (!numRes.ok) throw new Error(numJson.error || "Não foi possível gerar o número de estudante.");
@@ -2112,11 +2125,18 @@ function Candidaturas() {
   useEffect(() => {
     if (!modalNumeracaoAberto) return;
     setNumAtual(null);
-    fetch(`/api/numeracao-estudantes?curso=${numCurso}&regime=${numRegime}`)
+    setNumSugestao(null);
+    fetch(`/api/numeracao-estudantes?curso=${numCurso}&regime=${numRegime}&ano=${anoSelecionado}`)
       .then((r) => r.json())
-      .then((j) => setNumAtual(j.proximoNumero ?? null))
+      .then((j) => {
+        setNumAtual(j.proximoNumero ?? null);
+        setNumSugestao(j.sugestao ?? null);
+        // Sem semente ainda para este ano: pré-preenche com a sugestão, a
+        // secretaria só precisa de confirmar em vez de inventar o número.
+        if (!j.proximoNumero && j.sugestao) setNumInicial((prev) => prev || j.sugestao);
+      })
       .catch(() => setNumAtual(null));
-  }, [modalNumeracaoAberto, numCurso, numRegime]);
+  }, [modalNumeracaoAberto, numCurso, numRegime, anoSelecionado]);
 
   const guardarNumeracao = async () => {
     if (!numInicial.trim()) {
@@ -2129,11 +2149,17 @@ function Candidaturas() {
       const res = await fetch("/api/numeracao-estudantes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ curso: numCurso, regime: numRegime, numeroInicial: numInicial.trim() }),
+        body: JSON.stringify({
+          curso: numCurso,
+          regime: numRegime,
+          ano: anoSelecionado,
+          numeroInicial: numInicial.trim(),
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Não foi possível guardar.");
       setNumAtual(json.proximoNumero);
+      setNumSugestao(null);
       setNumInicial("");
       setNumMsg({ texto: "Número inicial guardado.", erro: false });
     } catch (err) {
@@ -2249,7 +2275,21 @@ function Candidaturas() {
     <div className="gestao-list-card">
       <div className="gestao-list-header flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-3">
-          Candidaturas
+          Candidatura
+          <select
+            value={anoSelecionado}
+            onChange={(e) => {
+              setAnoSelecionado(e.target.value);
+              setSelecionados(new Set());
+            }}
+            className="normal-case tracking-normal text-xs font-bold bg-cream/60 border border-navy-100 rounded px-1.5 py-0.5 text-navy-900 focus:outline-none focus:border-sky"
+          >
+            {anosDisponiveis.map((ano) => (
+              <option key={ano} value={ano}>
+                {ano}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={abrirNumeracao}
@@ -2280,7 +2320,9 @@ function Candidaturas() {
             </button>
           </div>
         ) : (
-          <span>{items.length} candidatura{items.length === 1 ? "" : "s"}</span>
+          <span>
+            {itemsFiltrados.length} candidatura{itemsFiltrados.length === 1 ? "" : "s"}
+          </span>
         )}
       </div>
       {missing && <SchemaInstall />}
@@ -2288,13 +2330,15 @@ function Candidaturas() {
       {aviso && (
         <p className={`px-4 py-2 text-xs font-semibold ${aviso.erro ? "text-crimson" : "text-leaf"}`}>{aviso.texto}</p>
       )}
-      {items.length === 0 && !error && !missing ? (
-        <p className="px-6 py-8 text-sm text-navy-900/55 italic">Ainda não há candidaturas.</p>
-      ) : items.length === 0 ? null : (
+      {itemsFiltrados.length === 0 && !error && !missing ? (
+        <p className="px-6 py-8 text-sm text-navy-900/55 italic">
+          Ainda não há candidaturas em {anoSelecionado}.
+        </p>
+      ) : itemsFiltrados.length === 0 ? null : (
         <>
           {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-            {items.map((c, idx) => {
+            {itemsFiltrados.map((c, idx) => {
               const selecionada = selecionados.has(c.protocolo);
               return (
                 <div key={c.protocolo} className={`p-3 text-xs space-y-1.5 ${selecionada ? "bg-sky/10" : "bg-white"}`}>
@@ -2354,7 +2398,7 @@ function Candidaturas() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-100">
-                {items.map((c, idx) => {
+                {itemsFiltrados.map((c, idx) => {
                   const selecionada = selecionados.has(c.protocolo);
                   return (
                     <tr
@@ -2403,7 +2447,7 @@ function Candidaturas() {
         <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
           <div className="flex items-center justify-between border-b border-navy-100 pb-3">
             <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
-              <Users size={16} className="text-sky" /> Numeração de estudantes
+              <Users size={16} className="text-sky" /> Numeração de estudantes — {anoSelecionado}
             </h3>
             <button
               type="button"
@@ -2414,9 +2458,11 @@ function Candidaturas() {
             </button>
           </div>
           <p className="text-xs text-navy-900/60 leading-relaxed">
-            Digite o número inicial uma única vez por curso/regime (ex.: <span className="font-mono">20260001MP</span>).
-            A partir daí, ao criar uma conta a partir de uma candidatura admitida, o sistema atribui sempre o número
-            seguinte sozinho — nunca mais se digita um número de estudante à mão.
+            Digite o número inicial uma única vez por curso/regime/ano lectivo (ex.:{" "}
+            <span className="font-mono">20260001MP</span>). A partir daí, ao aprovar uma candidatura, o sistema
+            atribui sempre o número seguinte sozinho — nunca mais se digita um número de estudante à mão. Só
+            candidatos Admitidos consomem número; reprovados nunca abrem um buraco na sequência. Ao virar de ano,
+            cada curso/regime volta a pedir um número inicial — sugerimos um a partir do último ano usado.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -2446,7 +2492,7 @@ function Candidaturas() {
             </div>
           </div>
           <p className="text-xs text-navy-900/70">
-            Próximo número guardado:{" "}
+            Próximo número guardado em {anoSelecionado}:{" "}
             <span className="font-mono font-bold text-navy-900">{numAtual ?? "ainda não definido"}</span>
           </p>
           <div>
@@ -2460,6 +2506,19 @@ function Candidaturas() {
               placeholder="Ex.: 20260001MP"
               className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs font-mono text-navy-900 focus:outline-none focus:border-sky"
             />
+            {!numAtual && numSugestao && (
+              <p className="text-[11px] text-navy-900/50 mt-1">
+                Sugestão a partir do último ano:{" "}
+                <button
+                  type="button"
+                  onClick={() => setNumInicial(numSugestao)}
+                  className="font-mono font-semibold text-sky hover:underline"
+                >
+                  {numSugestao}
+                </button>{" "}
+                — confirme ou edite antes de guardar.
+              </p>
+            )}
           </div>
           {numMsg && (
             <p className={`text-xs font-semibold ${numMsg.erro ? "text-crimson" : "text-leaf"}`}>{numMsg.texto}</p>

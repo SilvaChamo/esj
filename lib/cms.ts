@@ -401,7 +401,7 @@ export async function listInscricoesGestao() {
   const supabase = createBrowserSupabase();
   const { data, error } = await supabase
     .from("inscricoes")
-    .select("protocolo, nome, email, telefone, curso, turno, nivel, delegacao, created_at")
+    .select("protocolo, nome, email, telefone, curso, turno, nivel, delegacao, ano_lectivo, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw error;
