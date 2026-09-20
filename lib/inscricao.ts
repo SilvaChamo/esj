@@ -4,10 +4,9 @@ export const COURSES = cursosDoNivel("Licenciatura").map((c) => c.titulo);
 
 export const SHIFTS = REGIMES;
 
-export const DELEGACOES = [
-  "Maputo (Sede)",
-  "Manica (Delegação Académica)",
-] as const;
+// Só Maputo por enquanto — a delegação de Manica fica de fora da admissão
+// enquanto não for reactivada para candidaturas.
+export const DELEGACOES = ["Maputo (Sede)"] as const;
 
 export const SEXOS = ["Feminino", "Masculino"] as const;
 

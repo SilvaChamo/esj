@@ -389,10 +389,12 @@ export default function BibliotecaCientificaGestao({
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-100">
-                {items.map((row) => (
+                {items.map((row, idx) => (
                   <tr
                     key={row.id}
-                    className={`align-top ${selectedIds.has(row.id) ? "bg-sky/5" : ""}`}
+                    className={`align-top ${
+                      selectedIds.has(row.id) ? "bg-sky/5" : idx % 2 === 1 ? "bg-slate-100/70" : ""
+                    }`}
                   >
                     <td className="px-2 pt-3 pb-2.5 text-center align-top">
                       <input

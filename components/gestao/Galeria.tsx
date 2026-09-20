@@ -689,8 +689,13 @@ export default function Galeria() {
         <>
         {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
         <div className="lg:hidden bg-[#f0f0f1] border border-[#ccd0d4] grid grid-cols-1 md:grid-cols-2 gap-px">
-          {paginatedFiles.map((file) => (
-            <div key={file.name} className="bg-white p-3 flex items-center gap-3">
+          {paginatedFiles.map((file, idx) => (
+            <div
+              key={file.name}
+              className={`p-3 flex items-center gap-3 ${
+                selectedIds.has(file.name) ? "bg-[#f0f6fc]" : idx % 2 === 1 ? "bg-[#f6f7f7]" : "bg-white"
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={selectedIds.has(file.name)}
@@ -750,8 +755,13 @@ export default function Galeria() {
               </tr>
             </thead>
             <tbody>
-              {paginatedFiles.map((file) => (
-                <tr key={file.name} className="border-b border-[#f0f0f1] hover:bg-[#f6f7f7] text-[13px]">
+              {paginatedFiles.map((file, idx) => (
+                <tr
+                  key={file.name}
+                  className={`border-b border-[#f0f0f1] hover:bg-[#f6f7f7] text-[13px] ${
+                    selectedIds.has(file.name) ? "bg-[#f0f6fc]" : idx % 2 === 1 ? "bg-[#f6f7f7]" : ""
+                  }`}
+                >
                   <td className="p-2">
                     <input type="checkbox" checked={selectedIds.has(file.name)} onChange={() => toggleSelect(file.name)} />
                   </td>

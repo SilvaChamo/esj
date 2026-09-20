@@ -609,7 +609,7 @@ export default function Cadeiras() {
                           <div
                             key={chave}
                             className={`flex items-start gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[24px_28px_90px_1fr_110px_60px_92px_70px] sm:items-center sm:py-2 text-xs ${
-                              selecionada ? "bg-sky/5" : ""
+                              selecionada ? "bg-sky/5" : idx % 2 === 1 ? "bg-slate-100/70" : ""
                             }`}
                           >
                             <input
@@ -694,7 +694,7 @@ export default function Cadeiras() {
                               <div
                                 key={cad.id}
                                 className={`flex items-start gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[24px_28px_80px_1fr_60px_92px_76px] sm:items-center sm:py-2 text-xs ${
-                                  selecionada ? "bg-sky/5" : ""
+                                  selecionada ? "bg-sky/5" : idx % 2 === 1 ? "bg-slate-100/70" : ""
                                 }`}
                               >
                                 <input

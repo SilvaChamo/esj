@@ -221,11 +221,15 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
         <>
         {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
         <div className="lg:hidden gestao-list-card grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-          {items.map((row) => {
+          {items.map((row, idx) => {
             const cursoLabel = CURSOS_DOCENCIA.find((c) => c.slug === row.curso)?.titulo || row.curso;
             const regimeLabel = REGIMES.find((r) => r.valor === row.regime)?.label || row.regime;
             return (
-              <div key={row.id} onClick={() => editar(row)} className="bg-white p-3 text-xs space-y-1.5 cursor-pointer">
+              <div
+                key={row.id}
+                onClick={() => editar(row)}
+                className={`p-3 text-xs space-y-1.5 cursor-pointer ${idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"}`}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-mono font-semibold text-sky">{row.numero_estudante}</p>

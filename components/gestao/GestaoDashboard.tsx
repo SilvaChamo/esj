@@ -49,7 +49,7 @@ import {
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
-import { ANO_LECTIVO, classificacao, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
+import { ANO_LECTIVO, classificacao, codigoCurso, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   cmsError,
@@ -1866,11 +1866,15 @@ function Candidaturas() {
   ).sort((a, b) => b.localeCompare(a));
 
   // Filtro por curso — a mesma lista serve os 4 cursos, sem ter de os
-  // procurar a olho no meio de todos.
+  // procurar a olho no meio de todos. O valor guardado é o título completo
+  // (o que vem na candidatura), mas o selector mostra o nome por extenso
+  // ("Publicidade e Marketing"), sem o prefixo "Licenciatura em".
   const [cursoSelecionado, setCursoSelecionado] = useState("todos");
-  const cursosDisponiveis = Array.from(new Set(items.map((c) => c.curso).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, "pt")
-  );
+  const cursosDisponiveis = Array.from(new Set(items.map((c) => c.curso).filter(Boolean)))
+    .map((titulo) => ({ titulo, nome: cursoPorTitulo(titulo)?.nome || titulo }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt"));
+  const cursoSelecionadoLabel =
+    cursoSelecionado === "todos" ? "" : cursoPorTitulo(cursoSelecionado)?.nome || cursoSelecionado;
 
   const itemsFiltrados = items.filter(
     (c) =>
@@ -2285,8 +2289,8 @@ function Candidaturas() {
   return (
     <>
     <div className="gestao-list-card">
-      <div className="gestao-list-header flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-3">
+      <div className="gestao-list-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 className="flex flex-wrap items-center gap-3">
           Candidatura
           <select
             value={anoSelecionado}
@@ -2308,12 +2312,12 @@ function Candidaturas() {
               setCursoSelecionado(e.target.value);
               setSelecionados(new Set());
             }}
-            className="normal-case tracking-normal text-xs font-bold bg-cream/60 border border-navy-100 rounded px-1.5 py-0.5 text-navy-900 focus:outline-none focus:border-sky max-w-[12rem]"
+            className="normal-case tracking-normal text-xs font-bold bg-cream/60 border border-navy-100 rounded px-1.5 py-0.5 text-navy-900 focus:outline-none focus:border-sky w-auto"
           >
             <option value="todos">Todos os cursos</option>
             {cursosDisponiveis.map((curso) => (
-              <option key={curso} value={curso}>
-                {curso}
+              <option key={curso.titulo} value={curso.titulo}>
+                {curso.nome}
               </option>
             ))}
           </select>
@@ -2360,7 +2364,7 @@ function Candidaturas() {
       {itemsFiltrados.length === 0 && !error && !missing ? (
         <p className="px-6 py-8 text-sm text-navy-900/55 italic">
           Ainda não há candidaturas em {anoSelecionado}
-          {cursoSelecionado === "todos" ? "" : ` — ${cursoSelecionado}`}.
+          {cursoSelecionadoLabel ? ` — ${cursoSelecionadoLabel}` : ""}.
         </p>
       ) : itemsFiltrados.length === 0 ? null : (
         <>
@@ -2369,7 +2373,12 @@ function Candidaturas() {
             {itemsFiltrados.map((c, idx) => {
               const selecionada = selecionados.has(c.protocolo);
               return (
-                <div key={c.protocolo} className={`p-3 text-xs space-y-1.5 ${selecionada ? "bg-sky/10" : "bg-white"}`}>
+                <div
+                  key={c.protocolo}
+                  className={`p-3 text-xs space-y-1.5 ${
+                    selecionada ? "bg-sky/10" : idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"
+                  }`}
+                >
                   <div className="flex items-start gap-2">
                     <input
                       type="checkbox"
@@ -2384,7 +2393,7 @@ function Candidaturas() {
                       </p>
                       <p className="font-semibold text-navy-900">{c.nome}</p>
                       <p className="text-navy-900/70">
-                        {c.curso}
+                        {codigoCurso(c.curso)}
                         {c.delegacao ? ` · ${c.delegacao}` : ""}
                       </p>
                       {c.email && <p className="text-navy-900/50">{c.email}</p>}
@@ -2431,7 +2440,13 @@ function Candidaturas() {
                   return (
                     <tr
                       key={c.protocolo}
-                      className={`transition-colors ${selecionada ? "bg-sky/10" : "hover:bg-cream/40"}`}
+                      className={`transition-colors ${
+                        selecionada
+                          ? "bg-sky/10"
+                          : idx % 2 === 1
+                          ? "bg-slate-100/70 hover:bg-sky/5"
+                          : "bg-white hover:bg-sky/5"
+                      }`}
                     >
                       <td className="px-2 py-2 text-center border-r border-navy-100/60">
                         <input
@@ -2450,7 +2465,9 @@ function Candidaturas() {
                       <td className="px-2 py-2 font-semibold text-navy-900 whitespace-nowrap border-r border-navy-100/60">
                         {c.nome}
                       </td>
-                      <td className="px-3 py-2 text-navy-900/70">{c.curso}</td>
+                      <td className="px-3 py-2 text-navy-900/70 font-mono font-bold" title={c.curso}>
+                        {codigoCurso(c.curso)}
+                      </td>
                       <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
                       <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{colunaResultado(c)}</td>

@@ -127,6 +127,19 @@ export function cursoPorTitulo(titulo: string) {
   );
 }
 
+/** Sigla curta do curso, para listas apertadas (ex.: coluna "Curso" das candidaturas). */
+const CODIGO_POR_SLUG: Record<string, string> = {
+  jornalismo: "JJ",
+  "publicidade-e-marketing": "PM",
+  "relacoes-publicas": "RP",
+  "biblioteconomia-e-documentacao": "BD",
+};
+
+export function codigoCurso(tituloOuNome: string) {
+  const curso = cursoPorTitulo(tituloOuNome);
+  return (curso && CODIGO_POR_SLUG[curso.slug]) || tituloOuNome;
+}
+
 export function mediaFinal(notaPortugues: number, notaHistoria: number) {
   return (
     Math.round((notaPortugues * PESO_PORTUGUES + notaHistoria * PESO_HISTORIA) * 100) / 100

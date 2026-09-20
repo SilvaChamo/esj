@@ -408,7 +408,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
           <>
           {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-            {estudantes.map((std) => {
+            {estudantes.map((std, idx) => {
               const { apelidoUpper, primeiroNome } = formatarNomeEstudante(std.nome);
               const nomeCurso = CURSOS_DOCENCIA.find((c) => c.slug === std.curso)?.titulo || std.curso;
               const labelRegime = std.regime === "diurno" ? "Laboral" : "Pós-Laboral";
@@ -416,7 +416,9 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
               return (
                 <div
                   key={std.numeroEstudante}
-                  className={`p-4 space-y-2 ${estaSelecionado ? "bg-sky/10" : "bg-white"}`}
+                  className={`p-4 space-y-2 ${
+                    estaSelecionado ? "bg-sky/10" : idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">

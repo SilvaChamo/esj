@@ -420,7 +420,10 @@ export default function PautaCadeira({
             </label>
           );
           return (
-            <div key={l.numeroEstudante} className="bg-white p-4 space-y-3 text-xs">
+            <div
+              key={l.numeroEstudante}
+              className={`p-4 space-y-3 text-xs ${idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"}`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-mono font-bold text-sky text-[13px]">

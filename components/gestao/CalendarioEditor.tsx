@@ -177,10 +177,13 @@ export default function CalendarioEditor() {
         </h3>
 
         <div className="divide-y divide-navy-100 border-t border-navy-100">
-          {data.eventos.map((ev) => {
+          {data.eventos.map((ev, idx) => {
             const catInfo = labelCategoriaCalendario(ev.categoria);
             return (
-              <div key={ev.id} className="py-4 flex items-center justify-between gap-4">
+              <div
+                key={ev.id}
+                className={`py-4 px-2 flex items-center justify-between gap-4 ${idx % 2 === 1 ? "bg-slate-100/70" : ""}`}
+              >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`px-2 py-0.5 text-[10px] font-bold border rounded ${catInfo.bg} ${catInfo.color}`}>

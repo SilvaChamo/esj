@@ -280,11 +280,16 @@ export default function ContasAdministradores() {
           <>
           {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md). */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-            {contas.map((c) => {
+            {contas.map((c, idx) => {
               const { apelidoUpper, primeiroNome } = formatarNome(c.nome || c.email || "—");
               const estaSelecionado = selecionados.has(c.id);
               return (
-                <div key={c.id} className={`p-4 space-y-2 ${estaSelecionado ? "bg-sky/10" : "bg-white"}`}>
+                <div
+                  key={c.id}
+                  className={`p-4 space-y-2 ${
+                    estaSelecionado ? "bg-sky/10" : idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
                       <input

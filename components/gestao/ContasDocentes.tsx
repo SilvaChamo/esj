@@ -835,15 +835,15 @@ export default function ContasDocentes({
           {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md), sem
               scroll horizontal; a tabela completa só aparece a partir de lg. */}
           <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-            {contas.map((c) => {
+            {contas.map((c, idx) => {
               const cadeiras = cadeirasPorConta[c.id];
               const estaSelecionado = selecionados.has(c.id);
               return (
                 <div
                   key={c.id}
-                  className={`bg-white p-3 space-y-2 ${estaSelecionado ? "bg-sky/10" : ""} ${
-                    expandido === c.id ? "md:col-span-2" : ""
-                  }`}
+                  className={`p-3 space-y-2 ${
+                    estaSelecionado ? "bg-sky/10" : idx % 2 === 1 ? "bg-slate-100/70" : "bg-white"
+                  } ${expandido === c.id ? "md:col-span-2" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
@@ -932,12 +932,20 @@ export default function ContasDocentes({
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-100">
-                {contas.map((c) => {
+                {contas.map((c, idx) => {
                   const cadeiras = cadeirasPorConta[c.id];
                   const estaSelecionado = selecionados.has(c.id);
                   return (
                     <Fragment key={c.id}>
-                      <tr className={`transition-colors ${estaSelecionado ? "bg-sky/10" : "hover:bg-cream/40"}`}>
+                      <tr
+                        className={`transition-colors ${
+                          estaSelecionado
+                            ? "bg-sky/10"
+                            : idx % 2 === 1
+                            ? "bg-slate-100/70 hover:bg-sky/5"
+                            : "bg-white hover:bg-sky/5"
+                        }`}
+                      >
                         <td className="px-2 py-2.5 text-center align-top border-r border-navy-100/60">
                           <input
                             type="checkbox"

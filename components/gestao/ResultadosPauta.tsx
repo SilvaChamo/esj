@@ -229,7 +229,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             const resultado = classificacao(media);
             const ordem = (paginaAtual - 1) * porPagina + i + 1;
             return (
-              <div key={row.id} className="bg-white p-3 text-xs space-y-1.5">
+              <div key={row.id} className={`p-3 text-xs space-y-1.5 ${i % 2 === 1 ? "bg-slate-100/70" : "bg-white"}`}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold text-navy-900">
                     <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
