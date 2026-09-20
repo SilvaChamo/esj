@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, type FormEvent, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, ChevronUp, Pencil, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2, UserPlus, X } from "lucide-react";
 import {
   montarCatalogo,
   nomeCadeira,
@@ -452,6 +452,9 @@ export default function ContasDocentes({
   const [cadeirasPorConta, setCadeirasPorConta] = useState<Record<string, CadeiraAtribuidaRow[]>>({});
   // Contas cuja lista de cadeiras (quando > 3) está aberta na coluna da tabela.
   const [cadeirasAbertas, setCadeirasAbertas] = useState<Set<string>>(new Set());
+  // Idem para a coluna "Cursos" (quando > 2) — calculada a partir dos
+  // cursos das cadeiras já atribuídas, sem tabela própria no Supabase.
+  const [cursosAbertos, setCursosAbertos] = useState<Set<string>>(new Set());
   // Cadeiras acrescentadas pela secretaria (tabela cadeiras_adicionais) e
   // correcções ao catálogo estático (tabela cadeiras_overrides) — ambas
   // reflectidas aqui para que o que se atribui a um docente bata certo com
@@ -468,6 +471,21 @@ export default function ContasDocentes({
       else novo.add(contaId);
       return novo;
     });
+  };
+
+  const alternarCursosAbertos = (contaId: string) => {
+    setCursosAbertos((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(contaId)) novo.delete(contaId);
+      else novo.add(contaId);
+      return novo;
+    });
+  };
+
+  /** Cursos leccionados por um docente — os das cadeiras já atribuídas, sem repetir. */
+  const cursosDoDocente = (cadeiras: CadeiraAtribuidaRow[]) => {
+    const slugs = Array.from(new Set(cadeiras.map((c) => c.curso)));
+    return slugs.map((slug) => CURSOS_DOCENCIA.find((c) => c.slug === slug)?.titulo ?? slug);
   };
 
   useEffect(() => {
@@ -647,6 +665,7 @@ export default function ContasDocentes({
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
                   <th className="px-6 py-3">Nome do Docente</th>
                   <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3 min-w-[180px]">Cursos</th>
                   <th className="px-6 py-3 min-w-[420px]">Cadeira(s)</th>
                   <th className="px-6 py-3 text-right">Ações</th>
                 </tr>
@@ -661,6 +680,56 @@ export default function ContasDocentes({
                           {c.nome || "Sem nome"}
                         </td>
                         <td className="px-6 py-4 text-navy-900/70 align-top">{c.email}</td>
+                        <td className="px-6 py-4 align-top">
+                          {cadeiras === undefined ? (
+                            <span className="text-xs text-navy-900/40">A carregar…</span>
+                          ) : (
+                            (() => {
+                              const cursos = cursosDoDocente(cadeiras);
+                              if (cursos.length === 0) {
+                                return <span className="text-xs text-navy-900/40 italic">Nenhum</span>;
+                              }
+                              const aberto = cursosAbertos.has(c.id);
+                              const primeiros = cursos.slice(0, 2);
+                              const renderTag = (nome: string) => (
+                                <span
+                                  key={nome}
+                                  className="shrink-0 whitespace-nowrap inline-block px-2 py-0.5 bg-sky/10 text-sky text-[11px] font-semibold rounded border border-sky/30"
+                                >
+                                  {nome}
+                                </span>
+                              );
+                              return (
+                                <div>
+                                  <div className="flex flex-nowrap items-center gap-1.5">
+                                    {primeiros.map(renderTag)}
+                                    {cursos.length > 2 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => alternarCursosAbertos(c.id)}
+                                        title={aberto ? "Fechar lista" : "Ver todos os cursos"}
+                                        className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-bold text-navy-900/60 hover:text-navy-900 transition-colors"
+                                      >
+                                        {aberto ? (
+                                          <ChevronUp size={12} />
+                                        ) : (
+                                          <>
+                                            +{cursos.length - 2} <ChevronDown size={12} />
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+                                  {aberto && cursos.length > 2 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-navy-100/60">
+                                      {cursos.map(renderTag)}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          )}
+                        </td>
                         <td className="px-6 py-4 align-top">
                           {cadeiras === undefined ? (
                             <span className="text-xs text-navy-900/40">A carregar…</span>
@@ -721,11 +790,13 @@ export default function ContasDocentes({
                             <button
                               type="button"
                               onClick={() => setExpandido((v) => (v === c.id ? null : c.id))}
-                              className="shrink-0 inline-flex items-center gap-1.5 border border-navy-100 hover:border-sky text-navy-900 text-xs font-bold px-3 py-2 transition-colors"
+                              title="Gerir cadeiras deste docente"
+                              aria-label={`Gerir ${c.email}`}
+                              className={`shrink-0 p-2 transition-colors ${
+                                expandido === c.id ? "text-sky" : "text-navy-900/40 hover:text-sky"
+                              }`}
                             >
-                              <Pencil size={14} />
-                              Gerir
-                              {expandido === c.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                              <Pencil size={16} />
                             </button>
                             <button
                               type="button"
@@ -741,7 +812,7 @@ export default function ContasDocentes({
                       </tr>
                       {expandido === c.id && (
                         <tr>
-                          <td colSpan={4} className="p-0">
+                          <td colSpan={5} className="p-0">
                             <CadeirasDocente
                               docente={c}
                               catalogo={catalogo}
