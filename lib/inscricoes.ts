@@ -2,9 +2,16 @@ import { comprimirImagemUpload } from "@/lib/comprimir-imagem";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { ANO_LECTIVO } from "@/lib/admissao";
 
-function protocolNumber() {
-  const n = Math.floor(100000 + Math.random() * 900000);
-  return `ESJ-${ANO_LECTIVO}-${n}`;
+/**
+ * Número de candidatura sequencial (ESJ-EA{ano}{sequência}), gerado no
+ * servidor via a função proximo_protocolo (supabase/protocolo-candidatura-sequencial.sql)
+ * — nunca no browser, para não haver duas candidaturas simultâneas a
+ * ficarem com o mesmo número.
+ */
+async function protocolNumber(supabase: ReturnType<typeof createBrowserSupabase>) {
+  const { data, error } = await supabase.rpc("proximo_protocolo", { ano: ANO_LECTIVO });
+  if (error || !data) throw error || new Error("Não foi possível gerar o número de candidatura.");
+  return data as string;
 }
 
 export async function submitInscricao(
@@ -12,7 +19,7 @@ export async function submitInscricao(
   files: Record<string, File | null>
 ) {
   const supabase = createBrowserSupabase();
-  const protocolo = protocolNumber();
+  const protocolo = await protocolNumber(supabase);
   const documentos: Record<string, string> = {};
 
   for (const [id, file] of Object.entries(files)) {

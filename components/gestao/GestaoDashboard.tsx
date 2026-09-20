@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
+  AlertTriangle,
   Bell,
   Book,
   BookOpen,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   ChevronUp,
   ClipboardList,
+  Copy,
   ExternalLink,
   Eye,
   FileText,
@@ -1896,6 +1898,17 @@ function Candidaturas() {
   const [criandoConta, setCriandoConta] = useState<Set<string>>(new Set());
   const [aviso, setAviso] = useState<{ texto: string; erro: boolean } | null>(null);
 
+  // Fila de falhas de envio de e-mail — em vez de mostrar a senha só num
+  // aviso de uma linha (que desaparece assim que a próxima acção acontece),
+  // cada falha fica aqui até a secretaria a comunicar à mão. Isto aguenta
+  // várias/todas as aprovações falharem em sequência sem perder nenhuma
+  // senha pelo caminho. Só existe em memória desta sessão do browser —
+  // nunca é guardado em disco, por serem senhas em texto simples.
+  const [falhasEmail, setFalhasEmail] = useState<
+    { protocolo: string; nome: string; numeroEstudante: string; email: string; passwordTemporaria: string }[]
+  >([]);
+  const [modalFalhasAberto, setModalFalhasAberto] = useState(false);
+
   // Modal "Numeração" — a secretaria digita o número inicial UMA vez por
   // curso/regime; o sistema gera os seguintes sozinho a partir daí.
   const [modalNumeracaoAberto, setModalNumeracaoAberto] = useState(false);
@@ -2037,13 +2050,16 @@ function Candidaturas() {
         setCriandoConta((prev) => new Set(prev).add(c.protocolo));
         try {
           const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
+          if (!emailEnviado && passwordTemporaria) {
+            registarFalhaEmail(c, numeroEstudante, passwordTemporaria);
+          }
           setAviso({
             texto: emailEnviado
               ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}. Dados de acesso e informação de pagamento enviados para ${c.email}.`
               : passwordTemporaria
               ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}, mas o e-mail não foi enviado (${
                   avisoEmail || "falha desconhecida"
-                }). Senha temporária (comunique com segurança): ${passwordTemporaria}`
+                }). Adicionado à lista "Falhas de envio" — a senha fica lá até ser comunicada.`
               : `${c.nome} admitido/a — conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
             erro: !emailEnviado && Boolean(passwordTemporaria),
           });
@@ -2070,6 +2086,14 @@ function Candidaturas() {
     } finally {
       setGuardandoResultado(false);
     }
+  };
+
+  /** Junta a fila de "Falhas de envio" (substitui uma entrada anterior da mesma candidatura, nunca duplica). */
+  const registarFalhaEmail = (c: CandidaturaItem, numeroEstudante: string, passwordTemporaria: string) => {
+    setFalhasEmail((prev) => [
+      ...prev.filter((f) => f.protocolo !== c.protocolo),
+      { protocolo: c.protocolo, nome: c.nome, numeroEstudante, email: c.email || "", passwordTemporaria },
+    ]);
   };
 
   /**
@@ -2126,13 +2150,16 @@ function Candidaturas() {
     setAviso(null);
     try {
       const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
+      if (!emailEnviado && passwordTemporaria) {
+        registarFalhaEmail(c, numeroEstudante, passwordTemporaria);
+      }
       setAviso({
         texto: emailEnviado
           ? `Conta criada — nº ${numeroEstudante}. Dados de acesso e informação de pagamento enviados para ${c.email}.`
           : passwordTemporaria
           ? `Conta criada — nº ${numeroEstudante}, mas o e-mail não foi enviado (${
               avisoEmail || "falha desconhecida"
-            }). Senha temporária (comunique com segurança): ${passwordTemporaria}`
+            }). Adicionado à lista "Falhas de envio" — a senha fica lá até ser comunicada.`
           : `Conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
         erro: !emailEnviado && Boolean(passwordTemporaria),
       });
@@ -2343,6 +2370,15 @@ function Candidaturas() {
           >
             Numeração de estudantes
           </button>
+          {falhasEmail.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setModalFalhasAberto(true)}
+              className="normal-case tracking-normal text-[11px] font-bold text-crimson hover:underline"
+            >
+              Falhas de envio ({falhasEmail.length})
+            </button>
+          )}
         </h2>
         {selecionados.size > 0 ? (
           <div className="flex items-center gap-3 normal-case tracking-normal">
@@ -2600,6 +2636,86 @@ function Candidaturas() {
               className="px-4 py-2 bg-sky hover:bg-sky/90 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
             >
               {numBusy ? "A guardar…" : "Guardar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL: Falhas de envio — fila persistente de contas cujo e-mail
+        falhou, para nunca se perder uma senha só porque a seguinte
+        aprovação sobrescreveu o aviso de uma linha. */}
+    {modalFalhasAberto && (
+      <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-2xl p-6 space-y-4 animate-scale-in">
+          <div className="flex items-center justify-between border-b border-navy-100 pb-3">
+            <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
+              <AlertTriangle size={16} className="text-crimson" /> Falhas de envio ({falhasEmail.length})
+            </h3>
+            <button
+              type="button"
+              onClick={() => setModalFalhasAberto(false)}
+              className="text-navy-900/50 hover:text-navy-900"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-xs text-navy-900/60 leading-relaxed">
+            Estas contas foram criadas, mas o e-mail com os dados de acesso não foi enviado — comunique cada uma à
+            mão e depois marque como resolvida. Esta lista só existe nesta janela do navegador; se a fechar antes
+            de comunicar, perde-se.
+          </p>
+          {falhasEmail.length === 0 ? (
+            <p className="text-sm text-navy-900/50 italic py-6 text-center">Sem falhas pendentes.</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {falhasEmail.map((f) => (
+                <div key={f.protocolo} className="border border-navy-100 rounded p-3 text-xs space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-navy-900">{f.nome}</p>
+                      <p className="text-navy-900/50">{f.email || "sem e-mail"}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFalhasEmail((prev) => prev.filter((x) => x.protocolo !== f.protocolo))
+                      }
+                      className="shrink-0 text-navy-900/40 hover:text-leaf font-semibold"
+                      title="Marcar como comunicada"
+                    >
+                      Resolvida
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="px-2 py-1 rounded bg-cream text-navy-900">Nº {f.numeroEstudante}</span>
+                    <span className="px-2 py-1 rounded bg-cream text-navy-900">{f.passwordTemporaria}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard
+                          ?.writeText(
+                            `Número de estudante: ${f.numeroEstudante}\nE-mail: ${f.email}\nSenha temporária: ${f.passwordTemporaria}`
+                          )
+                          .catch(() => {})
+                      }
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-sky hover:bg-sky/10"
+                      title="Copiar dados"
+                    >
+                      <Copy size={12} /> Copiar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-navy-100">
+            <button
+              type="button"
+              onClick={() => setModalFalhasAberto(false)}
+              className="px-3 py-2 border border-navy-100 text-xs font-semibold rounded text-navy-900/70 hover:bg-cream"
+            >
+              Fechar
             </button>
           </div>
         </div>
@@ -3009,7 +3125,6 @@ function Anuncios({
           >
             <option>Todos os estudantes</option>
             <option>Maputo — Sede</option>
-            <option>Manica — Delegação Académica</option>
             <option>Licenciatura em Jornalismo</option>
             <option>Licenciatura em Publicidade e Marketing</option>
             <option>Licenciatura em Relações Públicas</option>

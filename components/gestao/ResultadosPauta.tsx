@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
@@ -33,13 +33,14 @@ type Linha = {
   publicado: boolean;
 };
 
+type LinhaCompleta = Linha & { ano_lectivo: string; nivel: string; curso: string; regime: string };
+
 export default function ResultadosPauta({ onAction }: { onAction: (m: string) => void }) {
   const [nivel, setNivel] = useState<Nivel>("Licenciatura");
   const [regime, setRegime] = useState<Regime>("Diurno");
   const [curso, setCurso] = useState("Jornalismo");
-  const [items, setItems] = useState<Linha[]>([]);
+  const [items, setItems] = useState<LinhaCompleta[]>([]);
   const [missing, setMissing] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [pagina, setPagina] = useState(1);
   const porPagina = 40;
 
@@ -76,33 +77,28 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nivel, curso, regime]);
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const notaPortugues = Number(fd.get("nota_portugues"));
-    const notaHistoria = Number(fd.get("nota_historia"));
-    setBusy(true);
+  /**
+   * Publicar/despublicar sem reabrir Candidaturas — mantém todos os outros
+   * campos da linha tal como estão, só troca "publicado".
+   */
+  const alternarPublicado = async (row: LinhaCompleta) => {
     try {
       await savePautaLinha({
-        anoLectivo: ANO_LECTIVO,
-        nivel,
-        curso,
-        regime,
-        apelido: String(fd.get("apelido") || ""),
-        nome: String(fd.get("nome") || ""),
-        notaPortugues,
-        notaHistoria,
-        publicado: fd.get("publicado") === "on",
+        id: row.id,
+        anoLectivo: row.ano_lectivo,
+        nivel: row.nivel,
+        curso: row.curso,
+        regime: row.regime,
+        apelido: row.apelido,
+        nome: row.nome,
+        notaPortugues: Number(row.nota_portugues),
+        notaHistoria: Number(row.nota_historia),
+        publicado: !row.publicado,
       });
-      form.reset();
       refresh();
-      onAction("Candidato gravado na pauta.");
+      onAction(row.publicado ? "Resultado despublicado." : "Resultado publicado.");
     } catch (error) {
-      if (isMissingTable(error)) setMissing(true);
       onAction(cmsError(error));
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -121,12 +117,13 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
       <div className="bg-white border border-navy-100 p-6 md:p-8">
         <h2 className="font-serif text-2xl font-bold text-navy-900">Pauta de resultados</h2>
         <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-          Média final = (Português × 50%) + (História × 50%). Admitido se média ≥ 10,00.
-          A pauta pública aparece em{" "}
+          Média final = (Português × 50%) + (História × 50%). Admitido se média ≥ 10,00. Esta lista é só de
+          consulta — os resultados lançam-se em <span className="font-semibold text-navy-900">Candidaturas</span> e
+          aparecem aqui e na{" "}
           <Link href="/resultados" className="text-sky hover:underline">
-            /resultados
-          </Link>
-          .
+            pauta pública
+          </Link>{" "}
+          automaticamente, sem nada duplicado à mão.
         </p>
         {missing && <SchemaInstall />}
         <div className="mt-6 grid md:grid-cols-3 gap-4">
@@ -169,58 +166,9 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         </div>
       </div>
 
-      <form
-        onSubmit={onSubmit}
-        className="bg-white border border-navy-100 p-6 md:p-8 grid md:grid-cols-2 lg:grid-cols-6 gap-4 items-end"
-      >
-        <label className="block lg:col-span-1">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Apelido</span>
-          <input name="apelido" required className="esj-field" />
-        </label>
-        <label className="block lg:col-span-1">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Nome</span>
-          <input name="nome" required className="esj-field" />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">Português</span>
-          <input
-            name="nota_portugues"
-            type="number"
-            min="0"
-            max="20"
-            step="0.01"
-            required
-            className="esj-field"
-          />
-        </label>
-        <label className="block">
-          <span className="block text-sm font-bold text-navy-900 mb-1.5">História</span>
-          <input
-            name="nota_historia"
-            type="number"
-            min="0"
-            max="20"
-            step="0.01"
-            required
-            className="esj-field"
-          />
-        </label>
-        <label className="flex items-center gap-2 h-11">
-          <input type="checkbox" name="publicado" defaultChecked className="accent-leaf" />
-          <span className="text-sm font-semibold text-navy-900">Publicar</span>
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-leaf hover:bg-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide px-5 py-3.5 transition-colors"
-        >
-          {busy ? "A GRAVAR…" : "ADICIONAR"}
-        </button>
-      </form>
-
       {items.length === 0 ? (
         <div className="bg-white border border-navy-100 px-5 py-8 text-center text-navy-900/50 text-xs">
-          Ainda sem candidatos nesta pauta.
+          Ainda não há resultados lançados para este curso/regime — lance-os em Candidaturas.
         </div>
       ) : (
         <div className="lg:hidden bg-navy-100 border border-navy-100 grid grid-cols-1 md:grid-cols-2 gap-px">
@@ -260,8 +208,16 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                     }`}
                   >
                     {resultado}
-                    {!row.publicado ? " · rascunho" : ""}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => void alternarPublicado(row)}
+                    className={`px-2 py-0.5 rounded font-semibold ${
+                      row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
+                    }`}
+                  >
+                    {row.publicado ? "Publicado" : "Rascunho — clique para publicar"}
+                  </button>
                 </div>
               </div>
             );
@@ -280,6 +236,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
               <th className="px-3 py-3 text-center">História (50%)</th>
               <th className="px-3 py-3 text-center">Média final</th>
               <th className="px-3 py-3 text-center">Resultado</th>
+              <th className="px-3 py-3 text-center">Publicação</th>
               <th className="px-3 py-3"></th>
             </tr>
           </thead>
@@ -315,7 +272,17 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                     }`}
                   >
                     {resultado}
-                    {!row.publicado ? " · rascunho" : ""}
+                  </td>
+                  <td className="px-3 py-1.5 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => void alternarPublicado(row)}
+                      className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
+                        row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
+                      }`}
+                    >
+                      {row.publicado ? "Publicado" : "Rascunho"}
+                    </button>
                   </td>
                   <td className="px-3 py-1.5 text-right">
                     <button
