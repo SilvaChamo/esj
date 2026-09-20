@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookPlus, Pencil, RotateCcw, Search, Trash2, Users, X } from "lucide-react";
+import { BookPlus, Pencil, RotateCcw, Search, Trash2, UserPlus, Users, X } from "lucide-react";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   montarCatalogo,
@@ -65,6 +65,15 @@ export default function Cadeiras() {
   const [docentesCadeiras, setDocentesCadeiras] = useState<Record<string, CadeiraAtribuidaRow[]>>({});
   const [docentesSelecionados, setDocentesSelecionados] = useState<Set<string>>(new Set());
   const [buscaDocente, setBuscaDocente] = useState("");
+  // Formulário para criar um docente novo sem sair do popup da cadeira —
+  // simétrico ao "Nova cadeira" que já existe no formulário de docente.
+  const [mostrarFormDocente, setMostrarFormDocente] = useState(false);
+  const [novoNomeDocente, setNovoNomeDocente] = useState("");
+  const [novoEmailDocente, setNovoEmailDocente] = useState("");
+  const [novoPasswordDocente, setNovoPasswordDocente] = useState("");
+  const [criandoDocente, setCriandoDocente] = useState(false);
+  const [toastDocente, setToastDocente] = useState<string | null>(null);
+  const [toastDocenteErro, setToastDocenteErro] = useState(false);
   // Identidade (curso+código) da cadeira ANTES desta edição — para saber a
   // que atribuições dos docentes ir buscar/substituir. Null ao criar de raiz.
   const [identidadeOriginal, setIdentidadeOriginal] = useState<{ curso: string; codigo: string } | null>(null);
@@ -108,6 +117,60 @@ export default function Cadeiras() {
       docentes.filter((d) => (docentesCadeiras[d.id] ?? []).some((c) => c.curso === curso && c.cadeira_codigo === codigo)).map((d) => d.id)
     );
 
+  const resetFormDocenteNovo = () => {
+    setMostrarFormDocente(false);
+    setNovoNomeDocente("");
+    setNovoEmailDocente("");
+    setNovoPasswordDocente("");
+    setToastDocente(null);
+  };
+
+  /** Cria a conta de docente sem sair do popup da cadeira e já a selecciona. */
+  const criarDocenteNovo = async () => {
+    const nome = novoNomeDocente.trim();
+    const email = novoEmailDocente.trim();
+    const password = novoPasswordDocente;
+    if (!email || !email.includes("@")) {
+      setToastDocente("Indique um correio válido.");
+      setToastDocenteErro(true);
+      return;
+    }
+    if (password.length < 6) {
+      setToastDocente("A palavra-passe deve ter pelo menos 6 caracteres.");
+      setToastDocenteErro(true);
+      return;
+    }
+    setCriandoDocente(true);
+    setToastDocente(null);
+    try {
+      const r = await pedir<{ id?: string; actualizado?: boolean }>("/api/docencia-contas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, password }),
+      });
+      if (r.id) {
+        setDocentes((prev) => [...prev, { id: r.id as string, email, nome: nome || null }]);
+        setDocentesSelecionados((prev) => new Set(prev).add(r.id as string));
+      }
+      setToastDocente(
+        r.actualizado
+          ? "Este correio já tinha conta — foi-lhe atribuído o papel de docente e ficou seleccionado."
+          : "Docente criado e seleccionado."
+      );
+      setToastDocenteErro(false);
+      setNovoNomeDocente("");
+      setNovoEmailDocente("");
+      setNovoPasswordDocente("");
+      setMostrarFormDocente(false);
+      carregarDocentes();
+    } catch (err) {
+      setToastDocente(err instanceof Error ? err.message : "Não foi possível criar o docente.");
+      setToastDocenteErro(true);
+    } finally {
+      setCriandoDocente(false);
+    }
+  };
+
   const abrirModal = () => {
     setEditando(null);
     setCursoNovo(cursoFiltro !== "todos" ? (cursoFiltro as CursoDocenciaSlug) : CURSOS_DOCENCIA[0].slug);
@@ -119,6 +182,7 @@ export default function Cadeiras() {
     setIdentidadeOriginal(null);
     setDocentesSelecionados(new Set());
     setBuscaDocente("");
+    resetFormDocenteNovo();
     setModalAberto(true);
   };
 
@@ -133,6 +197,7 @@ export default function Cadeiras() {
     setIdentidadeOriginal({ curso: extra.curso, codigo: extra.codigo });
     setDocentesSelecionados(docentesDaCadeira(extra.curso, extra.codigo));
     setBuscaDocente("");
+    resetFormDocenteNovo();
     setModalAberto(true);
   };
 
@@ -144,6 +209,7 @@ export default function Cadeiras() {
     setIdentidadeOriginal({ curso, codigo: cad.codigo });
     setDocentesSelecionados(docentesDaCadeira(curso, cad.codigo));
     setBuscaDocente("");
+    resetFormDocenteNovo();
     setAnoNovo(String(cad.ano));
     setSemestreNovo(String(cad.semestre));
     setToast(null);
@@ -601,11 +667,9 @@ export default function Cadeiras() {
                 <p className="text-xs font-bold text-navy-900 mb-2 flex items-center gap-1.5">
                   <Users size={14} className="text-sky" /> Docentes desta cadeira (opcional)
                 </p>
-                {docentes.length === 0 ? (
-                  <p className="text-[11px] text-navy-900/45">Ainda não há contas de docente criadas.</p>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="relative">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
                       <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-navy-900/40" />
                       <input
                         type="text"
@@ -615,6 +679,75 @@ export default function Cadeiras() {
                         className="w-full border border-navy-100 pl-8 pr-3 h-9 text-xs outline-none focus:border-sky bg-white"
                       />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarFormDocente((v) => !v)}
+                      className="shrink-0 inline-flex items-center justify-center gap-1.5 h-9 px-3 bg-sky/10 text-sky text-xs font-bold hover:bg-sky/20 transition-colors"
+                    >
+                      <UserPlus size={14} /> Novo docente
+                    </button>
+                  </div>
+
+                  {mostrarFormDocente && (
+                    <div className="bg-white border border-navy-100 p-3 space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-navy-900/45 mb-1">Nome</label>
+                          <input
+                            type="text"
+                            value={novoNomeDocente}
+                            onChange={(e) => setNovoNomeDocente(e.target.value)}
+                            placeholder="Nome completo"
+                            className="w-full border border-navy-100 px-2 h-9 text-xs outline-none focus:border-sky"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-navy-900/45 mb-1">Correio *</label>
+                          <input
+                            type="email"
+                            value={novoEmailDocente}
+                            onChange={(e) => setNovoEmailDocente(e.target.value)}
+                            placeholder="docente@esj.ac.mz"
+                            className="w-full border border-navy-100 px-2 h-9 text-xs outline-none focus:border-sky"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-navy-900/45 mb-1">Palavra-passe *</label>
+                          <input
+                            type="text"
+                            value={novoPasswordDocente}
+                            onChange={(e) => setNovoPasswordDocente(e.target.value)}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full border border-navy-100 px-2 h-9 text-xs outline-none focus:border-sky"
+                          />
+                        </div>
+                      </div>
+                      {toastDocente && (
+                        <p className={`text-xs ${toastDocenteErro ? "text-crimson" : "text-leaf"}`}>{toastDocente}</p>
+                      )}
+                      <div className="flex items-center gap-3 pt-1">
+                        <button
+                          type="button"
+                          disabled={criandoDocente}
+                          onClick={() => void criarDocenteNovo()}
+                          className="inline-flex items-center gap-1.5 h-9 px-3 bg-sky text-white text-xs font-bold hover:bg-sky/90 disabled:opacity-60 transition-colors"
+                        >
+                          {criandoDocente ? "A criar…" : "Criar e seleccionar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetFormDocenteNovo}
+                          className="text-xs font-semibold text-navy-900/50 hover:text-navy-900"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {docentes.length === 0 ? (
+                    <p className="text-[11px] text-navy-900/45">Ainda não há contas de docente criadas.</p>
+                  ) : (
                     <div className="max-h-40 overflow-y-auto space-y-1 bg-white border border-navy-100 p-2">
                       {docentes
                         .filter((d) => {
@@ -644,14 +777,14 @@ export default function Cadeiras() {
                           </label>
                         ))}
                     </div>
-                    {docentesSelecionados.size > 0 && (
-                      <p className="text-[11px] font-semibold text-navy-900/60">
-                        {docentesSelecionados.size} docente{docentesSelecionados.size === 1 ? "" : "s"} atribuído
-                        {docentesSelecionados.size === 1 ? "" : "s"} a esta cadeira.
-                      </p>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {docentesSelecionados.size > 0 && (
+                    <p className="text-[11px] font-semibold text-navy-900/60">
+                      {docentesSelecionados.size} docente{docentesSelecionados.size === 1 ? "" : "s"} atribuído
+                      {docentesSelecionados.size === 1 ? "" : "s"} a esta cadeira.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {toast && (
