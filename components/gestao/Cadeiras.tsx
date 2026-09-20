@@ -71,7 +71,6 @@ export default function Cadeiras() {
   const [novoNomeDocente, setNovoNomeDocente] = useState("");
   const [novoEmailDocente, setNovoEmailDocente] = useState("");
   const [novoPasswordDocente, setNovoPasswordDocente] = useState("");
-  const [criandoDocente, setCriandoDocente] = useState(false);
   const [toastDocente, setToastDocente] = useState<string | null>(null);
   const [toastDocenteErro, setToastDocenteErro] = useState(false);
   // Identidade (curso+código) da cadeira ANTES desta edição — para saber a
@@ -123,52 +122,6 @@ export default function Cadeiras() {
     setNovoEmailDocente("");
     setNovoPasswordDocente("");
     setToastDocente(null);
-  };
-
-  /** Cria a conta de docente sem sair do popup da cadeira e já a selecciona. */
-  const criarDocenteNovo = async () => {
-    const nome = novoNomeDocente.trim();
-    const email = novoEmailDocente.trim();
-    const password = novoPasswordDocente;
-    if (!email || !email.includes("@")) {
-      setToastDocente("Indique um correio válido.");
-      setToastDocenteErro(true);
-      return;
-    }
-    if (password.length < 6) {
-      setToastDocente("A palavra-passe deve ter pelo menos 6 caracteres.");
-      setToastDocenteErro(true);
-      return;
-    }
-    setCriandoDocente(true);
-    setToastDocente(null);
-    try {
-      const r = await pedir<{ id?: string; actualizado?: boolean }>("/api/docencia-contas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, password }),
-      });
-      if (r.id) {
-        setDocentes((prev) => [...prev, { id: r.id as string, email, nome: nome || null }]);
-        setDocentesSelecionados((prev) => new Set(prev).add(r.id as string));
-      }
-      setToastDocente(
-        r.actualizado
-          ? "Este correio já tinha conta — foi-lhe atribuído o papel de docente e ficou seleccionado."
-          : "Docente criado e seleccionado."
-      );
-      setToastDocenteErro(false);
-      setNovoNomeDocente("");
-      setNovoEmailDocente("");
-      setNovoPasswordDocente("");
-      setMostrarFormDocente(false);
-      carregarDocentes();
-    } catch (err) {
-      setToastDocente(err instanceof Error ? err.message : "Não foi possível criar o docente.");
-      setToastDocenteErro(true);
-    } finally {
-      setCriandoDocente(false);
-    }
   };
 
   const abrirModal = () => {
@@ -223,9 +176,17 @@ export default function Cadeiras() {
    * entrada desta cadeira e grava de novo — a rota /api/docencia-cadeiras
    * substitui sempre o conjunto completo de um docente de cada vez.
    */
-  const reconciliarDocentes = async (curso: string, codigo: string, nome: string, ano: number, semestre: number) => {
+  const reconciliarDocentes = async (
+    curso: string,
+    codigo: string,
+    nome: string,
+    ano: number,
+    semestre: number,
+    selecionados: Set<string>,
+    listaDocentes: ContaDocente[]
+  ) => {
     const antigos = identidadeOriginal ? docentesDaCadeira(identidadeOriginal.curso, identidadeOriginal.codigo) : new Set<string>();
-    const afetados = docentes.filter((d) => antigos.has(d.id) !== docentesSelecionados.has(d.id));
+    const afetados = listaDocentes.filter((d) => antigos.has(d.id) !== selecionados.has(d.id));
     if (afetados.length === 0) return;
 
     await Promise.all(
@@ -236,7 +197,7 @@ export default function Cadeiras() {
         const semEsta = atual.cadeiras.filter(
           (c) => !(identidadeOriginal && c.curso === identidadeOriginal.curso && c.cadeira_codigo === identidadeOriginal.codigo)
         );
-        const cadeiras = docentesSelecionados.has(d.id)
+        const cadeiras = selecionados.has(d.id)
           ? [...semEsta, { curso, cadeira_codigo: codigo, cadeira_nome: nome, ano, semestre }]
           : semEsta;
         await pedir("/api/docencia-cadeiras", {
@@ -266,9 +227,49 @@ export default function Cadeiras() {
       setToastErro(true);
       return;
     }
+
+    // Se o mini-formulário "Novo docente" estiver aberto e com dados, este
+    // único botão trata logo da criação da conta antes de gravar a cadeira
+    // — não é preciso clicar em dois sítios.
+    const novoDocenteEmail = novoEmailDocente.trim();
+    const criarDocenteJunto = mostrarFormDocente && (novoDocenteEmail || novoPasswordDocente);
+    if (criarDocenteJunto) {
+      if (!novoDocenteEmail || !novoDocenteEmail.includes("@")) {
+        setToastDocente("Indique um correio válido.");
+        setToastDocenteErro(true);
+        return;
+      }
+      if (novoPasswordDocente.length < 6) {
+        setToastDocente("A palavra-passe deve ter pelo menos 6 caracteres.");
+        setToastDocenteErro(true);
+        return;
+      }
+    }
+
     setGuardando(true);
     setToast(null);
     try {
+      let listaDocentes = docentes;
+      let selecaoFinal = docentesSelecionados;
+
+      if (criarDocenteJunto) {
+        const nomeDocenteNovo = novoNomeDocente.trim();
+        const r = await pedir<{ id?: string; actualizado?: boolean }>("/api/docencia-contas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome: nomeDocenteNovo, email: novoDocenteEmail, password: novoPasswordDocente }),
+        });
+        if (r.id) {
+          if (!listaDocentes.some((d) => d.id === r.id)) {
+            listaDocentes = [...listaDocentes, { id: r.id, email: novoDocenteEmail, nome: nomeDocenteNovo || null }];
+            setDocentes(listaDocentes);
+          }
+          selecaoFinal = new Set(selecaoFinal).add(r.id);
+          setDocentesSelecionados(selecaoFinal);
+        }
+        resetFormDocenteNovo();
+      }
+
       const cursoFinal = editando?.tipo === "base" ? editando.curso : cursoNovo;
       const codigoFinal = editando?.tipo === "base" ? editando.codigoOriginal : codigo;
       if (editando?.tipo === "base") {
@@ -298,7 +299,7 @@ export default function Cadeiras() {
         });
       }
       try {
-        await reconciliarDocentes(cursoFinal, codigoFinal, nome, Number(anoNovo), Number(semestreNovo));
+        await reconciliarDocentes(cursoFinal, codigoFinal, nome, Number(anoNovo), Number(semestreNovo), selecaoFinal, listaDocentes);
       } catch (err) {
         setNotice(err instanceof Error ? err.message : "A cadeira ficou gravada, mas não foi possível actualizar os docentes.");
         setNoticeErro(true);
@@ -722,18 +723,16 @@ export default function Cadeiras() {
                           />
                         </div>
                       </div>
-                      {toastDocente && (
+                      {toastDocente ? (
                         <p className={`text-xs ${toastDocenteErro ? "text-crimson" : "text-leaf"}`}>{toastDocente}</p>
+                      ) : (
+                        <p className="text-[11px] text-navy-900/45">
+                          A conta é criada e atribuída a esta cadeira ao clicar em "
+                          {editando ? "Guardar Alterações" : "Acrescentar Cadeira"}" — não precisa de um botão à
+                          parte.
+                        </p>
                       )}
                       <div className="flex items-center gap-3 pt-1">
-                        <button
-                          type="button"
-                          disabled={criandoDocente}
-                          onClick={() => void criarDocenteNovo()}
-                          className="inline-flex items-center gap-1.5 h-9 px-3 bg-sky text-white text-xs font-bold hover:bg-sky/90 disabled:opacity-60 transition-colors"
-                        >
-                          {criandoDocente ? "A criar…" : "Criar e seleccionar"}
-                        </button>
                         <button
                           type="button"
                           onClick={resetFormDocenteNovo}
