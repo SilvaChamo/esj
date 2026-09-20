@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-build-check
 out
 .DS_Store
 *.pem

@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Builds de verificação (BUILD_CHECK=1 npm run build) escrevem noutra pasta,
+  // para nunca corromper a cache do "next dev" que corre em paralelo na mesma pasta.
+  distDir: process.env.BUILD_CHECK ? ".next-build-check" : ".next",
   env: {
     NEXT_PUBLIC_SUPABASE_URL:
       process.env.NEXT_PUBLIC_SUPABASE_URL ||

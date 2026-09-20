@@ -490,7 +490,7 @@ export default function GestaoDashboard() {
           isCollapsed ? "lg:ml-20" : "lg:ml-[240px]"
         }`}
       >
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-navy-100 px-4 sm:px-8 py-3 flex items-center justify-between gap-4 shadow-sm">
+        <header className="sticky top-0 z-30 bg-white border-b border-navy-100 px-4 sm:px-8 py-3 flex items-center justify-between gap-4 shadow-sm">
           <div>
             <h1 className="font-serif text-xl font-bold text-navy-900">
               {sectionLabel(section)}

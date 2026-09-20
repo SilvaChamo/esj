@@ -279,27 +279,10 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
   };
 
   return (
+    <>
     <div className="space-y-4">
       {/* Botões ocultos para acionamento do cabeçalho */}
       <button id="btn-criar-estudante-modal" type="button" onClick={abrirCriarModal} className="hidden" />
-
-      {/* Toast flutuante simples que desaparece sozinho */}
-      {toastMessage && (
-        <div
-          className={`fixed bottom-6 right-6 z-[300] max-w-sm p-3.5 rounded-lg shadow-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-            toastMessage.tipo === "sucesso"
-              ? "bg-navy-900 text-white border border-leaf/40"
-              : "bg-crimson text-white border border-white/20"
-          }`}
-        >
-          {toastMessage.tipo === "sucesso" ? (
-            <CheckCircle2 size={16} className="text-leaf shrink-0" />
-          ) : (
-            <AlertTriangle size={16} className="text-white shrink-0" />
-          )}
-          <span>{toastMessage.texto}</span>
-        </div>
-      )}
 
       {/* Barra de Filtros */}
       <div className="bg-white p-4 border border-navy-100 rounded-lg shadow-sm">
@@ -556,10 +539,29 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
           </div>
         )}
       </div>
+    </div>
 
-      {/* MODAL: Criar Nova Conta de Estudante */}
-      {modalCriarAberto && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    {/* Toast e modais ficam fora do space-y-4 — ver nota em ContasDocentes.tsx */}
+    {toastMessage && (
+      <div
+        className={`fixed bottom-6 right-6 z-[300] max-w-sm p-3.5 rounded-lg shadow-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
+          toastMessage.tipo === "sucesso"
+            ? "bg-navy-900 text-white border border-leaf/40"
+            : "bg-crimson text-white border border-white/20"
+        }`}
+      >
+        {toastMessage.tipo === "sucesso" ? (
+          <CheckCircle2 size={16} className="text-leaf shrink-0" />
+        ) : (
+          <AlertTriangle size={16} className="text-white shrink-0" />
+        )}
+        <span>{toastMessage.texto}</span>
+      </div>
+    )}
+
+    {/* MODAL: Criar Nova Conta de Estudante */}
+    {modalCriarAberto && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
             <div className="flex items-center justify-between border-b border-navy-100 pb-3">
               <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
@@ -680,7 +682,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
       {/* MODAL: Editar Estudante (REGRA 6: permite trocar o e-mail) */}
       {estudanteEditando && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
             <div className="flex items-center justify-between border-b border-navy-100 pb-3">
               <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
@@ -795,7 +797,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
       {/* MODAL: Eliminar Único */}
       {estudanteEliminando && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-sm p-6 space-y-4 animate-scale-in">
             <div className="flex items-center gap-3 text-crimson">
               <AlertTriangle size={24} />
@@ -828,7 +830,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
       {/* MODAL: Eliminar em Lote */}
       {confirmarEliminarLote && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-sm p-6 space-y-4 animate-scale-in">
             <div className="flex items-center gap-3 text-crimson">
               <AlertTriangle size={24} />
@@ -857,6 +859,6 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -75,7 +75,7 @@ export default function LeitorDocumento({
       onContextMenu={bloquearCopia}
     >
       <div
-        className={`border-b border-navy-100 bg-cream/95 backdrop-blur-sm shrink-0 ${
+        className={`border-b border-navy-100 bg-cream shrink-0 ${
           stickyTop ? "sticky top-[84px] z-40" : ""
         }`}
       >

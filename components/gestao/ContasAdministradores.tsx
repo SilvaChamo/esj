@@ -175,27 +175,10 @@ export default function ContasAdministradores() {
   };
 
   return (
+    <>
     <div className="space-y-4">
       {/* Botão oculto para acionamento a partir do cabeçalho do painel */}
       <button id="btn-criar-administrador-modal" type="button" onClick={abrirModalCriar} className="hidden" />
-
-      {/* Toast flutuante simples que desaparece sozinho */}
-      {toastMessage && (
-        <div
-          className={`fixed bottom-6 right-6 z-[300] max-w-sm p-3.5 rounded-lg shadow-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
-            toastMessage.tipo === "sucesso"
-              ? "bg-navy-900 text-white border border-leaf/40"
-              : "bg-crimson text-white border border-white/20"
-          }`}
-        >
-          {toastMessage.tipo === "sucesso" ? (
-            <CheckCircle2 size={16} className="text-leaf shrink-0" />
-          ) : (
-            <AlertTriangle size={16} className="text-white shrink-0" />
-          )}
-          <span>{toastMessage.texto}</span>
-        </div>
-      )}
 
       {erroConfig && (
         <div className="border border-amber-300 bg-amber-50 p-5 text-sm text-navy-900/80 leading-relaxed rounded-lg">
@@ -335,10 +318,30 @@ export default function ContasAdministradores() {
           </div>
         )}
       </div>
+    </div>
 
-      {/* MODAL: Criar Nova Conta de Administrador */}
-      {modalCriarAberto && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    {/* Toast e modais ficam fora do space-y-4 — sendo "fixed", a margem
+        que o space-y-4 lhes aplicaria deixava uma faixa por cobrir. */}
+    {toastMessage && (
+      <div
+        className={`fixed bottom-6 right-6 z-[300] max-w-sm p-3.5 rounded-lg shadow-xl text-xs font-bold flex items-center gap-2.5 transition-all ${
+          toastMessage.tipo === "sucesso"
+            ? "bg-navy-900 text-white border border-leaf/40"
+            : "bg-crimson text-white border border-white/20"
+        }`}
+      >
+        {toastMessage.tipo === "sucesso" ? (
+          <CheckCircle2 size={16} className="text-leaf shrink-0" />
+        ) : (
+          <AlertTriangle size={16} className="text-white shrink-0" />
+        )}
+        <span>{toastMessage.texto}</span>
+      </div>
+    )}
+
+    {/* MODAL: Criar Nova Conta de Administrador */}
+    {modalCriarAberto && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
             <div className="flex items-center justify-between border-b border-navy-100 pb-3">
               <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
@@ -414,7 +417,7 @@ export default function ContasAdministradores() {
 
       {/* MODAL: Eliminar Único */}
       {contaEliminando && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-sm p-6 space-y-4 animate-scale-in">
             <div className="flex items-center gap-3 text-crimson">
               <AlertTriangle size={24} />
@@ -448,7 +451,7 @@ export default function ContasAdministradores() {
 
       {/* MODAL: Eliminar em Lote */}
       {confirmarEliminarLote && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-sm p-6 space-y-4 animate-scale-in">
             <div className="flex items-center gap-3 text-crimson">
               <AlertTriangle size={24} />
@@ -477,6 +480,6 @@ export default function ContasAdministradores() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

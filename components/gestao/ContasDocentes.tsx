@@ -275,9 +275,6 @@ function SeletorCadeiras({
                       />
                       <span className="font-mono text-[10px] text-navy-900/50">{cad.codigo}</span>
                       <span className="truncate">{cad.nome}</span>
-                      <span className="text-navy-900/40 shrink-0">
-                        ({cad.ano}º/{cad.semestre}º)
-                      </span>
                     </label>
                   ))}
                 </div>
@@ -611,6 +608,7 @@ export default function ContasDocentes({
   };
 
   return (
+    <>
     <div className="space-y-6">
       {/* Botão oculto para acionamento a partir do cabeçalho do painel */}
       <button id="btn-criar-docente-modal" type="button" onClick={abrirModalCriar} className="hidden" />
@@ -763,10 +761,13 @@ export default function ContasDocentes({
           </div>
         )}
       </div>
+    </div>
 
-      {/* MODAL: Criar Nova Conta de Docente */}
-      {modalCriarAberto && (
-        <div className="fixed inset-0 z-[250] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    {/* MODAL: Criar Nova Conta de Docente — fora do space-y-6 para o
+        "fixed inset-0" não herdar margin-top do container e deixar uma
+        faixa no topo sem o fundo transparente. */}
+    {modalCriarAberto && (
+        <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 animate-scale-in">
             <div className="flex items-center justify-between border-b border-navy-100 pb-3">
               <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
@@ -856,6 +857,6 @@ export default function ContasDocentes({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
