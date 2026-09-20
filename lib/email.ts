@@ -77,6 +77,72 @@ export function htmlNewsletter(params: {
   `);
 }
 
+/**
+ * Contas bancárias para pagamento de propina/matrícula, por regime — o
+ * estudante paga e leva o recibo ao registo académico. Vêm de uma etiqueta
+ * fotografada e parcialmente rasgada: a conta de cada banco está legível,
+ * mas o NIB completo não pôde ser confirmado com segurança a partir da
+ * foto (o rasgão atravessa exactamente os dígitos do meio). Por isso o NIB
+ * fica marcado "a confirmar" até a secretaria confirmar os dígitos exactos
+ * — nunca se envia um NIB adivinhado a um estudante real.
+ */
+export const CONTAS_PAGAMENTO: Record<"diurno" | "pos-laboral", { banco: string; conta: string; nib: string }> = {
+  diurno: { banco: "Millennium BIM", conta: "159436379", nib: "(NIB a confirmar pela secretaria)" },
+  "pos-laboral": { banco: "BCI", conta: "12127551210001", nib: "(NIB a confirmar pela secretaria)" },
+};
+
+export function htmlContaEstudante(params: {
+  origem: string;
+  nome: string;
+  numeroEstudante: string;
+  curso: string;
+  email: string;
+  passwordTemporaria: string;
+  regime: "diurno" | "pos-laboral";
+}) {
+  const banco = CONTAS_PAGAMENTO[params.regime];
+  return envelope(`
+    <p style="margin:0 0 24px;font-family:Georgia,serif;font-size:13px;letter-spacing:.12em;color:#159BDB;">
+      CANDIDATURA ADMITIDA
+    </p>
+    <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:20px;line-height:1.3;color:#0C1D3B;">
+      Parabéns, ${escaparHtml(params.nome)}!
+    </p>
+    <p style="margin:0 0 18px;font-family:Georgia,serif;font-size:15px;line-height:1.55;color:#122A55;">
+      A sua candidatura ao curso de ${escaparHtml(params.curso)} foi admitida. Aqui estão os dados de acesso à
+      sua conta de estudante e a informação para concluir a matrícula.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;border:1px solid #D7E0EF;">
+      <tr>
+        <td style="padding:16px 18px;font-family:Georgia,serif;font-size:14px;color:#122A55;">
+          <p style="margin:0 0 6px;"><strong>Número de estudante:</strong> ${escaparHtml(params.numeroEstudante)}</p>
+          <p style="margin:0 0 6px;"><strong>E-mail de acesso:</strong> ${escaparHtml(params.email)}</p>
+          <p style="margin:0;"><strong>Senha temporária:</strong> ${escaparHtml(params.passwordTemporaria)}</p>
+        </td>
+      </tr>
+    </table>
+    <a href="${params.origem}/entrar"
+      style="display:inline-block;background:#2E9E4F;color:#ffffff;text-decoration:none;font-family:Georgia,serif;font-size:13px;padding:12px 18px;margin:0 0 24px;">
+      Entrar na conta
+    </a>
+    <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:13px;letter-spacing:.1em;color:#159BDB;">
+      PAGAMENTO DA MATRÍCULA
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px;border:1px solid #D7E0EF;">
+      <tr>
+        <td style="padding:16px 18px;font-family:Georgia,serif;font-size:14px;color:#122A55;">
+          <p style="margin:0 0 6px;"><strong>Banco:</strong> ${escaparHtml(banco.banco)}</p>
+          <p style="margin:0 0 6px;"><strong>Conta:</strong> ${escaparHtml(banco.conta)}</p>
+          <p style="margin:0;"><strong>NIB:</strong> ${escaparHtml(banco.nib)}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0;font-family:Georgia,serif;font-size:14px;line-height:1.55;color:#122A55;">
+      Após o pagamento, leve o recibo ao registo académico da ESJ para concluir a matrícula.
+    </p>
+  `);
+}
+
 export function htmlFolha(params: { origem: string; titulo: string; ficheiro: string }) {
   return envelope(`
     <p style="margin:0 0 24px;font-family:Georgia,serif;font-size:13px;letter-spacing:.12em;color:#159BDB;">

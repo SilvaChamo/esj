@@ -5,6 +5,8 @@ import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase-env";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { eSuperAdmin } from "@/lib/gestao-auth";
 import { randomBytes } from "crypto";
+import { enviarUmEmail, htmlContaEstudante, siteUrl } from "@/lib/email";
+import { cursoDocenciaPorSlug } from "@/lib/docencia";
 
 export const dynamic = "force-dynamic";
 
@@ -188,12 +190,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: createErr.message }, { status: 400 });
     }
 
-    // A password só é devolvida uma vez, nesta resposta — comunique-a ao
-    // estudante por um canal seguro; ele deve trocá-la no primeiro acesso.
+    // Em vez de mostrar a senha num cartão no painel, envia-se por e-mail
+    // directamente ao candidato (o mesmo e-mail da candidatura), junto com
+    // os dados bancários para a matrícula. Só se devolve a senha nesta
+    // resposta (para a secretaria comunicar à mão) se o envio falhar — o
+    // painel nunca a mostra quando o e-mail foi enviado com sucesso.
+    let emailEnviado = false;
+    let avisoEmail: string | null = null;
+    if (userCreated?.user) {
+      try {
+        const regimeEmail = regime === "pos-laboral" ? "pos-laboral" : "diurno";
+        await enviarUmEmail(
+          emailInput,
+          "Candidatura admitida — dados de acesso e matrícula",
+          htmlContaEstudante({
+            origem: siteUrl(request),
+            nome,
+            numeroEstudante,
+            curso: cursoDocenciaPorSlug(curso)?.titulo || curso,
+            email: emailInput,
+            passwordTemporaria,
+            regime: regimeEmail,
+          })
+        );
+        emailEnviado = true;
+      } catch (err) {
+        avisoEmail = err instanceof Error ? err.message : "Não foi possível enviar o e-mail.";
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       userId: userCreated?.user?.id || null,
-      passwordTemporaria: userCreated?.user ? passwordTemporaria : null,
+      emailEnviado,
+      avisoEmail,
+      passwordTemporaria: userCreated?.user && !emailEnviado ? passwordTemporaria : null,
     });
   }
 

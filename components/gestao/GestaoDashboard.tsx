@@ -2036,12 +2036,16 @@ function Candidaturas() {
       if (classificacao(media) === "Admitido" && !jaTemConta) {
         setCriandoConta((prev) => new Set(prev).add(c.protocolo));
         try {
-          const { numeroEstudante, passwordTemporaria } = await criarContaNucleo(c);
+          const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
           setAviso({
-            texto: passwordTemporaria
-              ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${passwordTemporaria}`
+            texto: emailEnviado
+              ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}. Dados de acesso e informação de pagamento enviados para ${c.email}.`
+              : passwordTemporaria
+              ? `${c.nome} admitido/a — conta criada com o nº ${numeroEstudante}, mas o e-mail não foi enviado (${
+                  avisoEmail || "falha desconhecida"
+                }). Senha temporária (comunique com segurança): ${passwordTemporaria}`
               : `${c.nome} admitido/a — conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
-            erro: false,
+            erro: !emailEnviado && Boolean(passwordTemporaria),
           });
         } catch (err) {
           setAviso({
@@ -2107,19 +2111,30 @@ function Candidaturas() {
     if (!contaRes.ok) throw new Error(contaJson.error || "Não foi possível criar a conta.");
 
     setTurmaPorProtocolo((prev) => ({ ...prev, [c.protocolo]: { numero_estudante: numeroEstudante } }));
-    return { numeroEstudante, passwordTemporaria: contaJson.passwordTemporaria as string | null };
+    return {
+      numeroEstudante,
+      emailEnviado: Boolean(contaJson.emailEnviado),
+      avisoEmail: (contaJson.avisoEmail as string | null) || null,
+      // Só vem preenchida quando o e-mail falhou — é o único caso em que a
+      // secretaria precisa de a comunicar à mão.
+      passwordTemporaria: contaJson.passwordTemporaria as string | null,
+    };
   };
 
   const criarConta = async (c: CandidaturaItem) => {
     setCriandoConta((prev) => new Set(prev).add(c.protocolo));
     setAviso(null);
     try {
-      const { numeroEstudante, passwordTemporaria } = await criarContaNucleo(c);
+      const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
       setAviso({
-        texto: passwordTemporaria
-          ? `Conta criada — nº ${numeroEstudante}. Senha temporária (comunique com segurança): ${passwordTemporaria}`
+        texto: emailEnviado
+          ? `Conta criada — nº ${numeroEstudante}. Dados de acesso e informação de pagamento enviados para ${c.email}.`
+          : passwordTemporaria
+          ? `Conta criada — nº ${numeroEstudante}, mas o e-mail não foi enviado (${
+              avisoEmail || "falha desconhecida"
+            }). Senha temporária (comunique com segurança): ${passwordTemporaria}`
           : `Conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
-        erro: false,
+        erro: !emailEnviado && Boolean(passwordTemporaria),
       });
     } catch (err) {
       setAviso({ texto: err instanceof Error ? err.message : "Não foi possível criar a conta.", erro: true });
