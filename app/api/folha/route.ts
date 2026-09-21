@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
   if (!emailProvider()) {
     return NextResponse.json(
-      { error: "Configure RESEND_API_KEY e EMAIL_FROM no servidor." },
+      { error: "Configure BREVO_API_KEY e EMAIL_FROM no servidor." },
       { status: 503 }
     );
   }

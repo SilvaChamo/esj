@@ -7,9 +7,9 @@ export function siteUrl(request?: Request) {
 }
 
 export function emailProvider() {
-  const key = process.env.RESEND_API_KEY?.trim() || "";
-  const from = process.env.EMAIL_FROM?.trim() || process.env.RESEND_FROM?.trim() || "";
-  if (key && from) return { tipo: "resend" as const, key, from };
+  const key = process.env.BREVO_API_KEY?.trim() || "";
+  const from = process.env.EMAIL_FROM?.trim() || "";
+  if (key && from) return { tipo: "brevo" as const, key, from };
   return null;
 }
 
@@ -26,17 +26,18 @@ export async function enviarUmEmail(para: string, assunto: string, html: string)
   const provider = emailProvider();
   if (!provider) throw new Error("O envio de correio ainda não está configurado no servidor.");
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${provider.key}`,
+      "api-key": provider.key,
+      Accept: "application/json",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: provider.from,
-      to: [para],
+      sender: { name: "Escola Superior de Jornalismo", email: provider.from },
+      to: [{ email: para }],
       subject: assunto,
-      html,
+      htmlContent: html,
     }),
   });
   if (!res.ok) {

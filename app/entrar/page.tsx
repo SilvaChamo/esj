@@ -72,6 +72,9 @@ export default function EntrarPage() {
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [recuperar, setRecuperar] = useState(false);
+  const [emailRecuperar, setEmailRecuperar] = useState("");
+  const [recuperarBusy, setRecuperarBusy] = useState(false);
+  const [recuperarEnviado, setRecuperarEnviado] = useState(false);
 
   // Campos do formulário de registo
   const [nome, setNome] = useState("");
@@ -111,6 +114,29 @@ export default function EntrarPage() {
       );
     } finally {
       setBusy(false);
+    }
+  };
+
+  const recuperarSenha = async (e: FormEvent) => {
+    e.preventDefault();
+    const email = emailRecuperar.trim();
+    if (!email) {
+      setError("Indique o correio electrónico da conta.");
+      return;
+    }
+    setRecuperarBusy(true);
+    setError("");
+    try {
+      const supabase = createBrowserSupabase();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+      if (resetError) throw resetError;
+      setRecuperarEnviado(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível enviar o link de recuperação.");
+    } finally {
+      setRecuperarBusy(false);
     }
   };
 
@@ -247,7 +273,57 @@ export default function EntrarPage() {
             </button>
           </div>
 
-          {modo === "entrar" ? (
+          {modo === "entrar" && recuperar ? (
+            <form onSubmit={recuperarSenha} className="mt-6 space-y-4">
+              {recuperarEnviado ? (
+                <p className="text-sm text-leaf font-semibold text-center">
+                  Enviámos um link de recuperação para {emailRecuperar.trim()}. Verifique a caixa de entrada
+                  (e o spam) e siga o link para definir uma nova palavra-passe.
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-navy-900/60 text-center">
+                    Indique o correio da sua conta — enviamos um link para definir uma nova palavra-passe.
+                  </p>
+                  <Field
+                    id="recuperar-email"
+                    label="Correio electrónico"
+                    type="email"
+                    name="email"
+                    value={emailRecuperar}
+                    onChange={(e) => setEmailRecuperar(e.target.value)}
+                    required
+                    autoComplete="username"
+                  />
+                  {error && (
+                    <p className="text-sm text-crimson break-words" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={recuperarBusy}
+                    className="w-full bg-navy-800 hover:bg-crimson border-l-4 border-transparent hover:border-crimson disabled:opacity-60 text-white font-semibold text-xs tracking-wide py-3.5 transition-all rounded shadow-sm"
+                  >
+                    {recuperarBusy ? "A ENVIAR…" : "ENVIAR LINK DE RECUPERAÇÃO"}
+                  </button>
+                </>
+              )}
+              <p className="text-center text-xs text-navy-900/60 -mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecuperar(false);
+                    setRecuperarEnviado(false);
+                    setError("");
+                  }}
+                  className="text-sky hover:underline font-semibold"
+                >
+                  Voltar a entrar
+                </button>
+              </p>
+            </form>
+          ) : modo === "entrar" ? (
             <form onSubmit={onSubmitEntrar} className="mt-6 space-y-4">
               <Field
                 id="entrar-email"
@@ -292,7 +368,10 @@ export default function EntrarPage() {
                 Esqueceu a Senha?{" "}
                 <button
                   type="button"
-                  onClick={() => setRecuperar((v) => !v)}
+                  onClick={() => {
+                    setRecuperar(true);
+                    setError("");
+                  }}
                   className="text-sky hover:underline font-semibold"
                 >
                   Recuperar

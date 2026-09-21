@@ -149,7 +149,7 @@ export default function FolhaAcademica({ onAction }: { onAction: (m: string) => 
       {emailOk === false && (
         <div className="mb-6 border border-navy-100 bg-cream p-4 text-sm text-navy-900/80 leading-relaxed">
           Para enviar as edições por correio, defina no servidor{" "}
-          <span className="font-semibold">RESEND_API_KEY</span> e{" "}
+          <span className="font-semibold">BREVO_API_KEY</span> e{" "}
           <span className="font-semibold">EMAIL_FROM</span>. As edições podem ser
           gravadas na mesma.
         </div>
