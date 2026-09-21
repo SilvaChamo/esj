@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bell,
@@ -2084,9 +2084,7 @@ function Candidaturas() {
         }
       } else if (resultado === "Suplente") {
         setAviso({
-          texto: `Resultado de ${c.nome} gravado — Suplente (média ${media.toFixed(
-            1
-          )}). Sem conta automática; use "Repescar" na coluna Conta se o registo académico decidir admitir.`,
+          texto: `Resultado de ${c.nome} gravado — Suplente (média ${media.toFixed(1)}). Sem conta automática.`,
           erro: false,
         });
       } else {
@@ -2187,6 +2185,11 @@ function Candidaturas() {
   const colunaResultado = (c: CandidaturaItem) => {
     const pauta = pautaPorProtocolo[c.protocolo];
     if (resultadoAberto === c.protocolo) {
+      const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        if (!guardandoResultado) void guardarResultado(c);
+      };
       return (
         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <input
@@ -2196,8 +2199,9 @@ function Candidaturas() {
             step={0.1}
             value={notaPortugues}
             onChange={(e) => setNotaPortugues(e.target.value)}
+            onKeyDown={onEnter}
             placeholder="Port."
-            title="Nota de Português"
+            title="Nota de Português — Enter grava"
             className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
           />
           <input
@@ -2207,8 +2211,9 @@ function Candidaturas() {
             step={0.1}
             value={notaHistoria}
             onChange={(e) => setNotaHistoria(e.target.value)}
+            onKeyDown={onEnter}
             placeholder="Hist."
-            title="Nota de História"
+            title="Nota de História — Enter grava"
             className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
           />
           <button
