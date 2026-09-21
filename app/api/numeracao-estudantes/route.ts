@@ -40,22 +40,27 @@ function incrementarNumero(numero: string): string {
   return `${prefixo}${seguinte}${sufixo}`;
 }
 
+/** Sufixo fixo de todos os números de estudante (campus de Maputo) — sempre maiúsculo, em todos os cursos. */
+const SUFIXO_NUMERO = "MP";
+
 /**
  * Sugere o número inicial de um novo ano lectivo a partir do número mais
  * recente do mesmo curso/regime num ano anterior — troca o ano à cabeça
- * (4 dígitos) pelo novo e repõe a sequência a "0001", mantendo o sufixo.
+ * (4 dígitos) pelo novo e repõe a sequência a "0001", mantendo o sufixo
+ * (sempre "MP" maiúsculo, mesmo que o número antigo o tivesse noutra
+ * capitalização ou lhe faltasse por completo).
  * Ex.: última semente 2026 = "20260007MP" -> sugestão 2027 = "20270001MP".
- * Sem histórico nenhum, sugere "{ano}0001".
+ * Sem histórico nenhum, sugere "{ano}0001MP".
  */
 function sugerirNumeroInicial(ano: string, ultimoNumero: string | null): string {
   if (ultimoNumero) {
     const m = ultimoNumero.match(/^(\d{4})(\d+)(\D*)$/);
     if (m) {
-      const [, , digitosSeq, sufixo] = m;
-      return `${ano}${"1".padStart(digitosSeq.length, "0")}${sufixo}`;
+      const [, , digitosSeq] = m;
+      return `${ano}${"1".padStart(digitosSeq.length, "0")}${SUFIXO_NUMERO}`;
     }
   }
-  return `${ano}0001`;
+  return `${ano}0001${SUFIXO_NUMERO}`;
 }
 
 const CURSOS_VALIDOS = ["jornalismo", "publicidade-e-marketing", "relacoes-publicas", "biblioteconomia-e-documentacao"];
@@ -137,7 +142,7 @@ export async function PUT(request: Request) {
   const curso = String(body?.curso || "");
   const regime = String(body?.regime || "");
   const ano = String(body?.ano || ANO_PADRAO);
-  const numeroInicial = String(body?.numeroInicial || "").trim();
+  let numeroInicial = String(body?.numeroInicial || "").trim().toUpperCase();
   if (!CURSOS_VALIDOS.includes(curso) || !REGIMES_VALIDOS.includes(regime)) {
     return NextResponse.json({ error: "Curso ou regime inválido." }, { status: 400 });
   }
@@ -146,6 +151,12 @@ export async function PUT(request: Request) {
       { error: "Indique um número inicial válido (com pelo menos um dígito)." },
       { status: 400 }
     );
+  }
+  // Todos os números terminam em "MP" maiúsculo, em todos os cursos — corrige
+  // sozinho mesmo que a secretaria escreva sem sufixo ou com outro.
+  const partes = numeroInicial.match(/^(.*?)(\d+)(\D*)$/);
+  if (partes && partes[3] !== SUFIXO_NUMERO) {
+    numeroInicial = `${partes[1]}${partes[2]}${SUFIXO_NUMERO}`;
   }
 
   const { error } = await admin
