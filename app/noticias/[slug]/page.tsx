@@ -33,7 +33,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
 
       <article className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <div className="grid lg:grid-cols-[1fr_320px] gap-10 items-start">
-          <div className="min-w-0 max-w-3xl">
+          <div className="min-w-0 bg-white border border-navy-100 p-6 md:p-8">
             <h1 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
               {item.title}
             </h1>
@@ -57,7 +57,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
           </div>
 
           {maisLidas.length > 0 && (
-            <aside className="lg:sticky lg:top-24">
+            <aside className="lg:sticky lg:top-24 bg-white border border-navy-100 p-6">
               <h2 className="font-serif text-lg font-bold text-navy-900 mb-4">
                 Notícias mais lidas
               </h2>
