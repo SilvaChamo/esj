@@ -1,12 +1,13 @@
--- ESJ — número de candidatura sequencial (ESJ-EA{ano}{sequência})
+-- ESJ — número de candidatura sequencial (ESJ-CA{ano}{sequência})
 -- Colar no SQL Editor: https://supabase.com/dashboard/project/tsozqadxoujocwxqxorg/sql/new
 --
 -- Antes, o protocolo de cada candidatura era um número aleatório gerado no
 -- browser (ex.: ESJ-2026-483920). Passa a ser sequencial por ano lectivo
--- (ex.: ESJ-EA202601, ESJ-EA202602, ...), gerado sempre no servidor através
--- da função abaixo — nunca no browser, para duas pessoas a candidatar-se ao
--- mesmo tempo nunca ficarem com o mesmo número (a função faz o incremento
--- dentro de um único UPDATE, que o Postgres serializa automaticamente).
+-- (ex.: ESJ-CA202601, ESJ-CA202602, ... — "CA" de Candidatura), gerado
+-- sempre no servidor através da função abaixo, no próprio acto de
+-- inscrição — nunca no browser, para duas pessoas a candidatar-se ao mesmo
+-- tempo nunca ficarem com o mesmo número (a função faz o incremento dentro
+-- de um único UPDATE, que o Postgres serializa automaticamente).
 
 create table if not exists protocolo_candidatura_seq (
   ano_lectivo text primary key,
@@ -30,7 +31,7 @@ begin
   values (ano, 2)
   on conflict (ano_lectivo) do update set proximo = protocolo_candidatura_seq.proximo + 1
   returning proximo - 1 into seq;
-  return 'ESJ-EA' || ano || lpad(seq::text, 2, '0');
+  return 'ESJ-CA' || ano || lpad(seq::text, 2, '0');
 end;
 $$;
 

@@ -3,7 +3,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { ANO_LECTIVO } from "@/lib/admissao";
 
 /**
- * Número de candidatura sequencial (ESJ-EA{ano}{sequência}), gerado no
+ * Número de candidatura sequencial (ESJ-CA{ano}{sequência}), gerado no
  * servidor via a função proximo_protocolo (supabase/protocolo-candidatura-sequencial.sql)
  * — nunca no browser, para não haver duas candidaturas simultâneas a
  * ficarem com o mesmo número.

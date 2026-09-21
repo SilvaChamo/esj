@@ -2130,35 +2130,6 @@ function Candidaturas() {
     return resultado;
   };
 
-  const criarConta = async (c: CandidaturaItem) => {
-    setCriandoConta((prev) => new Set(prev).add(c.protocolo));
-    setAviso(null);
-    try {
-      const { numeroEstudante, emailEnviado, avisoEmail, passwordTemporaria } = await criarContaNucleo(c);
-      if (!emailEnviado && passwordTemporaria) {
-        registarFalhaEmail(c, numeroEstudante, passwordTemporaria);
-      }
-      setAviso({
-        texto: emailEnviado
-          ? `Conta criada — nº ${numeroEstudante}. Dados de acesso e informação de pagamento enviados para ${c.email}.`
-          : passwordTemporaria
-          ? `Conta criada — nº ${numeroEstudante}, mas o e-mail não foi enviado (${
-              avisoEmail || "falha desconhecida"
-            }). Adicionado à lista "Falhas de envio" — a senha fica lá até ser comunicada.`
-          : `Conta ligada ao nº ${numeroEstudante} (já existia uma conta com este e-mail).`,
-        erro: !emailEnviado && Boolean(passwordTemporaria),
-      });
-    } catch (err) {
-      setAviso({ texto: err instanceof Error ? err.message : "Não foi possível criar a conta.", erro: true });
-    } finally {
-      setCriandoConta((prev) => {
-        const novo = new Set(prev);
-        novo.delete(c.protocolo);
-        return novo;
-      });
-    }
-  };
-
   const abrirNumeracao = () => {
     setModalNumeracaoAberto(true);
     setNumMsg(null);
@@ -2287,36 +2258,6 @@ function Candidaturas() {
     );
   };
 
-  const colunaConta = (c: CandidaturaItem) => {
-    const pauta = pautaPorProtocolo[c.protocolo];
-    if (!pauta) return <span className="text-navy-900/30">—</span>;
-    const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
-    const resultado = classificacao(media);
-    // Suplente: só passa a ter conta por repescagem manual (decisão do
-    // registo académico) — nunca automático, mas o botão fica disponível
-    // aqui para essa decisão. Não admitido não tem conta de forma alguma.
-    if (resultado === "Não admitido") return <span className="text-navy-900/30">—</span>;
-    const turma = turmaPorProtocolo[c.protocolo];
-    if (turma) {
-      return <span className="font-mono font-bold text-navy-900">Nº {turma.numero_estudante}</span>;
-    }
-    const aCriar = criandoConta.has(c.protocolo);
-    return (
-      <button
-        type="button"
-        disabled={aCriar}
-        onClick={(e) => {
-          e.stopPropagation();
-          void criarConta(c);
-        }}
-        title={resultado === "Suplente" ? "Repescagem — criar conta manualmente" : undefined}
-        className="inline-flex items-center gap-1 text-sky hover:underline font-semibold disabled:opacity-50"
-      >
-        <UserPlus size={11} /> {aCriar ? "A criar…" : resultado === "Suplente" ? "Repescar" : "Criar conta"}
-      </button>
-    );
-  };
-
   return (
     <>
     <div className="gestao-list-card">
@@ -2437,10 +2378,7 @@ function Candidaturas() {
                         {c.delegacao ? ` · ${c.delegacao}` : ""}
                       </p>
                       {c.email && <p className="text-navy-900/50">{c.email}</p>}
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        {colunaResultado(c)}
-                        {colunaConta(c)}
-                      </div>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">{colunaResultado(c)}</div>
                       <p className="text-navy-900/40 text-[11px]">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </p>
@@ -2470,7 +2408,6 @@ function Candidaturas() {
                   <th className="px-3 py-2.5">Delegação</th>
                   <th className="px-3 py-2.5">E-mail</th>
                   <th className="px-3 py-2.5">Resultado</th>
-                  <th className="px-3 py-2.5">Conta</th>
                   <th className="px-3 py-2.5 text-right">Data</th>
                 </tr>
               </thead>
@@ -2511,7 +2448,6 @@ function Candidaturas() {
                       <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
                       <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">{colunaResultado(c)}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{colunaConta(c)}</td>
                       <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </td>
