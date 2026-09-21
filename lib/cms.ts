@@ -536,7 +536,7 @@ export async function listPautaGestao(input: {
   let query = supabase
     .from("pauta_admissao")
     .select(
-      "id, ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado, updated_at"
+      "id, ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado, updated_at, candidatura_protocolo"
     )
     .eq("ano_lectivo", input.anoLectivo);
   if (input.nivel && input.nivel !== "todos") query = query.eq("nivel", input.nivel);

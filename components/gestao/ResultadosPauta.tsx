@@ -21,6 +21,7 @@ import {
   deletePautaLinha,
   isMissingTable,
   listPautaGestao,
+  listTurmaLigadaACandidaturas,
   savePautaLinha,
 } from "@/lib/cms";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
@@ -32,6 +33,7 @@ type Linha = {
   nota_portugues: number | string;
   nota_historia: number | string;
   publicado: boolean;
+  candidatura_protocolo?: string | null;
 };
 
 type LinhaCompleta = Linha & { ano_lectivo: string; nivel: string; curso: string; regime: string };
@@ -48,6 +50,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
   const [items, setItems] = useState<LinhaCompleta[]>([]);
   const [missing, setMissing] = useState(false);
   const [pagina, setPagina] = useState(1);
+  const [numeroPorProtocolo, setNumeroPorProtocolo] = useState<Record<string, string>>({});
   const porPagina = 40;
 
   const cursos = nivel === "todos" ? TODOS_OS_CURSOS : CURSOS_POR_NIVEL[nivel];
@@ -78,6 +81,18 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         if (isMissingTable(err)) setMissing(true);
         else onAction(cmsError(err));
       });
+    // Nº de estudante — só existe depois de "Criar conta"/repescagem em
+    // Candidaturas (turma_estudantes), por isso vem à parte da pauta e
+    // liga-se pelo mesmo candidatura_protocolo.
+    listTurmaLigadaACandidaturas()
+      .then((rows) => {
+        const mapa: Record<string, string> = {};
+        for (const r of rows) {
+          if (r.candidatura_protocolo) mapa[r.candidatura_protocolo] = r.numero_estudante;
+        }
+        setNumeroPorProtocolo(mapa);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -208,6 +223,11 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-semibold text-navy-900">
                       <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
+                      {row.candidatura_protocolo && numeroPorProtocolo[row.candidatura_protocolo] && (
+                        <span className="font-mono font-bold text-sky">
+                          {numeroPorProtocolo[row.candidatura_protocolo]}{" "}
+                        </span>
+                      )}
                       <span className="uppercase">{row.apelido}</span> {row.nome}
                     </p>
                     <button
@@ -255,7 +275,8 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
-                  <th className="px-2 py-2.5 whitespace-nowrap w-10 text-center border-r border-navy-100/60">Nº</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap w-10 text-center border-r border-navy-100/60">Ord.</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nº Estudante</th>
                   <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Apelido</th>
                   <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nome</th>
                   <th className="px-3 py-2.5 text-center">Português (50%)</th>
@@ -280,6 +301,9 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                     >
                       <td className="px-2 py-2 text-center text-navy-900/50 font-mono border-r border-navy-100/60">
                         {ordem}
+                      </td>
+                      <td className="px-2 py-2 font-mono font-bold text-sky whitespace-nowrap border-r border-navy-100/60">
+                        {(row.candidatura_protocolo && numeroPorProtocolo[row.candidatura_protocolo]) || "—"}
                       </td>
                       <td className="px-2 py-2 text-[11px] font-semibold text-navy-900 uppercase border-r border-navy-100/60">
                         {row.apelido}

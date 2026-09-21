@@ -14,3 +14,22 @@ export function getSupabase(): SupabaseClient | null {
     },
   });
 }
+
+/**
+ * Como getSupabase(), mas em vez de "no-store" (0% cache — cada visita
+ * paga sempre o pedido completo à Supabase, daí a pauta pública demorar a
+ * abrir), deixa o Next.js reaproveitar a resposta durante
+ * `revalidateSeconds`. As publicações novas continuam a aparecer sozinhas,
+ * só passam a demorar até `revalidateSeconds` a chegar em vez de zero —
+ * troca invisível para quem visita, muito mais rápida para todos.
+ */
+export function getSupabaseCached(revalidateSeconds: number): SupabaseClient | null {
+  const url = supabaseUrl();
+  const key = supabaseAnonKey();
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, next: { revalidate: revalidateSeconds } }),
+    },
+  });
+}

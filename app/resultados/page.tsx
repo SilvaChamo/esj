@@ -9,7 +9,8 @@ export const metadata = {
     "Resultados dos exames de admissão da Escola Superior de Jornalismo, por curso e regime.",
 };
 
-export const dynamic = "force-dynamic";
+// Sem "force-dynamic": esta página não lê dados (é só a lista de cursos,
+// ResultadosLista é client-side) — pode ficar estática, sem custo nenhum.
 
 export default function ResultadosPage() {
   return (

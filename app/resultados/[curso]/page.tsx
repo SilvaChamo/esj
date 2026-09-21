@@ -15,7 +15,10 @@ import {
 } from "@/lib/admissao";
 import { loadPautaPublica } from "@/lib/pauta";
 
-export const dynamic = "force-dynamic";
+// 30s de cache (ver getSupabaseCached em lib/supabase.ts) em vez de
+// "force-dynamic" — a pauta publicada aparece na mesma sozinha, só demora
+// até 30s a chegar em vez de pagar sempre o pedido completo à Supabase.
+export const revalidate = 30;
 
 type Props = {
   params: { curso: string };

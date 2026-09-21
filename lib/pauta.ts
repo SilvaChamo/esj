@@ -1,4 +1,4 @@
-import { getSupabase } from "@/lib/supabase";
+import { getSupabaseCached } from "@/lib/supabase";
 import { ANO_LECTIVO, classificacao, mediaFinal, type Nivel, type Regime } from "@/lib/admissao";
 
 export type LinhaPauta = {
@@ -105,7 +105,9 @@ export async function loadPautaPublica(input: {
   anoLectivo?: string;
 }): Promise<PautaPublica> {
   const anoLectivo = input.anoLectivo ?? ANO_LECTIVO;
-  const supabase = getSupabase();
+  // 30s de cache — a pauta pública deixa de pagar o pedido completo à
+  // Supabase em cada visita, só continua "quase" em tempo real.
+  const supabase = getSupabaseCached(30);
   let linhas: LinhaPauta[] = [];
   if (supabase) {
     const { data } = await supabase
