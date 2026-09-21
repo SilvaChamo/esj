@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import EventoCartazCard from "@/components/EventoCartazCard";
 import { FotoACarregar } from "@/components/Carregando";
 import {
@@ -13,49 +13,16 @@ import {
   type EventoTipo,
 } from "@/lib/eventos-esj";
 
-const META: Record<
-  EventoTipo,
-  { kicker: string; titulo: ReactNode; intro: string; tom: string }
-> = {
-  conferencia: {
-    kicker: "PRESTÍGIO ACADÉMICO",
-    titulo: (
-      <>
-        Conferência <span className="text-sky">Internacional</span>
-      </>
-    ),
-    intro:
-      "Edições de referência da ESJ: oradores, programa e memória das discussões científicas.",
-    tom: "institucional",
-  },
-  semana: {
-    kicker: "FESTIVAL ESJ",
-    titulo: (
-      <>
-        Semana da Comunicação e <span className="text-sky">Informação</span>
-      </>
-    ),
-    intro:
-      "Vários dias de actividades, participação estudantil, programa diário e registo fotográfico.",
-    tom: "dinamica",
-  },
-  coloquio: {
-    kicker: "ARQUIVO VISUAL",
-    titulo: (
-      <>
-        Colóquios da <span className="text-sky">ESJ</span>
-      </>
-    ),
-    intro:
-      "Debates frequentes anunciados com cartazes A4 — o mesmo material das redes, preservado no site.",
-    tom: "editorial",
-  },
+const TOM: Record<EventoTipo, string> = {
+  conferencia: "institucional",
+  semana: "dinamica",
+  coloquio: "editorial",
 };
 
 export default function EventoAreaClient({ tipo }: { tipo: EventoTipo }) {
   const [lista, setLista] = useState<EventoEsj[]>([]);
   const [loading, setLoading] = useState(true);
-  const meta = META[tipo];
+  const tom = TOM[tipo];
 
   useEffect(() => {
     listEventosPublicos({ tipo })
@@ -77,20 +44,6 @@ export default function EventoAreaClient({ tipo }: { tipo: EventoTipo }) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16 space-y-16">
-      <div>
-        <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3 uppercase">
-          <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
-          {meta.kicker}
-        </p>
-        <h1 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
-          {meta.titulo}
-        </h1>
-        <p className="mt-4 max-w-2xl text-navy-900/70 leading-relaxed">{meta.intro}</p>
-        <Link href="/eventos" className="mt-4 inline-block text-sm text-sky hover:underline font-semibold">
-          ← Todos os eventos
-        </Link>
-      </div>
-
       {loading && <p className="text-sm text-navy-900/50">A carregar…</p>}
 
       {!loading && !destaque && (
@@ -100,7 +53,7 @@ export default function EventoAreaClient({ tipo }: { tipo: EventoTipo }) {
       {destaque && (
         <section
           className={
-            meta.tom === "editorial"
+            tom === "editorial"
               ? "grid lg:grid-cols-[0.9fr_1.1fr] gap-8 items-start"
               : "grid lg:grid-cols-2 gap-10 items-start"
           }

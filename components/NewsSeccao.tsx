@@ -120,7 +120,21 @@ export default function NewsSeccao({
           </>
         )}
 
-        {tab === "eventos" && <EnsinoHistoria embedded />}
+        {tab === "eventos" && (
+          <>
+            <EntradaHome>
+              <div className="flex justify-end mb-10">
+                <Link
+                  href="/eventos"
+                  className="esj-btn-move esj-btn-outline-navy inline-flex items-center border bg-transparent text-sm font-semibold px-4 py-2"
+                >
+                  Ver página de eventos →
+                </Link>
+              </div>
+            </EntradaHome>
+            <EnsinoHistoria embedded />
+          </>
+        )}
 
         {tab === "galeria" && <GaleriaHomeTab />}
       </div>
