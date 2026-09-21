@@ -28,7 +28,6 @@ import {
   Newspaper,
   PanelLeftClose,
   PanelLeftOpen,
-  Pencil,
   ScrollText,
   Send,
   ShieldCheck,
@@ -1853,6 +1852,77 @@ type CandidaturaItem = {
 type PautaLigada = { id: string; nota_portugues: number; nota_historia: number; publicado: boolean };
 type TurmaLigada = { numero_estudante: string };
 
+/**
+ * Coluna "Resultados" de uma candidatura — os dois campos ficam sempre
+ * visíveis e editáveis (nunca é preciso clicar em "Lançar resultado" nem
+ * num lápis para corrigir depois, ex.: numa reclamação). Estado local
+ * porque cada linha edita só as suas próprias notas, sem mexer nas
+ * restantes; sincroniza sozinha se a pauta mudar por fora (ex.: depois de
+ * gravar e a lista recarregar).
+ */
+function LinhaNotas({
+  c,
+  pauta,
+  guardando,
+  onGuardar,
+}: {
+  c: CandidaturaItem;
+  pauta: PautaLigada | undefined;
+  guardando: boolean;
+  onGuardar: (c: CandidaturaItem, notaPortugues: string, notaHistoria: string) => void;
+}) {
+  const [notaPortugues, setNotaPortugues] = useState(pauta ? String(pauta.nota_portugues) : "");
+  const [notaHistoria, setNotaHistoria] = useState(pauta ? String(pauta.nota_historia) : "");
+
+  useEffect(() => {
+    setNotaPortugues(pauta ? String(pauta.nota_portugues) : "");
+    setNotaHistoria(pauta ? String(pauta.nota_historia) : "");
+  }, [pauta?.nota_portugues, pauta?.nota_historia]);
+
+  const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!guardando) onGuardar(c, notaPortugues, notaHistoria);
+  };
+
+  return (
+    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <input
+        type="number"
+        min={0}
+        max={20}
+        step={0.1}
+        value={notaPortugues}
+        onChange={(e) => setNotaPortugues(e.target.value)}
+        onKeyDown={onEnter}
+        placeholder="Port."
+        title="Nota de Português — Enter grava"
+        className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
+      />
+      <input
+        type="number"
+        min={0}
+        max={20}
+        step={0.1}
+        value={notaHistoria}
+        onChange={(e) => setNotaHistoria(e.target.value)}
+        onKeyDown={onEnter}
+        placeholder="Hist."
+        title="Nota de História — Enter grava"
+        className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
+      />
+      <button
+        type="button"
+        disabled={guardando}
+        onClick={() => onGuardar(c, notaPortugues, notaHistoria)}
+        className="text-leaf hover:text-leaf/80 font-bold disabled:opacity-50"
+      >
+        {guardando ? "…" : "Guardar"}
+      </button>
+    </div>
+  );
+}
+
 function Candidaturas() {
   const [items, setItems] = useState<CandidaturaItem[]>([]);
   const [missing, setMissing] = useState(false);
@@ -1893,10 +1963,10 @@ function Candidaturas() {
   const [pautaPorProtocolo, setPautaPorProtocolo] = useState<Record<string, PautaLigada>>({});
   const [turmaPorProtocolo, setTurmaPorProtocolo] = useState<Record<string, TurmaLigada>>({});
 
-  const [resultadoAberto, setResultadoAberto] = useState<string | null>(null);
-  const [notaPortugues, setNotaPortugues] = useState("");
-  const [notaHistoria, setNotaHistoria] = useState("");
-  const [guardandoResultado, setGuardandoResultado] = useState(false);
+  // Coluna "Resultados" — cada linha edita as suas próprias notas sempre
+  // visíveis (ver LinhaNotas), por isso o "a gravar" é por candidatura, não
+  // um único booleano partilhado por toda a lista.
+  const [guardandoResultado, setGuardandoResultado] = useState<Set<string>>(new Set());
   const [criandoConta, setCriandoConta] = useState<Set<string>>(new Set());
   const [aviso, setAviso] = useState<{ texto: string; erro: boolean } | null>(null);
 
@@ -2002,16 +2072,9 @@ function Candidaturas() {
     }
   };
 
-  const abrirResultado = (c: CandidaturaItem) => {
-    const pauta = pautaPorProtocolo[c.protocolo];
-    setNotaPortugues(pauta ? String(pauta.nota_portugues) : "");
-    setNotaHistoria(pauta ? String(pauta.nota_historia) : "");
-    setResultadoAberto(c.protocolo);
-  };
-
-  const guardarResultado = async (c: CandidaturaItem) => {
-    const np = Number(notaPortugues);
-    const nh = Number(notaHistoria);
+  const guardarResultado = async (c: CandidaturaItem, notaPortuguesStr: string, notaHistoriaStr: string) => {
+    const np = Number(notaPortuguesStr);
+    const nh = Number(notaHistoriaStr);
     if (Number.isNaN(np) || Number.isNaN(nh) || np < 0 || np > 20 || nh < 0 || nh > 20) {
       setAviso({ texto: "Indique as duas notas, entre 0 e 20.", erro: true });
       return;
@@ -2022,7 +2085,7 @@ function Candidaturas() {
       return;
     }
     const { apelido, nome } = separarNome(c.nome);
-    setGuardandoResultado(true);
+    setGuardandoResultado((prev) => new Set(prev).add(c.protocolo));
     try {
       await savePautaLinha({
         id: pautaPorProtocolo[c.protocolo]?.id,
@@ -2039,7 +2102,6 @@ function Candidaturas() {
         publicado: true,
         candidaturaProtocolo: c.protocolo,
       });
-      setResultadoAberto(null);
 
       // Admitido directo (média ≥ 14) e ainda sem conta: atribui logo o
       // número de estudante seguinte e cria a conta — não é preciso um
@@ -2093,7 +2155,11 @@ function Candidaturas() {
     } catch (err) {
       setAviso({ texto: err instanceof Error ? err.message : "Não foi possível gravar o resultado.", erro: true });
     } finally {
-      setGuardandoResultado(false);
+      setGuardandoResultado((prev) => {
+        const novo = new Set(prev);
+        novo.delete(c.protocolo);
+        return novo;
+      });
     }
   };
 
@@ -2184,85 +2250,30 @@ function Candidaturas() {
     }
   };
 
-  /** Badge/acção da coluna "Resultado" + "Conta", partilhado entre cartão e tabela. */
-  const colunaResultado = (c: CandidaturaItem) => {
+  /** Coluna "Resultados" — sempre editável (ver LinhaNotas), nunca precisa de um clique para "abrir" antes de corrigir. */
+  const colunaNotas = (c: CandidaturaItem) => (
+    <LinhaNotas
+      c={c}
+      pauta={pautaPorProtocolo[c.protocolo]}
+      guardando={guardandoResultado.has(c.protocolo)}
+      onGuardar={guardarResultado}
+    />
+  );
+
+  /** Coluna "Situação" — só leitura: Aprovado/Suplente/Chumbou a partir das notas gravadas, ou "—" sem notas ainda. */
+  const colunaSituacao = (c: CandidaturaItem) => {
     const pauta = pautaPorProtocolo[c.protocolo];
-    if (resultadoAberto === c.protocolo) {
-      const onEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key !== "Enter") return;
-        e.preventDefault();
-        if (!guardandoResultado) void guardarResultado(c);
-      };
-      return (
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="number"
-            min={0}
-            max={20}
-            step={0.1}
-            value={notaPortugues}
-            onChange={(e) => setNotaPortugues(e.target.value)}
-            onKeyDown={onEnter}
-            placeholder="Port."
-            title="Nota de Português — Enter grava"
-            className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
-          />
-          <input
-            type="number"
-            min={0}
-            max={20}
-            step={0.1}
-            value={notaHistoria}
-            onChange={(e) => setNotaHistoria(e.target.value)}
-            onKeyDown={onEnter}
-            placeholder="Hist."
-            title="Nota de História — Enter grava"
-            className="w-14 border border-navy-100 px-1 py-1 text-xs text-center outline-none focus:border-sky"
-          />
-          <button
-            type="button"
-            disabled={guardandoResultado}
-            onClick={() => void guardarResultado(c)}
-            className="text-leaf hover:text-leaf/80 font-bold disabled:opacity-50"
-          >
-            {guardandoResultado ? "…" : "Guardar"}
-          </button>
-          <button type="button" onClick={() => setResultadoAberto(null)} className="text-navy-900/40 hover:text-navy-900">
-            Cancelar
-          </button>
-        </div>
-      );
-    }
-    if (!pauta) {
-      return (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            abrirResultado(c);
-          }}
-          className="text-sky hover:underline font-semibold"
-        >
-          Lançar resultado
-        </button>
-      );
-    }
+    if (!pauta) return <span className="text-navy-900/30">—</span>;
     const media = mediaFinal(pauta.nota_portugues, pauta.nota_historia);
     const resultado = classificacao(media);
     return (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          abrirResultado(c);
-        }}
-        title="Clique para corrigir as notas"
+      <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold ${
           corResultado(resultado).fundo
         } ${corResultado(resultado).texto}`}
       >
-        <Pencil size={10} /> {resultado} ({media.toFixed(1)})
-      </button>
+        {resultado} ({media.toFixed(1)})
+      </span>
     );
   };
 
@@ -2386,7 +2397,10 @@ function Candidaturas() {
                         {c.delegacao ? ` · ${c.delegacao}` : ""}
                       </p>
                       {c.email && <p className="text-navy-900/50">{c.email}</p>}
-                      <div className="flex flex-wrap items-center gap-2 pt-1">{colunaResultado(c)}</div>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {colunaNotas(c)}
+                        {colunaSituacao(c)}
+                      </div>
                       <p className="text-navy-900/40 text-[11px]">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </p>
@@ -2415,7 +2429,8 @@ function Candidaturas() {
                   <th className="px-3 py-2.5">Curso</th>
                   <th className="px-3 py-2.5">Delegação</th>
                   <th className="px-3 py-2.5">E-mail</th>
-                  <th className="px-3 py-2.5">Resultado</th>
+                  <th className="px-3 py-2.5">Resultados</th>
+                  <th className="px-3 py-2.5">Situação</th>
                   <th className="px-3 py-2.5 text-right">Data</th>
                 </tr>
               </thead>
@@ -2455,7 +2470,8 @@ function Candidaturas() {
                       </td>
                       <td className="px-3 py-2 text-navy-900/70">{c.delegacao || "—"}</td>
                       <td className="px-3 py-2 text-navy-900/70">{c.email || "—"}</td>
-                      <td className="px-3 py-2 whitespace-nowrap">{colunaResultado(c)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{colunaNotas(c)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{colunaSituacao(c)}</td>
                       <td className="px-3 py-2 text-right text-navy-900/50 whitespace-nowrap">
                         {new Date(c.created_at).toLocaleDateString("pt-PT")}
                       </td>
