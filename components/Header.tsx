@@ -450,9 +450,7 @@ export default function Header() {
               <div
                 onMouseEnter={() => setOpenSub(megaItem.label)}
                 onMouseLeave={() => setOpenSub(null)}
-                className={`absolute top-full bg-white shadow-lg border-t-2 border-sky z-50 ${
-                  megaItem.carousel ? "left-0 right-0" : "left-1/2 w-full max-w-7xl -translate-x-1/2"
-                }`}
+                className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
               >
                 <div className="mx-auto max-w-7xl px-4 py-6">
                   {megaItem.carousel ? (
