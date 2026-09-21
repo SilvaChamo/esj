@@ -733,7 +733,7 @@ export default function EstudanteDashboard({
               const isRegularizado = perfil?.regularizado !== false;
               return (
                 <div
-                  className={`rounded-xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${isRegularizado
+                  className={`rounded-xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${isRegularizado
                       ? "bg-gradient-to-r from-navy-900 to-navy-800 text-white border border-navy-800"
                       : "bg-gradient-to-r from-navy-900 via-crimson/30 to-navy-900 text-white border-2 border-crimson/60 shadow-crimson/20"
                     }`}
@@ -1209,7 +1209,7 @@ export default function EstudanteDashboard({
             {(() => {
               const isRegularizado = perfil?.regularizado !== false;
               return (
-                <div className={`rounded-xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${isRegularizado
+                <div className={`rounded-xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${isRegularizado
                     ? "bg-gradient-to-r from-navy-900 to-navy-800 text-white border border-navy-800"
                     : "bg-gradient-to-r from-navy-900 via-crimson/30 to-navy-900 text-white border-2 border-crimson/60"
                   }`}>
@@ -1468,7 +1468,7 @@ export default function EstudanteDashboard({
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-navy-900 mb-1">
@@ -1574,7 +1574,7 @@ export default function EstudanteDashboard({
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-navy-900 mb-1">
@@ -1676,7 +1676,7 @@ export default function EstudanteDashboard({
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-navy-900 mb-1">
@@ -1760,7 +1760,7 @@ export default function EstudanteDashboard({
         {section === "configuracoes" && (
           <div className="p-6 md:p-8 space-y-6 w-full">
             {/* Cabeçalho do perfil */}
-            <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 rounded-xl p-6 sm:p-8 text-white shadow-md border border-navy-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="bg-gradient-to-r from-navy-900 via-navy-800 to-navy-900 rounded-xl p-6 sm:p-8 text-white shadow-md border border-navy-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
               <div className="flex items-center gap-5">
                 <div className="relative h-16 w-16 rounded-full bg-leaf flex items-center justify-center text-white font-bold text-2xl shadow-inner border-2 border-white/20 shrink-0 overflow-hidden">
                   {perfil?.avatar_url ? (
@@ -1808,7 +1808,7 @@ export default function EstudanteDashboard({
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               {/* Form 1: Dados Pessoais e de Contacto */}
               <div className="lg:col-span-2 bg-white border border-navy-100 rounded-xl p-6 sm:p-8 shadow-sm space-y-6">
                 <div className="border-b border-navy-100 pb-4">
@@ -1821,7 +1821,7 @@ export default function EstudanteDashboard({
                 </div>
 
                 <form onSubmit={handleGuardarDadosPessoais} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-bold text-navy-900 mb-1.5">
                         Nome Completo *
@@ -1893,7 +1893,7 @@ export default function EstudanteDashboard({
                     <h5 className="text-xs font-bold uppercase tracking-wider text-navy-900/70">
                       Contacto de Emergência / Encarregado
                     </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-bold text-navy-900 mb-1.5">
                           Nome do Contacto

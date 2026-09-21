@@ -41,7 +41,7 @@ export default function Facilities() {
         Infraestruturas ao Serviço da Comunicação
       </h2>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {facilities.map(({ image, position, icon: Icon, title, text }) => (
           <div key={title} className="group">
             <div className="relative h-52 overflow-hidden">

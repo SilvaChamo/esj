@@ -15,7 +15,7 @@ export default function About() {
     <section className="relative overflow-x-clip bg-cream">
       <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 w-full">
         <EntradaHome>
-          <div className="w-full grid md:grid-cols-2 md:items-center gap-8 md:gap-10 lg:gap-12">
+          <div className="w-full grid md:grid-cols-2 md:items-center gap-5 md:gap-5 lg:gap-5">
             <div className="relative w-full">
               <Image
                 src="/esj-20262.webp"
@@ -29,7 +29,7 @@ export default function About() {
               />
             </div>
 
-            <div className="w-full flex min-w-0 flex-col justify-center gap-8 text-left">
+            <div className="w-full flex min-w-0 flex-col justify-center gap-5 text-left">
               <div>
                 <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3 uppercase">
                   <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />
@@ -49,7 +49,7 @@ export default function About() {
               <div>
                 <div className="mb-6 h-px w-full bg-sky/30" aria-hidden />
 
-                <div className="relative grid grid-cols-2 gap-y-5 sm:grid-cols-4">
+                <div className="relative grid grid-cols-2 gap-5 sm:grid-cols-4">
                   <div
                     className="pointer-events-none absolute inset-y-0 left-1/4 hidden w-px -translate-x-1/2 bg-sky/30 sm:block"
                     aria-hidden

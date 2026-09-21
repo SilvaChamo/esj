@@ -64,7 +64,7 @@ export default function DocumentosEnsino() {
   return (
     <>
       <div className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+        <div className="flex flex-col lg:flex-row gap-5 lg:gap-5">
           <aside className="lg:w-56 shrink-0">
             <p className="text-[11px] font-bold tracking-widest text-sky mb-3">FILTRAR</p>
             <nav className="bg-white border border-navy-100 divide-y divide-navy-100">

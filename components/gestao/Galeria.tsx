@@ -854,7 +854,7 @@ export default function Galeria() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="flex flex-col items-center justify-center bg-[#f0f0f1] border p-4">
                       <img src={selectedFile.url} className="max-w-full max-h-[40vh] object-contain" alt="Pré-visualização" />
                     </div>

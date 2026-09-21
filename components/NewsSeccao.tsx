@@ -53,7 +53,7 @@ export default function NewsSeccao({
         {tab === "noticias" && (
           <>
             <EntradaHome>
-              <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
+              <div className="flex items-end justify-between gap-5 flex-wrap mb-10">
                 <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
                   Publicações
                 </h2>
@@ -65,7 +65,7 @@ export default function NewsSeccao({
                 </Link>
               </div>
             </EntradaHome>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {noticias.map((item, i) => (
                 <EntradaHome key={item.slug} atraso={i * 0.05}>
                   <Link
@@ -102,7 +102,7 @@ export default function NewsSeccao({
         {tab === "videos" && (
           <>
             <EntradaHome>
-              <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
+              <div className="flex items-end justify-between gap-5 flex-wrap mb-10">
                 <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
                   Vídeo
                 </h2>

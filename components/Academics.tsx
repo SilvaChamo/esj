@@ -241,7 +241,7 @@ export default function Academics() {
                 e as oportunidades de mobilidade académica disponíveis.
               </p>
 
-              <div className="mt-10 grid sm:grid-cols-2 gap-6">
+              <div className="mt-10 grid sm:grid-cols-2 gap-5">
                 {/* Card 1 — Estudar Internacionalmente */}
                 <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5">
                   <span className="inline-flex items-center justify-center w-12 h-12 bg-sky/10 text-sky">
@@ -344,7 +344,7 @@ export default function Academics() {
                   const isRight = i % 2 === 1;
                   return (
                     <EntradaHome key={d.titulo} atraso={i * 0.12}>
-                      <div className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10">
+                      <div className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-5">
                         <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
                           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">
                             {d.numero}
@@ -477,7 +477,7 @@ export default function Academics() {
                 colegiais e legislação aplicável ao ensino superior em Moçambique.
               </p>
 
-              <div className="mt-10 grid sm:grid-cols-2 gap-6">
+              <div className="mt-10 grid sm:grid-cols-2 gap-5">
                 {/* Card Minutas */}
                 <div className="bg-cream border border-navy-100 p-8 flex flex-col gap-5 h-full">
                   <div className="flex items-center gap-4">

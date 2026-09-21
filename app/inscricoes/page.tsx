@@ -17,7 +17,7 @@ export default function InscricoesEncerradasPage() {
       />
 
       <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
+        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-5 items-start">
           <aside className="bg-white border border-navy-100 order-2 lg:order-1">
             <div className="p-5">
               <h2 className="font-serif font-bold text-navy-900">Edital 2026</h2>

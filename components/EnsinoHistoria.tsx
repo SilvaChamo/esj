@@ -55,7 +55,7 @@ export default function EnsinoHistoria({ embedded = false }: { embedded?: boolea
   const content = (
     <>
       <EntradaHome>
-        <div className="grid lg:grid-cols-[1fr_1.08fr] gap-12 lg:gap-16 items-start">
+        <div className="grid lg:grid-cols-[1fr_1.08fr] gap-5 lg:gap-5 items-start">
           <div>
             <p className="flex items-center gap-3 text-leaf font-bold tracking-widest text-sm mb-3">
               <span className="h-px w-[40px] shrink-0 bg-leaf" aria-hidden />

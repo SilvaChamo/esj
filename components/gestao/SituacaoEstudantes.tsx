@@ -287,7 +287,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                   </button>
                 </div>
                 <p className="text-navy-900/70">{[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}</p>
-                <div className="flex flex-wrap items-center gap-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className={`font-semibold ${row.regularizado ? "text-leaf" : "text-crimson"}`}>
                     {row.regularizado ? "Regularizado" : "Não regularizado"}
                   </p>

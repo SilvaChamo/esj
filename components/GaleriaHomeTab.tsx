@@ -32,7 +32,7 @@ export default function GaleriaHomeTab() {
   return (
     <>
       <EntradaHome>
-        <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
+        <div className="flex items-end justify-between gap-5 flex-wrap mb-10">
           <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900 leading-tight">
             Galeria
           </h2>

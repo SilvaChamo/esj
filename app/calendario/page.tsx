@@ -70,7 +70,7 @@ export default async function CalendarioPage() {
               return (
                 <div
                   key={d.titulo}
-                  className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-x-10"
+                  className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-5"
                 >
                   <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">

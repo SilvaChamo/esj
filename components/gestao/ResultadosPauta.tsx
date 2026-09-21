@@ -214,7 +214,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
   return (
     <div className="w-full space-y-6">
       <div className="gestao-list-card">
-        <div className="gestao-list-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="gestao-list-header flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex flex-wrap items-center gap-3">
             Pauta de resultados — admitidos
           </h2>

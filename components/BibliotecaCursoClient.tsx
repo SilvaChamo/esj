@@ -71,7 +71,7 @@ export default function BibliotecaCursoClient({ curso }: { curso: CursoBibliotec
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-5">
       <aside className="lg:w-64 shrink-0">
         <nav className="bg-white border border-navy-100" aria-label="Tipo de projecto">
           {TIPOS_PROJECTO.map((t, i) => {
@@ -112,7 +112,7 @@ export default function BibliotecaCursoClient({ curso }: { curso: CursoBibliotec
                   <h3 className="mt-1 font-serif text-[15px] md:text-base font-bold text-sky leading-snug line-clamp-3 group-hover:underline underline-offset-2">
                     {p.titulo}
                   </h3>
-                  <p className="mt-2 text-[13px] leading-relaxed flex flex-wrap gap-x-3 gap-y-1">
+                  <p className="mt-2 text-[13px] leading-relaxed flex flex-wrap gap-3">
                     <Meta label="Tipo" valor={labelTipo(p.tipo)} />
                     <Meta label="Ano" valor={String(p.ano)} />
                     {p.numeroEstudante ? (

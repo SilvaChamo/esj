@@ -15,7 +15,7 @@ export default function EstudantesInternacionaisPage() {
         title="Estudantes internacionais"
         description="Acolhemos estudantes de outros países em intercâmbio e em inscrição regular."
       />
-      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8 grid md:grid-cols-2 gap-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:py-8 grid md:grid-cols-2 gap-5">
         <article className="bg-white border border-navy-100 p-8">
           <h2 className="font-serif text-2xl font-bold text-navy-900">Intercâmbio</h2>
           <p className="mt-4 text-sm text-navy-900/70 leading-relaxed">

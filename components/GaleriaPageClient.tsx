@@ -23,7 +23,7 @@ export default function GaleriaPageClient() {
       ) : albuns.length === 0 ? (
         <p className="text-sm text-navy-900/55">Ainda sem álbuns publicados.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-5">
           {albuns.map((album, i) => (
             <EntradaHome key={album.slug} atraso={i * 0.04}>
               <AlbumCard href={`/galeria/${album.slug}`} album={album} />

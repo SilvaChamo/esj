@@ -469,7 +469,7 @@ export default function AlbunsGaleria() {
           Ainda sem álbuns. Clique em «Adicionar álbum» na barra para criar o primeiro.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-5">
           {albuns.map((album) => (
             <AlbumCard
               key={album.slug}
