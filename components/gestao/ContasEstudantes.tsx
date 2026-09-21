@@ -23,7 +23,20 @@ type ItemEstudante = {
   temConta: boolean;
   userId: string | null;
   email: string;
+  matriculaEstado: "activo" | "trancado" | "desistiu";
 };
+
+const LABEL_MATRICULA: Record<ItemEstudante["matriculaEstado"], string> = {
+  activo: "Activo",
+  trancado: "Trancado",
+  desistiu: "Desistiu",
+};
+
+function corMatricula(estado: ItemEstudante["matriculaEstado"]) {
+  if (estado === "trancado") return "text-amber-600 bg-amber-500/10";
+  if (estado === "desistiu") return "text-crimson bg-crimson/10";
+  return "";
+}
 
 /** Separa o último segmento como apelido (maiúsculas) e o resto como primeiro(s) nome(s). */
 function formatarNomeEstudante(nomeCompleto: string): { apelidoUpper: string; primeiroNome: string } {
@@ -46,6 +59,9 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
   const [regimeFiltro, setRegimeFiltro] = useState<string>("todos");
   const [cursoFiltro, setCursoFiltro] = useState<string>(filtroInicial?.curso || "todos");
   const [anoFiltro, setAnoFiltro] = useState<string>(filtroInicial?.ano ? String(filtroInicial.ano) : "todos");
+  // "Activos" por omissão — trancados/desistentes saem da turma activa sem
+  // desaparecerem, continuam visíveis ao mudar este filtro.
+  const [matriculaFiltro, setMatriculaFiltro] = useState<string>("activo");
   const [pesquisa, setPesquisa] = useState<string>("");
 
   // Seleção em lote (Checkboxes)
@@ -84,6 +100,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
       if (regimeFiltro !== "todos") params.set("regime", regimeFiltro);
       if (cursoFiltro !== "todos") params.set("curso", cursoFiltro);
       if (anoFiltro !== "todos") params.set("ano", anoFiltro);
+      params.set("matricula", matriculaFiltro);
       if (pesquisa.trim()) params.set("q", pesquisa.trim());
 
       const res = await fetch(`/api/estudantes-contas?${params.toString()}`);
@@ -104,7 +121,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
   useEffect(() => {
     void carregarEstudantes();
-  }, [regimeFiltro, cursoFiltro, anoFiltro]);
+  }, [regimeFiltro, cursoFiltro, anoFiltro, matriculaFiltro]);
 
   const handlePesquisaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,7 +307,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
 
       {/* Barra de Filtros */}
       <div className="bg-white p-4 border border-navy-100 rounded-lg shadow-sm">
-        <form onSubmit={handlePesquisaSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <form onSubmit={handlePesquisaSubmit} className="grid grid-cols-1 md:grid-cols-6 gap-3">
           {/* Filtro Regime */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-navy-900/70 mb-1">
@@ -341,6 +358,23 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
               <option value="2">2º Ano</option>
               <option value="3">3º Ano</option>
               <option value="4">4º Ano</option>
+            </select>
+          </div>
+
+          {/* Filtro Matrícula */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-navy-900/70 mb-1">
+              Matrícula
+            </label>
+            <select
+              value={matriculaFiltro}
+              onChange={(e) => setMatriculaFiltro(e.target.value)}
+              className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 font-medium focus:outline-none focus:border-sky"
+            >
+              <option value="activo">Activos</option>
+              <option value="trancado">Trancados</option>
+              <option value="desistiu">Desistentes</option>
+              <option value="todos">Todos</option>
             </select>
           </div>
 
@@ -480,6 +514,15 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                         <AlertTriangle size={11} /> Pendente
                       </span>
                     )}
+                    {std.matriculaEstado !== "activo" && (
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-current/30 ${corMatricula(
+                          std.matriculaEstado
+                        )}`}
+                      >
+                        {LABEL_MATRICULA[std.matriculaEstado]}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -517,6 +560,7 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                   <th className="p-2.5 text-left w-16">ANO</th>
                   <th className="p-2.5 text-left w-28">REGIME</th>
                   <th className="p-2.5 text-left w-24">ESTADO</th>
+                  <th className="p-2.5 text-left w-24">MATRÍCULA</th>
                   <th className="p-2.5 text-left w-20">AÇÃO</th>
                 </tr>
               </thead>
@@ -601,6 +645,21 @@ export default function ContasEstudantes({ filtroInicial }: { filtroInicial?: Fi
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded text-[11px] font-bold">
                             <AlertTriangle size={11} /> Pendente
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Matrícula — só chama a atenção quando não é Activo */}
+                      <td className="p-2 text-left whitespace-nowrap">
+                        {std.matriculaEstado === "activo" ? (
+                          <span className="text-navy-900/40">—</span>
+                        ) : (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold border border-current/30 ${corMatricula(
+                              std.matriculaEstado
+                            )}`}
+                          >
+                            {LABEL_MATRICULA[std.matriculaEstado]}
                           </span>
                         )}
                       </td>

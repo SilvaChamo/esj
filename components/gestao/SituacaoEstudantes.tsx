@@ -9,6 +9,7 @@ import {
   isMissingTable,
   listSituacaoGestao,
   saveSituacaoEstudante,
+  type MatriculaEstado,
   type SituacaoEstudanteLinha,
 } from "@/lib/cms";
 import { gestorSessao } from "@/lib/gestao-auth";
@@ -18,6 +19,19 @@ const REGIMES = [
   { valor: "diurno", label: "Diurno" },
   { valor: "pos-laboral", label: "Pós-laboral" },
 ];
+
+const ESTADOS_MATRICULA: { valor: MatriculaEstado; label: string }[] = [
+  { valor: "activo", label: "Activo" },
+  { valor: "trancado", label: "Trancado" },
+  { valor: "desistiu", label: "Desistiu" },
+];
+
+/** Cor do estado de matrícula — activo fica neutro (é o normal), trancado/desistiu chamam a atenção. */
+function corMatricula(estado: MatriculaEstado) {
+  if (estado === "trancado") return "text-amber-600";
+  if (estado === "desistiu") return "text-crimson";
+  return "text-leaf";
+}
 
 export default function SituacaoEstudantes({ onAction }: { onAction: (m: string) => void }) {
   const [pesquisa, setPesquisa] = useState("");
@@ -33,6 +47,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
   const [regime, setRegime] = useState("");
   const [regularizado, setRegularizado] = useState(true);
   const [observacao, setObservacao] = useState("");
+  const [matriculaEstado, setMatriculaEstado] = useState<MatriculaEstado>("activo");
 
   useEffect(() => {
     gestorSessao().then((s) => setAutor(s?.autor || s?.email || null));
@@ -65,6 +80,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
     setRegime("");
     setRegularizado(true);
     setObservacao("");
+    setMatriculaEstado("activo");
   };
 
   const editar = (row: SituacaoEstudanteLinha) => {
@@ -75,6 +91,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
     setRegime(row.regime || "");
     setRegularizado(row.regularizado);
     setObservacao(row.observacao || "");
+    setMatriculaEstado(row.matricula_estado || "activo");
   };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -89,6 +106,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
         regime: regime || undefined,
         regularizado,
         observacao,
+        matriculaEstado,
         updatedBy: autor || undefined,
       });
       limpar();
@@ -123,12 +141,19 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
           automático de dívida — isto é só a confirmação da secretaria, visível no painel do
           próprio estudante.
         </p>
+        <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
+          O estado de matrícula (Activo/Trancado/Desistiu) marca quem sai da turma activa —{" "}
+          <span className="font-semibold text-navy-900">o número de estudante nunca é reatribuído</span>, mesmo
+          desistindo: um Trancado mantém o número reservado para o regresso, um Desistiu tem o número
+          arquivado. A lista de{" "}
+          <span className="font-semibold text-navy-900">Estudantes</span> mostra Activos por omissão.
+        </p>
         {missing && <SchemaInstall />}
       </div>
 
       <form
         onSubmit={onSubmit}
-        className="bg-white border border-navy-100 p-6 md:p-8 grid md:grid-cols-2 lg:grid-cols-6 gap-4 items-end"
+        className="bg-white border border-navy-100 p-6 md:p-8 grid md:grid-cols-2 lg:grid-cols-7 gap-4 items-end"
       >
         <label className="block">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">N.º de Estudante</span>
@@ -165,6 +190,20 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="block text-sm font-bold text-navy-900 mb-1.5">Matrícula</span>
+          <select
+            value={matriculaEstado}
+            onChange={(e) => setMatriculaEstado(e.target.value as MatriculaEstado)}
+            className={`esj-field font-semibold ${corMatricula(matriculaEstado)}`}
+          >
+            {ESTADOS_MATRICULA.map((e) => (
+              <option key={e.valor} value={e.valor}>
+                {e.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="flex items-center gap-2 h-11">
           <input
             type="checkbox"
@@ -181,7 +220,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
         >
           {busy ? "A GRAVAR…" : editId ? "ACTUALIZAR" : "GRAVAR"}
         </button>
-        <label className="block lg:col-span-6">
+        <label className="block lg:col-span-7">
           <span className="block text-sm font-bold text-navy-900 mb-1.5">
             Observação (ex.: n.º do recibo, data)
           </span>
@@ -196,7 +235,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
           <button
             type="button"
             onClick={limpar}
-            className="lg:col-span-6 justify-self-start text-xs font-semibold text-navy-900/60 hover:text-crimson"
+            className="lg:col-span-7 justify-self-start text-xs font-semibold text-navy-900/60 hover:text-crimson"
           >
             Cancelar edição
           </button>
@@ -248,9 +287,16 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                   </button>
                 </div>
                 <p className="text-navy-900/70">{[cursoLabel, regimeLabel].filter(Boolean).join(" · ") || "—"}</p>
-                <p className={`font-semibold ${row.regularizado ? "text-leaf" : "text-crimson"}`}>
-                  {row.regularizado ? "Regularizado" : "Não regularizado"}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-2">
+                  <p className={`font-semibold ${row.regularizado ? "text-leaf" : "text-crimson"}`}>
+                    {row.regularizado ? "Regularizado" : "Não regularizado"}
+                  </p>
+                  {row.matricula_estado !== "activo" && (
+                    <p className={`font-semibold ${corMatricula(row.matricula_estado)}`}>
+                      {ESTADOS_MATRICULA.find((e) => e.valor === row.matricula_estado)?.label}
+                    </p>
+                  )}
+                </div>
                 {row.observacao && <p className="text-navy-900/60">{row.observacao}</p>}
               </div>
             );
@@ -265,6 +311,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                 <th className="px-3 py-2">Nome</th>
                 <th className="px-3 py-2">Curso / Regime</th>
                 <th className="px-3 py-2 text-center">Situação</th>
+                <th className="px-3 py-2 text-center">Matrícula</th>
                 <th className="px-3 py-2">Observação</th>
                 <th className="px-3 py-2"></th>
               </tr>
@@ -287,6 +334,11 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
                     <td className="px-3 py-2 text-center whitespace-nowrap font-semibold">
                       <span className={row.regularizado ? "text-leaf" : "text-crimson"}>
                         {row.regularizado ? "Regularizado" : "Não regularizado"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center whitespace-nowrap font-semibold">
+                      <span className={corMatricula(row.matricula_estado)}>
+                        {ESTADOS_MATRICULA.find((e) => e.valor === row.matricula_estado)?.label}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-navy-900/60">{row.observacao || "—"}</td>

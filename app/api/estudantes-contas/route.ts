@@ -49,6 +49,10 @@ export async function GET(request: Request) {
   const cursoFilter = searchParams.get("curso") || "todos";
   const anoFilter = searchParams.get("ano") || "todos";
   const search = (searchParams.get("q") || "").trim().toLowerCase();
+  // "activo" (omisso) = só a turma activa, tal como pedido — Trancados e
+  // Desistentes ficam de fora sem desaparecerem (o registo em Situação dos
+  // estudantes mantém-se, e "todos" ainda os mostra aqui se for preciso).
+  const matriculaFilter = searchParams.get("matricula") || "activo";
 
   // 1. Obter todos os estudantes inscritos nas turmas
   let query = admin.from("turma_estudantes").select("*").order("nome", { ascending: true });
@@ -81,6 +85,17 @@ export async function GET(request: Request) {
     }
   }
 
+  // 2b. Estado de matrícula (Activo/Trancado/Desistiu) — sem registo em
+  // situacao_estudante conta como Activo (é o normal antes de haver
+  // qualquer trancamento/desistência a registar).
+  const matriculaMap = new Map<string, string>();
+  const { data: situacaoData } = await admin
+    .from("situacao_estudante")
+    .select("numero_estudante, matricula_estado");
+  for (const s of situacaoData || []) {
+    if (s.numero_estudante) matriculaMap.set(String(s.numero_estudante).trim().toUpperCase(), s.matricula_estado);
+  }
+
   // 3. Cruzar dados
   const listaCompleta = (turmaData || []).map((t) => {
     const numUpper = String(t.numero_estudante).trim().toUpperCase();
@@ -97,18 +112,23 @@ export async function GET(request: Request) {
       temConta: Boolean(conta),
       userId: conta?.id || null,
       email: conta?.email || emailGerado,
+      matriculaEstado: matriculaMap.get(numUpper) || "activo",
     };
   });
 
-  // Filtrar por texto de pesquisa se fornecido
+  // Filtrar por estado de matrícula, depois por texto de pesquisa
+  const porMatricula =
+    matriculaFilter === "todos"
+      ? listaCompleta
+      : listaCompleta.filter((e) => e.matriculaEstado === matriculaFilter);
   const filtrados = search
-    ? listaCompleta.filter(
+    ? porMatricula.filter(
         (e) =>
           e.nome.toLowerCase().includes(search) ||
           e.numeroEstudante.toLowerCase().includes(search) ||
           e.email.toLowerCase().includes(search)
       )
-    : listaCompleta;
+    : porMatricula;
 
   return NextResponse.json({ estudantes: filtrados, total: filtrados.length });
 }

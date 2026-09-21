@@ -598,6 +598,8 @@ export async function deletePautaLinha(id: string) {
   if (error) throw error;
 }
 
+export type MatriculaEstado = "activo" | "trancado" | "desistiu";
+
 export type SituacaoEstudanteLinha = {
   id: string;
   numero_estudante: string;
@@ -606,6 +608,7 @@ export type SituacaoEstudanteLinha = {
   regime: string | null;
   regularizado: boolean;
   observacao: string | null;
+  matricula_estado: MatriculaEstado;
   updated_at: string;
   updated_by: string | null;
 };
@@ -615,7 +618,7 @@ export async function listSituacaoGestao(pesquisa: string) {
   let query = supabase
     .from("situacao_estudante")
     .select(
-      "id, numero_estudante, nome, curso, regime, regularizado, observacao, updated_at, updated_by"
+      "id, numero_estudante, nome, curso, regime, regularizado, observacao, matricula_estado, updated_at, updated_by"
     )
     .order("updated_at", { ascending: false });
   const termo = pesquisa.trim();
@@ -634,6 +637,7 @@ export async function saveSituacaoEstudante(input: {
   regime?: string;
   regularizado: boolean;
   observacao?: string;
+  matriculaEstado?: MatriculaEstado;
   updatedBy?: string;
 }) {
   const res = await fetch("/api/situacao-estudante", {

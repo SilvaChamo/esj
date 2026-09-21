@@ -8,6 +8,7 @@ import { eSuperAdmin } from "@/lib/gestao-auth";
 export const dynamic = "force-dynamic";
 
 const TABELA_EM_FALTA = /Could not find the table|PGRST205|schema cache/i;
+const ESTADOS_MATRICULA = ["activo", "trancado", "desistiu"];
 
 /**
  * Confirmar/editar a situação (regularizado ou não) de um estudante é acto
@@ -49,6 +50,10 @@ export async function POST(request: Request) {
   if (!numeroEstudante || !nome) {
     return NextResponse.json({ error: "Indique o número de estudante e o nome." }, { status: 400 });
   }
+  const matriculaEstado = String(body?.matriculaEstado || "activo");
+  if (!ESTADOS_MATRICULA.includes(matriculaEstado)) {
+    return NextResponse.json({ error: "Estado de matrícula inválido." }, { status: 400 });
+  }
 
   const { error } = await admin.from("situacao_estudante").upsert(
     {
@@ -58,6 +63,7 @@ export async function POST(request: Request) {
       regime: body?.regime ? String(body.regime) : null,
       regularizado: Boolean(body?.regularizado),
       observacao: body?.observacao ? String(body.observacao).trim() : null,
+      matricula_estado: matriculaEstado,
       updated_at: new Date().toISOString(),
       updated_by: body?.updatedBy ? String(body.updatedBy) : null,
     },
