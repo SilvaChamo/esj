@@ -404,58 +404,6 @@ export default function Header() {
             ))}
           </nav>
 
-          {(() => {
-            const megaItem = menu.find((m) => m.mega && m.label === openSub);
-            if (!megaItem?.children) return null;
-            return (
-              <>
-                <div
-                  aria-hidden
-                  onClick={() => setOpenSub(null)}
-                  className="fixed inset-x-0 top-[124px] bottom-0 bg-navy-900/40 z-40"
-                />
-                <div
-                  onMouseEnter={() => setOpenSub(megaItem.label)}
-                  onMouseLeave={() => setOpenSub(null)}
-                  className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
-                >
-                  <div className="py-6">
-                    {megaItem.carousel ? (
-                      <MegaMenuCarousel items={megaItem.children} />
-                    ) : (
-                      <div className="mx-auto max-w-7xl px-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                          {megaItem.children.map((child) => (
-                            <a
-                              key={child.label}
-                              href={child.href}
-                              className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
-                            >
-                              <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
-                                {child.label}
-                              </h3>
-                              {child.description && (
-                                <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
-                                  {child.description}
-                                </p>
-                              )}
-                              {child.cta && (
-                                <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
-                                  {child.cta}
-                                  <ChevronRight size={12} />
-                                </span>
-                              )}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            );
-          })()}
-
           <div className="flex items-center justify-end gap-4">
             {loggedIn ? (
               <button
@@ -488,6 +436,58 @@ export default function Header() {
             </button>
           </div>
         </div>
+
+        {(() => {
+          const megaItem = menu.find((m) => m.mega && m.label === openSub);
+          if (!megaItem?.children) return null;
+          return (
+            <>
+              <div
+                aria-hidden
+                onClick={() => setOpenSub(null)}
+                className="fixed inset-x-0 top-[124px] bottom-0 bg-navy-900/40 z-40"
+              />
+              <div
+                onMouseEnter={() => setOpenSub(megaItem.label)}
+                onMouseLeave={() => setOpenSub(null)}
+                className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
+              >
+                <div className="py-6">
+                  {megaItem.carousel ? (
+                    <MegaMenuCarousel items={megaItem.children} />
+                  ) : (
+                    <div className="mx-auto max-w-7xl px-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {megaItem.children.map((child) => (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
+                          >
+                            <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
+                              {child.label}
+                            </h3>
+                            {child.description && (
+                              <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
+                                {child.description}
+                              </p>
+                            )}
+                            {child.cta && (
+                              <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
+                                {child.cta}
+                                <ChevronRight size={12} />
+                              </span>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         <div className="relative h-[4px] w-full bg-crimson">
           {enabled && (
