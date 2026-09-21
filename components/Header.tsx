@@ -148,7 +148,7 @@ const menu: MenuItem[] = [
     children: [
       { label: "Conselho da ESJ" },
       { label: "Direcção" },
-      { label: "Conselho Científico-Pedagógico" },
+      { label: "Conselho Científico-Pedagógico", href: "/sobre#conselho-cientifico-pedagogico" },
     ],
   },
   { label: "CONTACTO", href: "/contacto" },

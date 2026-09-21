@@ -80,7 +80,7 @@ export default function About() {
 
                 <div className="mt-8">
                   <Link
-                    href="#ensino"
+                    href="/sobre"
                     className="esj-btn-move inline-flex items-center gap-2 bg-navy-900 text-white font-semibold text-[12px] tracking-wide px-5 py-3.5"
                   >
                     Saiba mais sobre a ESJ
