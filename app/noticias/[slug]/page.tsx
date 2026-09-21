@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import BannerInterior from "@/components/BannerInterior";
 import { FotoACarregar } from "@/components/Carregando";
-import { findNoticia, listNoticias, noticias } from "@/lib/noticias";
+import {
+  findNoticia,
+  listNoticias,
+  listNoticiasMaisLidas,
+  noticias,
+  registarVisualizacaoNoticia,
+} from "@/lib/noticias";
 import { sanitizarHtmlNoticia } from "@/lib/html-noticia";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +30,11 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
   const item = await findNoticia(params.slug);
   if (!item) notFound();
 
+  await registarVisualizacaoNoticia(item.slug);
+
   const todas = await listNoticias();
   const outras = todas.filter((n) => n.slug !== item.slug);
-  const maisLidas = outras.slice(0, 5);
+  const maisLidas = await listNoticiasMaisLidas(item.slug, 5);
   const relacionadas = outras.slice(0, 4);
 
   return (

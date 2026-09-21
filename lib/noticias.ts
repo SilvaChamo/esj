@@ -7,6 +7,7 @@ export type Noticia = {
   excerpt: string;
   image: string;
   body: string[];
+  views?: number;
 };
 
 export const noticias: Noticia[] = [
@@ -118,6 +119,7 @@ type NoticiaRow = {
   image: string;
   body: string[] | null;
   estado?: string | null;
+  views?: number | null;
 };
 
 function fromRow(row: NoticiaRow): Noticia {
@@ -128,6 +130,7 @@ function fromRow(row: NoticiaRow): Noticia {
     excerpt: row.excerpt,
     image: row.image,
     body: row.body ?? [],
+    views: row.views ?? 0,
   };
 }
 
@@ -156,6 +159,44 @@ export async function listNoticias(): Promise<Noticia[]> {
 export async function listNoticiasDestaque(): Promise<Noticia[]> {
   const all = await listNoticias();
   return all.slice(0, 4);
+}
+
+/**
+ * Ordenadas por visualizações reais (coluna `views`), não por data — para a
+ * secção "Notícias mais lidas". Sem Supabase configurado não há contagem
+ * real disponível, por isso cai para a ordem por data (listNoticias).
+ */
+export async function listNoticiasMaisLidas(excluirSlug?: string, limite = 5): Promise<Noticia[]> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return noticias.filter((n) => n.slug !== excluirSlug).slice(0, limite);
+  }
+  const comEstado = await supabase
+    .from("noticias")
+    .select("slug, date_label, title, excerpt, image, body, estado, views")
+    .order("views", { ascending: false })
+    .limit(limite + 1);
+  const data = !comEstado.error && comEstado.data?.length
+    ? comEstado.data.filter(visivel)
+    : (
+        await supabase
+          .from("noticias")
+          .select("slug, date_label, title, excerpt, image, body, views")
+          .order("views", { ascending: false })
+          .limit(limite + 1)
+      ).data;
+  if (!data?.length) return (await listNoticias()).filter((n) => n.slug !== excluirSlug).slice(0, limite);
+  return data
+    .map(fromRow)
+    .filter((n) => n.slug !== excluirSlug)
+    .slice(0, limite);
+}
+
+/** Regista mais uma visualização desta notícia (contador real, atómico). */
+export async function registarVisualizacaoNoticia(slug: string): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  await supabase.rpc("incrementar_visualizacao_noticia", { noticia_slug: slug });
 }
 
 export function getNoticia(slug: string) {
