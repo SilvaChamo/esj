@@ -130,46 +130,46 @@ export default function PautaAdmissao({
 
       {visiveis.length > 0 && (
       <div className="hidden lg:block print:block overflow-x-auto">
-        <table className="w-full min-w-[720px] text-xs">
+        <table className="w-full min-w-[720px] text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3 w-12 text-center border-r border-navy-100">Ord.</th>
-              <th className="px-3 py-3">Apelido</th>
-              <th className="px-3 py-3">Nome</th>
-              <th className="px-3 py-3 text-center">Português (50%)</th>
-              <th className="px-3 py-3 text-center">História (50%)</th>
-              <th className="px-3 py-3 text-center">Média final</th>
-              <th className="px-3 py-3 text-center">Resultado</th>
+            <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
+              <th className="px-2 py-2.5 whitespace-nowrap w-10 text-center border-r border-navy-100/60">Nº</th>
+              <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Apelido</th>
+              <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nome</th>
+              <th className="px-3 py-2.5 text-center">Português (50%)</th>
+              <th className="px-3 py-2.5 text-center">História (50%)</th>
+              <th className="px-3 py-2.5 text-center">Média final</th>
+              <th className="px-3 py-2.5 text-center">Resultado</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-navy-100">
             {visiveis.map(({ linha, ordem }, i) => {
               const naPagina = Math.floor(i / porPagina) + 1 === paginaAtual;
               return (
               <tr
                 key={linha.id}
-                className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""} ${
+                className={`${i % 2 === 1 ? "bg-slate-100/70" : "bg-white"} ${
                   naPagina ? "" : "hidden print:table-row"
                 }`}
               >
-                <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
+                <td className="px-2 py-2 text-center text-navy-900/50 font-mono border-r border-navy-100/60">
                   {ordem}
                 </td>
-                <td className="px-3 py-1.5 text-[11px] font-semibold text-navy-900 uppercase">
+                <td className="px-2 py-2 text-[11px] font-semibold text-navy-900 uppercase border-r border-navy-100/60">
                   {linha.apelido}
                 </td>
-                <td className="px-3 py-1.5 text-navy-900">{linha.nome}</td>
-                <td className="px-3 py-1.5 text-center tabular-nums">
+                <td className="px-2 py-2 text-navy-900 border-r border-navy-100/60">{linha.nome}</td>
+                <td className="px-3 py-2 text-center tabular-nums">
                   {formatNota(linha.notaPortugues)}
                 </td>
-                <td className="px-3 py-1.5 text-center tabular-nums">
+                <td className="px-3 py-2 text-center tabular-nums">
                   {formatNota(linha.notaHistoria)}
                 </td>
-                <td className="px-3 py-1.5 text-center tabular-nums font-semibold text-navy-900">
+                <td className="px-3 py-2 text-center tabular-nums font-semibold text-navy-900">
                   {formatNota(linha.media)}
                 </td>
                 <td
-                  className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
+                  className={`px-3 py-2 text-center whitespace-nowrap font-semibold ${
                     corResultado(linha.resultado).texto
                   }`}
                 >

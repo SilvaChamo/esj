@@ -5,12 +5,12 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
   ANO_LECTIVO,
+  CURSOS_POR_NIVEL,
   NIVEIS,
   REGIME_LABEL,
   REGIMES,
   classificacao,
   corResultado,
-  cursosDoNivel,
   formatNota,
   mediaFinal,
   type Nivel,
@@ -36,19 +36,32 @@ type Linha = {
 
 type LinhaCompleta = Linha & { ano_lectivo: string; nivel: string; curso: string; regime: string };
 
+/** Todos os cursos de todos os níveis, sem repetir pelo nome — usado quando o filtro de nível está em "todos". */
+const TODOS_OS_CURSOS = Array.from(
+  new Map(Object.values(CURSOS_POR_NIVEL).flat().map((c) => [c.nome, c])).values()
+);
+
 export default function ResultadosPauta({ onAction }: { onAction: (m: string) => void }) {
-  const [nivel, setNivel] = useState<Nivel>("Licenciatura");
-  const [regime, setRegime] = useState<Regime>("Diurno");
-  const [curso, setCurso] = useState("Jornalismo");
+  const [nivel, setNivel] = useState<Nivel | "todos">("todos");
+  const [regime, setRegime] = useState<Regime | "todos">("todos");
+  const [curso, setCurso] = useState("todos");
   const [items, setItems] = useState<LinhaCompleta[]>([]);
   const [missing, setMissing] = useState(false);
   const [pagina, setPagina] = useState(1);
   const porPagina = 40;
 
-  const cursos = cursosDoNivel(nivel);
-  const totalPaginas = Math.max(1, Math.ceil(items.length / porPagina));
+  const cursos = nivel === "todos" ? TODOS_OS_CURSOS : CURSOS_POR_NIVEL[nivel];
+
+  // Pauta interna = só admitidos, para acompanhar quem vai mesmo entrar —
+  // reprovados/suplentes geram-se e repescam-se em Candidaturas, não aqui.
+  // A pauta pública (/resultados) é que mostra todos, tal como vêm da
+  // candidatura.
+  const aprovados = items.filter(
+    (row) => classificacao(mediaFinal(Number(row.nota_portugues), Number(row.nota_historia))) === "Admitido"
+  );
+  const totalPaginas = Math.max(1, Math.ceil(aprovados.length / porPagina));
   const paginaAtual = Math.min(pagina, totalPaginas);
-  const itemsPagina = items.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
+  const itemsPagina = aprovados.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina);
 
   const refresh = () => {
     listPautaGestao({
@@ -68,9 +81,11 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
   };
 
   useEffect(() => {
-    const first = cursos[0]?.nome;
-    if (first && !cursos.some((c) => c.nome === curso)) setCurso(first);
-  }, [nivel, cursos, curso]);
+    if (nivel !== "todos" && curso !== "todos" && !CURSOS_POR_NIVEL[nivel].some((c) => c.nome === curso)) {
+      setCurso("todos");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivel]);
 
   useEffect(() => {
     refresh();
@@ -115,38 +130,46 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
 
   return (
     <div className="w-full space-y-6">
-      <div className="bg-white border border-navy-100 p-6 md:p-8">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Pauta de resultados</h2>
-        <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-          Média final = (Português × 50%) + (História × 50%). Admitido se média ≥ 10,00. Esta lista é só de
-          consulta — os resultados lançam-se em <span className="font-semibold text-navy-900">Candidaturas</span> e
-          aparecem aqui e na{" "}
+      <div className="gestao-list-card">
+        <div className="gestao-list-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <h2 className="flex flex-wrap items-center gap-3">
+            Pauta de resultados — admitidos
+          </h2>
+          <span>
+            {aprovados.length} admitido{aprovados.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        <p className="px-4 py-2 text-xs text-navy-900/65 border-b border-navy-100">
+          Só consulta — os resultados lançam-se em Candidaturas.{" "}
           <Link href="/resultados" className="text-sky hover:underline">
-            pauta pública
-          </Link>{" "}
-          automaticamente, sem nada duplicado à mão.
+            Ver a pauta pública
+          </Link>
         </p>
         {missing && <SchemaInstall />}
-        <div className="mt-6 grid md:grid-cols-3 gap-4">
+        <div className="p-4 grid md:grid-cols-3 gap-3">
           <label className="block">
-            <span className="block text-sm font-bold text-navy-900 mb-1.5">Nível</span>
+            <span className="block text-xs font-bold text-navy-900 mb-1">Nível</span>
             <select
               className="esj-field"
               value={nivel}
-              onChange={(e) => setNivel(e.target.value as Nivel)}
+              onChange={(e) => setNivel(e.target.value as Nivel | "todos")}
             >
+              <option value="todos">Todos os níveis</option>
               {NIVEIS.map((n) => (
-                <option key={n}>{n}</option>
+                <option key={n} value={n}>
+                  {n}
+                </option>
               ))}
             </select>
           </label>
           <label className="block">
-            <span className="block text-sm font-bold text-navy-900 mb-1.5">Regime</span>
+            <span className="block text-xs font-bold text-navy-900 mb-1">Regime</span>
             <select
               className="esj-field"
               value={regime}
-              onChange={(e) => setRegime(e.target.value as Regime)}
+              onChange={(e) => setRegime(e.target.value as Regime | "todos")}
             >
+              <option value="todos">Todos os regimes</option>
               {REGIMES.map((r) => (
                 <option key={r} value={r}>
                   {REGIME_LABEL[r]}
@@ -155,8 +178,9 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
             </select>
           </label>
           <label className="block">
-            <span className="block text-sm font-bold text-navy-900 mb-1.5">Curso</span>
+            <span className="block text-xs font-bold text-navy-900 mb-1">Curso</span>
             <select className="esj-field" value={curso} onChange={(e) => setCurso(e.target.value)}>
+              <option value="todos">Todos os cursos</option>
               {cursos.map((c) => (
                 <option key={c.slug} value={c.nome}>
                   {c.nome}
@@ -167,144 +191,149 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {aprovados.length === 0 ? (
         <div className="bg-white border border-navy-100 px-5 py-8 text-center text-navy-900/50 text-xs">
-          Ainda não há resultados lançados para este curso/regime — lance-os em Candidaturas.
+          Ainda não há admitidos com este filtro — lance resultados em Candidaturas.
         </div>
       ) : (
-        <div className="lg:hidden bg-navy-100 border border-navy-100 grid grid-cols-1 md:grid-cols-2 gap-px">
-          {itemsPagina.map((row, i) => {
-            const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
-            const resultado = classificacao(media);
-            const ordem = (paginaAtual - 1) * porPagina + i + 1;
-            return (
-              <div key={row.id} className={`p-3 text-xs space-y-1.5 ${i % 2 === 1 ? "bg-slate-100/70" : "bg-white"}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-navy-900">
-                    <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
-                    <span className="uppercase">{row.apelido}</span> {row.nome}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void remover(row.id)}
-                    title="Remover"
-                    className="shrink-0 text-crimson hover:text-navy-900 transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
-                    Português: {formatNota(Number(row.nota_portugues))}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
-                    História: {formatNota(Number(row.nota_historia))}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-cream text-navy-900 font-semibold">
-                    Média: {formatNota(media)}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded font-semibold ${corResultado(resultado).texto} ${
-                      corResultado(resultado).fundo
-                    }`}
-                  >
-                    {resultado}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void alternarPublicado(row)}
-                    className={`px-2 py-0.5 rounded font-semibold ${
-                      row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
-                    }`}
-                  >
-                    {row.publicado ? "Publicado" : "Rascunho — clique para publicar"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="hidden lg:block bg-white border border-navy-100 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-xs">
-          <thead>
-            <tr className="bg-cream text-left text-[11px] font-bold tracking-wide text-navy-900/70">
-              <th className="px-3 py-3 w-12 text-center border-r border-navy-100">Ord.</th>
-              <th className="px-3 py-3">Apelido</th>
-              <th className="px-3 py-3">Nome</th>
-              <th className="px-3 py-3 text-center">Português (50%)</th>
-              <th className="px-3 py-3 text-center">História (50%)</th>
-              <th className="px-3 py-3 text-center">Média final</th>
-              <th className="px-3 py-3 text-center">Resultado</th>
-              <th className="px-3 py-3 text-center">Publicação</th>
-              <th className="px-3 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          {/* < lg: cartões — 1 coluna em telemóvel, 2 em tablet (md), mesmo padrão da lista de candidaturas. */}
+          <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
             {itemsPagina.map((row, i) => {
               const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
               const resultado = classificacao(media);
               const ordem = (paginaAtual - 1) * porPagina + i + 1;
               return (
-                <tr
-                  key={row.id}
-                  className={`border-t border-navy-100 ${i % 2 === 1 ? "bg-cream/60" : ""}`}
-                >
-                  <td className="px-3 py-1.5 text-center text-xs text-navy-900/50 border-r border-navy-100">
-                    {ordem}
-                  </td>
-                  <td className="px-3 py-1.5 text-[11px] font-semibold text-navy-900 uppercase">
-                    {row.apelido}
-                  </td>
-                  <td className="px-3 py-1.5 text-navy-900">{row.nome}</td>
-                  <td className="px-3 py-1.5 text-center tabular-nums">
-                    {formatNota(Number(row.nota_portugues))}
-                  </td>
-                  <td className="px-3 py-1.5 text-center tabular-nums">
-                    {formatNota(Number(row.nota_historia))}
-                  </td>
-                  <td className="px-3 py-1.5 text-center tabular-nums font-semibold text-navy-900">
-                    {formatNota(media)}
-                  </td>
-                  <td
-                    className={`px-3 py-1.5 text-center whitespace-nowrap font-semibold ${
-                      corResultado(resultado).texto
-                    }`}
-                  >
-                    {resultado}
-                  </td>
-                  <td className="px-3 py-1.5 text-center whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => void alternarPublicado(row)}
-                      className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
-                        row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
-                      }`}
-                    >
-                      {row.publicado ? "Publicado" : "Rascunho"}
-                    </button>
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
+                <div key={row.id} className={`p-3 text-xs space-y-1.5 ${i % 2 === 1 ? "bg-slate-100/70" : "bg-white"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-semibold text-navy-900">
+                      <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
+                      <span className="uppercase">{row.apelido}</span> {row.nome}
+                    </p>
                     <button
                       type="button"
                       onClick={() => void remover(row.id)}
                       title="Remover"
-                      className="text-crimson hover:text-navy-900 transition-colors"
+                      className="shrink-0 text-crimson hover:text-navy-900 transition-colors"
                     >
                       <Trash2 size={15} />
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                      Português: {formatNota(Number(row.nota_portugues))}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
+                      História: {formatNota(Number(row.nota_historia))}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-cream text-navy-900 font-semibold">
+                      Média: {formatNota(media)}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded font-semibold ${corResultado(resultado).texto} ${
+                        corResultado(resultado).fundo
+                      }`}
+                    >
+                      {resultado}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void alternarPublicado(row)}
+                      className={`px-2 py-0.5 rounded font-semibold ${
+                        row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
+                      }`}
+                    >
+                      {row.publicado ? "Publicado" : "Rascunho — clique para publicar"}
+                    </button>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-      {items.length > 0 && (
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-cream/70 border-b border-navy-100 text-[11px] font-bold uppercase tracking-wider text-navy-900/70">
+                  <th className="px-2 py-2.5 whitespace-nowrap w-10 text-center border-r border-navy-100/60">Nº</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Apelido</th>
+                  <th className="px-2 py-2.5 whitespace-nowrap border-r border-navy-100/60">Nome</th>
+                  <th className="px-3 py-2.5 text-center">Português (50%)</th>
+                  <th className="px-3 py-2.5 text-center">História (50%)</th>
+                  <th className="px-3 py-2.5 text-center">Média final</th>
+                  <th className="px-3 py-2.5 text-center">Resultado</th>
+                  <th className="px-3 py-2.5 text-center">Publicação</th>
+                  <th className="px-3 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy-100">
+                {itemsPagina.map((row, i) => {
+                  const media = mediaFinal(Number(row.nota_portugues), Number(row.nota_historia));
+                  const resultado = classificacao(media);
+                  const ordem = (paginaAtual - 1) * porPagina + i + 1;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`transition-colors ${
+                        i % 2 === 1 ? "bg-slate-100/70 hover:bg-sky/5" : "bg-white hover:bg-sky/5"
+                      }`}
+                    >
+                      <td className="px-2 py-2 text-center text-navy-900/50 font-mono border-r border-navy-100/60">
+                        {ordem}
+                      </td>
+                      <td className="px-2 py-2 text-[11px] font-semibold text-navy-900 uppercase border-r border-navy-100/60">
+                        {row.apelido}
+                      </td>
+                      <td className="px-2 py-2 text-navy-900 border-r border-navy-100/60">{row.nome}</td>
+                      <td className="px-3 py-2 text-center tabular-nums">
+                        {formatNota(Number(row.nota_portugues))}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums">
+                        {formatNota(Number(row.nota_historia))}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums font-semibold text-navy-900">
+                        {formatNota(media)}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-center whitespace-nowrap font-semibold ${
+                          corResultado(resultado).texto
+                        }`}
+                      >
+                        {resultado}
+                      </td>
+                      <td className="px-3 py-2 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => void alternarPublicado(row)}
+                          className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
+                            row.publicado ? "text-sky bg-sky/10" : "text-navy-900/50 bg-navy-100"
+                          }`}
+                        >
+                          {row.publicado ? "Publicado" : "Rascunho"}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => void remover(row.id)}
+                          title="Remover"
+                          className="text-crimson hover:text-navy-900 transition-colors"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      {aprovados.length > 0 && (
         <div className="bg-white lg:border-x lg:border-b border-navy-100 px-4 py-3 lg:border-t-0 border-t flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-navy-900/50">
-            {items.length} candidato{items.length === 1 ? "" : "s"} nesta pauta
+            {aprovados.length} admitido{aprovados.length === 1 ? "" : "s"} nesta pauta
           </p>
           {totalPaginas > 1 && (
             <div className="flex items-center gap-1.5">

@@ -525,23 +525,24 @@ export async function publishCalendario(data: Calendario) {
   if (error) throw error;
 }
 
+/** nivel/curso/regime a "todos" (ou omitidos) não filtram essa coluna — mostra todos os cursos/regimes/níveis. */
 export async function listPautaGestao(input: {
   anoLectivo: string;
-  nivel: string;
-  curso: string;
-  regime: string;
+  nivel?: string;
+  curso?: string;
+  regime?: string;
 }) {
   const supabase = createBrowserSupabase();
-  const { data, error } = await supabase
+  let query = supabase
     .from("pauta_admissao")
     .select(
       "id, ano_lectivo, nivel, curso, regime, apelido, nome, nota_portugues, nota_historia, publicado, updated_at"
     )
-    .eq("ano_lectivo", input.anoLectivo)
-    .eq("nivel", input.nivel)
-    .eq("curso", input.curso)
-    .eq("regime", input.regime)
-    .order("apelido", { ascending: true });
+    .eq("ano_lectivo", input.anoLectivo);
+  if (input.nivel && input.nivel !== "todos") query = query.eq("nivel", input.nivel);
+  if (input.curso && input.curso !== "todos") query = query.eq("curso", input.curso);
+  if (input.regime && input.regime !== "todos") query = query.eq("regime", input.regime);
+  const { data, error } = await query.order("apelido", { ascending: true });
   if (error) throw error;
   return data ?? [];
 }
