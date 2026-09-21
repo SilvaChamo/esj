@@ -95,7 +95,7 @@ export default function MegaMenuCarousel({ items }: { items: CarouselItem[] }) {
               type="button"
               aria-label="Anterior"
               onClick={() => setIndex((i) => i - 1)}
-              className="absolute left-[-7px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-navy-100 bg-white text-navy-900 shadow hover:border-sky hover:text-sky transition-colors"
+              className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-navy-100 bg-white text-navy-900 shadow hover:border-sky hover:text-sky transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
@@ -103,7 +103,7 @@ export default function MegaMenuCarousel({ items }: { items: CarouselItem[] }) {
               type="button"
               aria-label="Seguinte"
               onClick={() => setIndex((i) => i + 1)}
-              className="absolute right-[-7px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-navy-100 bg-white text-navy-900 shadow hover:border-sky hover:text-sky transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border border-navy-100 bg-white text-navy-900 shadow hover:border-sky hover:text-sky transition-colors"
             >
               <ChevronRight size={16} />
             </button>

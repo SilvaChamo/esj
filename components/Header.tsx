@@ -421,9 +421,7 @@ export default function Header() {
                 >
                   <div className="py-6">
                     {megaItem.carousel ? (
-                      <div className="w-full px-4">
-                        <MegaMenuCarousel items={megaItem.children} />
-                      </div>
+                      <MegaMenuCarousel items={megaItem.children} />
                     ) : (
                       <div className="mx-auto max-w-7xl px-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
