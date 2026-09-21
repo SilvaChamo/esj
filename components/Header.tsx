@@ -83,19 +83,54 @@ const menu: MenuItem[] = [
   },
   {
     label: "INVESTIGAÇÃO",
+    href: "/investigacao",
+    mega: true,
     children: [
-      { label: "Linhas de Pesquisa" },
-      { label: "Projectos" },
-      { label: "Biblioteca", href: "/biblioteca-virtual" },
+      {
+        label: "Linhas de Pesquisa",
+        href: "/investigacao/linhas-de-pesquisa",
+        description: "Áreas e temas de investigação em curso na Escola Superior de Jornalismo.",
+        cta: "Ver linhas de pesquisa",
+      },
+      {
+        label: "Projectos",
+        href: "/investigacao/projectos",
+        description: "Projectos de investigação e parcerias científicas em desenvolvimento.",
+        cta: "Ver projectos",
+      },
+      {
+        label: "Centro de Pesquisa em Ciências da Comunicação da Informação",
+        href: "/investigacao/centro-de-pesquisa",
+        description: "Missão, actividades e publicações do centro de pesquisa da ESJ.",
+        cta: "Conhecer o centro",
+      },
+      {
+        label: "Biblioteca",
+        href: "/biblioteca-virtual",
+        description: "Acervo científico e materiais de apoio à investigação, por curso.",
+        cta: "Aceder à biblioteca",
+      },
+      {
+        label: "Política de Investigação",
+        href: "/investigacao/politica-de-investigacao",
+        description: "Princípios e regras que orientam a actividade de investigação na ESJ.",
+        cta: "Ver política",
+      },
+      {
+        label: "Política de Publicação",
+        href: "/investigacao/politica-de-publicacao",
+        description: "Critérios e procedimentos para publicação científica na ESJ.",
+        cta: "Ver política",
+      },
     ],
   },
   {
     label: "EVENTOS",
     children: [
-      { label: "Conferência Internacional" },
-      { label: "Semana da Comunicação e Informação" },
-      { label: "Cerimónia de Graduação" },
-      { label: "Colóquios" },
+      { label: "Conferência Internacional", href: "/eventos#conferencia-internacional" },
+      { label: "Semana da Comunicação e Informação", href: "/eventos#semana-comunicacao" },
+      { label: "Cerimónia de Graduação", href: "/eventos#cerimonia-graduacao" },
+      { label: "Colóquios", href: "/eventos#coloquios" },
     ],
   },
   { label: "NOTÍCIAS", href: "/noticias" },
@@ -301,12 +336,10 @@ export default function Header() {
                     className="flex items-center gap-1 text-[11px] font-semibold text-navy-900 hover:text-crimson transition-colors tracking-wide"
                   >
                     {item.label}
-                    {item.children && <ChevronDown size={14} />}
                   </a>
                 ) : (
                   <span className="flex items-center gap-1 text-[11px] font-semibold text-navy-900 tracking-wide">
                     {item.label}
-                    {item.children && <ChevronDown size={14} />}
                   </span>
                 )}
                 {!item.mega && item.children && openSub === item.label && (
