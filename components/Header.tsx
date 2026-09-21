@@ -450,37 +450,37 @@ export default function Header() {
               <div
                 onMouseEnter={() => setOpenSub(megaItem.label)}
                 onMouseLeave={() => setOpenSub(null)}
-                className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
+                className={`absolute top-full bg-white shadow-lg border-t-2 border-sky z-50 ${
+                  megaItem.carousel ? "left-0 right-0" : "left-1/2 w-full max-w-7xl -translate-x-1/2"
+                }`}
               >
-                <div className="py-6">
+                <div className="mx-auto max-w-7xl px-4 py-6">
                   {megaItem.carousel ? (
                     <MegaMenuCarousel items={megaItem.children} />
                   ) : (
-                    <div className="mx-auto max-w-7xl px-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {megaItem.children.map((child) => (
-                          <a
-                            key={child.label}
-                            href={child.href}
-                            className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
-                          >
-                            <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
-                              {child.label}
-                            </h3>
-                            {child.description && (
-                              <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
-                                {child.description}
-                              </p>
-                            )}
-                            {child.cta && (
-                              <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
-                                {child.cta}
-                                <ChevronRight size={12} />
-                              </span>
-                            )}
-                          </a>
-                        ))}
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {megaItem.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
+                        >
+                          <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
+                            {child.label}
+                          </h3>
+                          {child.description && (
+                            <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
+                              {child.description}
+                            </p>
+                          )}
+                          {child.cta && (
+                            <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
+                              {child.cta}
+                              <ChevronRight size={12} />
+                            </span>
+                          )}
+                        </a>
+                      ))}
                     </div>
                   )}
                 </div>
