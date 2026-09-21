@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { CURSOS_DOCENCIA } from "@/lib/docencia";
+import { separarNome } from "@/lib/admissao";
 
 type ItemEstudante = {
   id: string;
@@ -38,13 +39,10 @@ function corMatricula(estado: ItemEstudante["matriculaEstado"]) {
   return "";
 }
 
-/** Separa o último segmento como apelido (maiúsculas) e o resto como primeiro(s) nome(s). */
+/** Mesma regra de separarNome (lib/admissao.ts) em toda a parte — só maiusculiza o apelido para exibição aqui. */
 function formatarNomeEstudante(nomeCompleto: string): { apelidoUpper: string; primeiroNome: string } {
-  const partes = nomeCompleto.trim().split(/\s+/);
-  if (partes.length === 1) return { apelidoUpper: partes[0].toUpperCase(), primeiroNome: "" };
-  const apelido = partes[partes.length - 1].toUpperCase();
-  const resto = partes.slice(0, -1).join(" ");
-  return { apelidoUpper: apelido, primeiroNome: resto };
+  const { apelido, nome } = separarNome(nomeCompleto);
+  return { apelidoUpper: apelido.toUpperCase(), primeiroNome: nome };
 }
 
 type FiltroInicial = { curso: string; ano: number } | null;

@@ -167,6 +167,20 @@ export function formatNota(n: number) {
   return n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * Separa um nome completo em apelido + resto do nome — última palavra é o
+ * apelido, tudo antes é o "nome" (pode ter mais do que uma palavra, ex.:
+ * "João Ernesto Bila" -> apelido "Bila", nome "João Ernesto"; nada se
+ * perde). Regra única, partilhada por toda a parte que precisa de separar
+ * nomes — pauta, candidaturas, lista de estudantes, situação dos
+ * estudantes — para nunca haver duas versões a poderem divergir.
+ */
+export function separarNome(nomeCompleto: string): { apelido: string; nome: string } {
+  const partes = nomeCompleto.trim().split(/\s+/).filter(Boolean);
+  if (partes.length <= 1) return { apelido: partes[0] || "", nome: "" };
+  return { apelido: partes[partes.length - 1], nome: partes.slice(0, -1).join(" ") };
+}
+
 export function tituloPauta() {
   return "Pauta de resultados de admissão";
 }

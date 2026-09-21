@@ -51,9 +51,17 @@ import {
 } from "@/lib/publicacao";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
-import { ANO_LECTIVO, classificacao, codigoCurso, corResultado, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
+import {
+  ANO_LECTIVO,
+  classificacao,
+  codigoCurso,
+  corResultado,
+  cursoPorTitulo,
+  mediaFinal,
+  separarNome,
+} from "@/lib/admissao";
 import { criarContaEstudante } from "@/lib/estudante-conta";
-import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
+import { CURSOS_DOCENCIA } from "@/lib/docencia";
 import {
   cmsError,
   isMissingTable,
@@ -1845,13 +1853,6 @@ type CandidaturaItem = {
 type PautaLigada = { id: string; nota_portugues: number; nota_historia: number; publicado: boolean };
 type TurmaLigada = { numero_estudante: string };
 
-/** Último termo = apelido (maiúsculas), resto = nome — mesma regra usada nas listas de contas. */
-function separarApelido(nomeCompleto: string): { apelido: string; nome: string } {
-  const partes = nomeCompleto.trim().split(/\s+/);
-  if (partes.length === 1) return { apelido: partes[0], nome: "" };
-  return { apelido: partes[partes.length - 1], nome: partes.slice(0, -1).join(" ") };
-}
-
 function Candidaturas() {
   const [items, setItems] = useState<CandidaturaItem[]>([]);
   const [missing, setMissing] = useState(false);
@@ -1913,8 +1914,6 @@ function Candidaturas() {
   // Modal "Numeração" — a secretaria digita o número inicial UMA vez por
   // curso/regime; o sistema gera os seguintes sozinho a partir daí.
   const [modalNumeracaoAberto, setModalNumeracaoAberto] = useState(false);
-  const [numCurso, setNumCurso] = useState<CursoDocenciaSlug>(CURSOS_DOCENCIA[0].slug);
-  const [numRegime, setNumRegime] = useState<"diurno" | "pos-laboral">("diurno");
   const [numAtual, setNumAtual] = useState<string | null>(null);
   const [numSugestao, setNumSugestao] = useState<string | null>(null);
   const [numInicial, setNumInicial] = useState("");
@@ -2022,7 +2021,7 @@ function Candidaturas() {
       setAviso({ texto: `Curso "${c.curso}" não reconhecido — não foi possível gravar.`, erro: true });
       return;
     }
-    const { apelido, nome } = separarApelido(c.nome);
+    const { apelido, nome } = separarNome(c.nome);
     setGuardandoResultado(true);
     try {
       await savePautaLinha({
@@ -2138,7 +2137,11 @@ function Candidaturas() {
     if (!modalNumeracaoAberto) return;
     setNumAtual(null);
     setNumSugestao(null);
-    fetch(`/api/numeracao-estudantes?curso=${numCurso}&regime=${numRegime}&ano=${anoSelecionado}`)
+    // curso/regime são só uma formalidade aceite pela API — o contador em
+    // si é único por ano, não por curso (ver /api/numeracao-estudantes).
+    fetch(
+      `/api/numeracao-estudantes?curso=${CURSOS_DOCENCIA[0].slug}&regime=diurno&ano=${anoSelecionado}`
+    )
       .then((r) => r.json())
       .then((j) => {
         setNumAtual(j.proximoNumero ?? null);
@@ -2148,7 +2151,7 @@ function Candidaturas() {
         if (!j.proximoNumero && j.sugestao) setNumInicial((prev) => prev || j.sugestao);
       })
       .catch(() => setNumAtual(null));
-  }, [modalNumeracaoAberto, numCurso, numRegime, anoSelecionado]);
+  }, [modalNumeracaoAberto, anoSelecionado]);
 
   const guardarNumeracao = async () => {
     if (!numInicial.trim()) {
@@ -2162,8 +2165,8 @@ function Candidaturas() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          curso: numCurso,
-          regime: numRegime,
+          curso: CURSOS_DOCENCIA[0].slug,
+          regime: "diurno",
           ano: anoSelecionado,
           numeroInicial: numInicial.trim(),
         }),
@@ -2484,39 +2487,14 @@ function Candidaturas() {
             </button>
           </div>
           <p className="text-xs text-navy-900/60 leading-relaxed">
-            O número nunca precisa de ser digitado à mão: assim que a primeira candidatura de um curso/regime/ano é
-            aprovada, o sistema gera logo o número inicial sozinho (ex.: <span className="font-mono">20260001MP</span>) e
-            os seguintes seguem a mesma sequência automaticamente. Só candidatos Admitidos consomem número; reprovados
-            nunca abrem um buraco na sequência. Este ecrã é só para corrigir a convenção se for preciso — nunca é um
-            passo obrigatório antes de aprovar alguém.
+            Um único número de estudante para {anoSelecionado} — conta todos os Admitidos desse ano, em qualquer
+            curso ou regime, não um contador por curso. O número nunca precisa de ser digitado à mão: assim que a
+            primeira candidatura do ano é aprovada, o sistema gera logo o número inicial sozinho (ex.:{" "}
+            <span className="font-mono">20260001MP</span>) e os seguintes seguem a mesma sequência automaticamente,
+            pela ordem em que forem sendo aprovados. Só candidatos Admitidos consomem número; reprovados nunca abrem
+            um buraco na sequência. Este ecrã é só para corrigir a convenção se for preciso — nunca é um passo
+            obrigatório antes de aprovar alguém.
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-navy-900 mb-1">Curso</label>
-              <select
-                value={numCurso}
-                onChange={(e) => setNumCurso(e.target.value as CursoDocenciaSlug)}
-                className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 focus:outline-none focus:border-sky"
-              >
-                {CURSOS_DOCENCIA.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.titulo}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-navy-900 mb-1">Regime</label>
-              <select
-                value={numRegime}
-                onChange={(e) => setNumRegime(e.target.value as "diurno" | "pos-laboral")}
-                className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs text-navy-900 focus:outline-none focus:border-sky"
-              >
-                <option value="diurno">Diurno</option>
-                <option value="pos-laboral">Pós-laboral</option>
-              </select>
-            </div>
-          </div>
           <p className="text-xs text-navy-900/70">
             Próximo número em {anoSelecionado}:{" "}
             <span className="font-mono font-bold text-navy-900">
