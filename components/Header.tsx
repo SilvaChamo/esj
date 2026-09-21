@@ -50,6 +50,18 @@ const menu: MenuItem[] = [
         cta: "Ver admissões",
       },
       {
+        label: "Resultados de Admissão",
+        href: "/resultados",
+        description: "Consulte os resultados publicados dos exames de admissão por curso e regime.",
+        cta: "Ver resultados",
+      },
+      {
+        label: "Pautas Finais",
+        href: "/pautas",
+        description: "Pautas finais das cadeiras publicadas pelo registo académico, por curso e cadeira.",
+        cta: "Ver pautas",
+      },
+      {
         label: "Portal do Estudante",
         href: "/estudantes",
         description: "Aceda aos materiais de estudo, pautas de frequências, calendário e minutas da ESJ.",
