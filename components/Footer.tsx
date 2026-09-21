@@ -7,7 +7,7 @@ const quickLinks: { label: string; href: string }[] = [
   { label: "Ensino", href: "/#ensino" },
   { label: "Notícias", href: "/noticias" },
   { label: "Contacto", href: "/contacto" },
-  { label: "Eventos", href: "/eventos" },
+  { label: "Eventos", href: "/#ensino" },
 ];
 
 const info: { label: string; href?: string }[] = [

@@ -19,6 +19,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { useSlideProgress } from "@/components/SlideProgressContext";
+import MegaMenuCarousel from "@/components/MegaMenuCarousel";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { eDocente, eSuperAdmin } from "@/lib/gestao-auth";
 
@@ -29,7 +30,13 @@ type MenuChild = {
   cta?: string;
   children?: MenuChild[];
 };
-type MenuItem = { label: string; href?: string; children?: MenuChild[]; mega?: boolean };
+type MenuItem = {
+  label: string;
+  href?: string;
+  children?: MenuChild[];
+  mega?: boolean;
+  carousel?: boolean;
+};
 
 const menu: MenuItem[] = [
   {
@@ -83,8 +90,8 @@ const menu: MenuItem[] = [
   },
   {
     label: "INVESTIGAÇÃO",
-    href: "/investigacao",
     mega: true,
+    carousel: true,
     children: [
       {
         label: "Linhas de Pesquisa",
@@ -127,10 +134,10 @@ const menu: MenuItem[] = [
   {
     label: "EVENTOS",
     children: [
-      { label: "Conferência Internacional", href: "/eventos#conferencia-internacional" },
-      { label: "Semana da Comunicação e Informação", href: "/eventos#semana-comunicacao" },
-      { label: "Cerimónia de Graduação", href: "/eventos#cerimonia-graduacao" },
-      { label: "Colóquios", href: "/eventos#coloquios" },
+      { label: "Conferência Internacional" },
+      { label: "Semana da Comunicação e Informação" },
+      { label: "Cerimónia de Graduação" },
+      { label: "Colóquios" },
     ],
   },
   { label: "NOTÍCIAS", href: "/noticias" },
@@ -411,30 +418,34 @@ export default function Header() {
                   className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
                 >
                   <div className="mx-auto max-w-7xl px-4 py-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {megaItem.children.map((child) => (
-                        <a
-                          key={child.label}
-                          href={child.href}
-                          className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
-                        >
-                          <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
-                            {child.label}
-                          </h3>
-                          {child.description && (
-                            <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
-                              {child.description}
-                            </p>
-                          )}
-                          {child.cta && (
-                            <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
-                              {child.cta}
-                              <ChevronRight size={12} />
-                            </span>
-                          )}
-                        </a>
-                      ))}
-                    </div>
+                    {megaItem.carousel ? (
+                      <MegaMenuCarousel items={megaItem.children} />
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {megaItem.children.map((child) => (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            className="group/card block border border-navy-100 p-4 hover:border-sky hover:bg-cream transition-colors"
+                          >
+                            <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
+                              {child.label}
+                            </h3>
+                            {child.description && (
+                              <p className="mt-1.5 text-[12px] text-navy-900/60 leading-relaxed">
+                                {child.description}
+                              </p>
+                            )}
+                            {child.cta && (
+                              <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold text-sky group-hover/card:text-crimson transition-colors">
+                                {child.cta}
+                                <ChevronRight size={12} />
+                              </span>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
