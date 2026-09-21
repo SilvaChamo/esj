@@ -58,6 +58,7 @@ export async function POST(request: Request) {
   const curso = String(body?.curso || "");
   const cadeiraCodigo = String(body?.cadeiraCodigo || "");
   const cadeiraNome = String(body?.cadeiraNome || "").trim();
+  const regime = body?.regime === "pos-laboral" ? "pos-laboral" : "diurno";
   const ano = Number(body?.ano) || null;
   const semestre = Number(body?.semestre) || null;
   const resultado = String(body?.resultado || "Em Frequência");
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
         curso,
         cadeira_codigo: cadeiraCodigo,
         cadeira_nome: cadeiraNome,
+        regime,
         ano,
         semestre,
         teste1,
@@ -156,6 +158,9 @@ export async function POST(request: Request) {
         resultado: resVal,
         docente_id: user.id,
         docente_nome: rotuloAutorConta(user),
+        // Sem passo de aprovação por agora: a nota fica visível assim que o
+        // docente a lança (a pauta pública em /pautas filtra por publicado).
+        publicado: true,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "estudante_id,curso,cadeira_codigo" }

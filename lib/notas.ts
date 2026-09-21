@@ -157,6 +157,32 @@ export async function listarPautaFinalPublica(
   return (data ?? []).map(deLinha);
 }
 
+/**
+ * Pauta final pública de TODAS as cadeiras já publicadas de um curso/regime
+ * — usada em /pautas/[curso] enquanto nenhuma cadeira estiver seleccionada
+ * na barra lateral (pauta geral). Mesma regra de publicação que
+ * listarPautaFinalPublica, só sem o filtro de cadeira_codigo.
+ */
+export async function listarPautaFinalPublicaCurso(
+  curso: CursoDocenciaSlug,
+  regime: RegimeCurso
+): Promise<NotaEstudante[] | null> {
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("estudantes_notas")
+    .select("*")
+    .eq("curso", curso)
+    .eq("regime", regime)
+    .eq("publicado", true)
+    .order("cadeira_nome", { ascending: true })
+    .order("nome_estudante", { ascending: true });
+  if (error) {
+    if (isMissingTable(error)) return null;
+    throw error;
+  }
+  return (data ?? []).map(deLinha);
+}
+
 export type CadeiraComNotas = {
   cadeiraCodigo: string;
   cadeiraNome: string;

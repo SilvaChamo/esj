@@ -914,6 +914,7 @@ export default function DocenciaDashboard({
                     cadeiraCodigo={cadeiraNotaInfo.cadeiraCodigo}
                     cadeiraNome={cadeiraNotaInfo.cadeiraNome}
                     ano={cadeiraNotaInfo.ano}
+                    semestre={cadeiraNotaInfo.semestre}
                     regime={regimeNotaSel}
                   />
                 )}

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import BannerInterior from "@/components/BannerInterior";
-import PautasFinais from "@/components/PautasFinais";
+import PautasLista from "@/components/PautasLista";
 import { CarregandoTexto } from "@/components/Carregando";
 
 export const metadata = {
@@ -9,26 +9,24 @@ export const metadata = {
     "Pautas finais das cadeiras da Escola Superior de Jornalismo, por curso e regime.",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function PautasPage() {
   return (
     <main className="bg-cream min-h-[70vh]">
       <BannerInterior
         kicker="REGISTO ACADÉMICO"
         title="Pautas Finais"
-        description="Escolha o curso, o regime e a cadeira para consultar a pauta final publicada pelo registo académico."
+        description="Filtre o regime na barra lateral e abra a pauta do curso."
       />
       <Suspense
         fallback={
           <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
             <div className="bg-white border border-navy-100">
-              <CarregandoTexto texto="A carregar as pautas…" />
+              <CarregandoTexto texto="A carregar os cursos…" />
             </div>
           </section>
         }
       >
-        <PautasFinais />
+        <PautasLista />
       </Suspense>
     </main>
   );

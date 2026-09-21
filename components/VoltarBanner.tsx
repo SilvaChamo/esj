@@ -57,6 +57,13 @@ function destinoHierarquico(pathname: string) {
     return { href: "/inscricoes", label: voltar("às", "admissões") };
   }
 
+  if (p.startsWith("/pautas/") && p !== "/pautas") {
+    return { href: "/pautas", label: voltar("às", "pautas finais") };
+  }
+  if (p === "/pautas") {
+    return { href: "/#ensino", label: voltar("ao", "Ensino") };
+  }
+
   if (p.startsWith("/cursos/")) {
     return { href: "/#ensino", label: voltar("ao", "Ensino") };
   }

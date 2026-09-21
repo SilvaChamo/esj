@@ -155,12 +155,14 @@ export default function PautaCadeira({
   cadeiraCodigo,
   cadeiraNome,
   ano,
+  semestre,
   regime,
 }: {
   curso: CursoDocenciaSlug;
   cadeiraCodigo: string;
   cadeiraNome: string;
   ano: number | null;
+  semestre: number | null;
   regime: "diurno" | "pos-laboral";
 }) {
   const [linhas, setLinhas] = useState<LinhaPauta[] | null>(null);
@@ -290,7 +292,9 @@ export default function PautaCadeira({
           curso,
           cadeiraCodigo,
           cadeiraNome,
+          regime,
           ano,
+          semestre,
           teste1: linha.teste1 || null,
           teste2: linha.teste2 || null,
           trabalho: linha.trabalho || null,
