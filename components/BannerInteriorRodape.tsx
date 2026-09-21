@@ -10,11 +10,13 @@ export default function BannerInteriorRodape({
   actions,
   busca = true,
   compact,
+  imagem,
 }: {
   children: ReactNode;
   actions?: ReactNode;
   busca?: boolean;
   compact?: boolean;
+  imagem?: string;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -39,15 +41,34 @@ export default function BannerInteriorRodape({
 
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-br from-navy-900 from-0% via-navy-900 via-60% to-sky-700 text-white">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/Bg1.webp"
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", bottom: 0, left: 0, right: 0, width: "100%", opacity: 0.1, pointerEvents: "none" }}
-          className="pointer-events-none select-none absolute inset-x-0 bottom-0 w-full opacity-10"
-        />
+      <section
+        className={`relative overflow-hidden text-white ${
+          imagem
+            ? "bg-navy-900"
+            : "bg-gradient-to-br from-navy-900 from-0% via-navy-900 via-60% to-sky-700"
+        }`}
+      >
+        {imagem ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imagem}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none select-none absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-navy-900/95 via-navy-900/70 to-navy-900/40" />
+          </>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/Bg1.webp"
+            alt=""
+            aria-hidden="true"
+            style={{ position: "absolute", bottom: 0, left: 0, right: 0, width: "100%", opacity: 0.1, pointerEvents: "none" }}
+            className="pointer-events-none select-none absolute inset-x-0 bottom-0 w-full opacity-10"
+          />
+        )}
         <div
           className={`relative z-[1] mx-auto max-w-7xl px-4 py-4 md:py-6${
             actions ? " flex flex-col md:flex-row md:items-end justify-between gap-5" : ""
@@ -55,8 +76,8 @@ export default function BannerInteriorRodape({
         >
           <div
             className={`min-w-0 flex-1 ${
-              compact ? "" : "flex flex-col justify-center min-h-[212px]"
-            }`}
+              compact && !imagem ? "" : "flex flex-col justify-center min-h-[212px]"
+            } ${imagem ? "md:min-h-[320px]" : ""}`}
           >
             {children}
             <div className={`mt-4 flex items-center gap-4 ${busca ? "justify-between" : ""}`}>

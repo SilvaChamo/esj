@@ -9,15 +9,18 @@ export default function BannerInterior({
   compact,
   printHidden,
   busca = true,
+  imagem,
 }: {
   kicker?: ReactNode;
-  title: ReactNode;
+  title?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   compact?: boolean;
   printHidden?: boolean;
   /** Mostrar pesquisa no banner. Desligar em páginas só de leitura. */
   busca?: boolean;
+  /** Foto de fundo do banner (estática, sem slide). Substitui o fundo navy liso. */
+  imagem?: string;
 }) {
   const conteudo = (
     <div>
@@ -27,13 +30,15 @@ export default function BannerInterior({
           {kicker}
         </p>
       ) : null}
-      <h1
-        className={`font-serif font-bold leading-tight text-[36px] ${
-          compact ? "sm:whitespace-nowrap" : ""
-        }`}
-      >
-        {title}
-      </h1>
+      {title ? (
+        <h1
+          className={`font-serif font-bold leading-tight text-[36px] ${
+            compact ? "sm:whitespace-nowrap" : ""
+          }`}
+        >
+          {title}
+        </h1>
+      ) : null}
       {description ? (
         <div
           className={`mt-3 text-white/70 text-sm leading-relaxed ${
@@ -48,7 +53,7 @@ export default function BannerInterior({
 
   return (
     <div className={printHidden ? "print:hidden" : undefined}>
-      <BannerInteriorRodape actions={actions} busca={busca} compact={compact}>
+      <BannerInteriorRodape actions={actions} busca={busca} compact={compact} imagem={imagem}>
         {conteudo}
       </BannerInteriorRodape>
     </div>
