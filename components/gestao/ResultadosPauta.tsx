@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, UserPlus } from "lucide-react";
 import {
   ANO_LECTIVO,
   CURSOS_POR_NIVEL,
@@ -20,10 +20,12 @@ import {
   cmsError,
   deletePautaLinha,
   isMissingTable,
+  listInscricoesGestao,
   listPautaGestao,
   listTurmaLigadaACandidaturas,
   savePautaLinha,
 } from "@/lib/cms";
+import { criarContaEstudante } from "@/lib/estudante-conta";
 import SchemaInstall from "@/components/gestao/SchemaInstall";
 
 type Linha = {
@@ -51,6 +53,8 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
   const [missing, setMissing] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [numeroPorProtocolo, setNumeroPorProtocolo] = useState<Record<string, string>>({});
+  const [emailPorProtocolo, setEmailPorProtocolo] = useState<Record<string, string | null>>({});
+  const [criandoConta, setCriandoConta] = useState<Set<string>>(new Set());
   const porPagina = 40;
 
   const cursos = nivel === "todos" ? TODOS_OS_CURSOS : CURSOS_POR_NIVEL[nivel];
@@ -93,6 +97,51 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
         setNumeroPorProtocolo(mapa);
       })
       .catch(() => {});
+    // E-mail da candidatura — só é preciso para criar a conta directamente
+    // a partir daqui, quando um admitido ainda não tem número.
+    listInscricoesGestao()
+      .then((rows) => {
+        const mapa: Record<string, string | null> = {};
+        for (const r of rows) mapa[r.protocolo] = r.email;
+        setEmailPorProtocolo(mapa);
+      })
+      .catch(() => {});
+  };
+
+  /** Fecha o buraco de um admitido sem número — mesma lógica de "Criar conta" de Candidaturas. */
+  const criarConta = async (row: LinhaCompleta) => {
+    const protocolo = row.candidatura_protocolo;
+    if (!protocolo) {
+      onAction(`${row.nome} não está ligado a nenhuma candidatura — não é possível criar a conta a partir daqui.`);
+      return;
+    }
+    setCriandoConta((prev) => new Set(prev).add(protocolo));
+    try {
+      const resultado = await criarContaEstudante({
+        protocolo,
+        nome: `${row.nome} ${row.apelido}`.trim(),
+        email: emailPorProtocolo[protocolo],
+        curso: row.curso,
+        turno: row.regime,
+        anoLectivo: row.ano_lectivo,
+      });
+      onAction(
+        resultado.emailEnviado
+          ? `Conta criada — nº ${resultado.numeroEstudante}. Dados de acesso enviados por e-mail.`
+          : resultado.passwordTemporaria
+          ? `Conta criada — nº ${resultado.numeroEstudante}, mas o e-mail não foi enviado. Comunique a senha à mão a partir de Candidaturas.`
+          : `Conta ligada ao nº ${resultado.numeroEstudante} (já existia uma conta com este e-mail).`
+      );
+      refresh();
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "Não foi possível criar a conta.");
+    } finally {
+      setCriandoConta((prev) => {
+        const novo = new Set(prev);
+        novo.delete(protocolo);
+        return novo;
+      });
+    }
   };
 
   useEffect(() => {
@@ -141,6 +190,25 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
     } catch (error) {
       onAction(cmsError(error));
     }
+  };
+
+  /** Número já atribuído, ou botão para o atribuir agora — nunca fica um espaço morto por preencher. */
+  const colunaNumero = (row: LinhaCompleta) => {
+    const protocolo = row.candidatura_protocolo;
+    const numero = protocolo && numeroPorProtocolo[protocolo];
+    if (numero) return <span className="font-mono font-bold text-sky">{numero}</span>;
+    const aCriar = Boolean(protocolo && criandoConta.has(protocolo));
+    return (
+      <button
+        type="button"
+        disabled={!protocolo || aCriar}
+        onClick={() => void criarConta(row)}
+        title={protocolo ? undefined : "Sem candidatura ligada"}
+        className="inline-flex items-center gap-1 text-sky hover:underline font-semibold disabled:opacity-50 disabled:no-underline"
+      >
+        <UserPlus size={11} /> {aCriar ? "A criar…" : "Criar conta"}
+      </button>
+    );
   };
 
   return (
@@ -223,11 +291,6 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-semibold text-navy-900">
                       <span className="text-navy-900/40 font-normal">{ordem}.</span>{" "}
-                      {row.candidatura_protocolo && numeroPorProtocolo[row.candidatura_protocolo] && (
-                        <span className="font-mono font-bold text-sky">
-                          {numeroPorProtocolo[row.candidatura_protocolo]}{" "}
-                        </span>
-                      )}
                       <span className="uppercase">{row.apelido}</span> {row.nome}
                     </p>
                     <button
@@ -239,6 +302,7 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                       <Trash2 size={15} />
                     </button>
                   </div>
+                  <p className="text-[11px]">{colunaNumero(row)}</p>
                   <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span className="px-2 py-0.5 rounded bg-cream text-navy-900/60">
                       Português: {formatNota(Number(row.nota_portugues))}
@@ -302,8 +366,8 @@ export default function ResultadosPauta({ onAction }: { onAction: (m: string) =>
                       <td className="px-2 py-2 text-center text-navy-900/50 font-mono border-r border-navy-100/60">
                         {ordem}
                       </td>
-                      <td className="px-2 py-2 font-mono font-bold text-sky whitespace-nowrap border-r border-navy-100/60">
-                        {(row.candidatura_protocolo && numeroPorProtocolo[row.candidatura_protocolo]) || "—"}
+                      <td className="px-2 py-2 whitespace-nowrap border-r border-navy-100/60">
+                        {colunaNumero(row)}
                       </td>
                       <td className="px-2 py-2 text-[11px] font-semibold text-navy-900 uppercase border-r border-navy-100/60">
                         {row.apelido}

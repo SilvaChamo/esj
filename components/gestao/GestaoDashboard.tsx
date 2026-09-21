@@ -52,6 +52,7 @@ import {
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { COURSES } from "@/lib/inscricao";
 import { ANO_LECTIVO, classificacao, codigoCurso, corResultado, cursoPorTitulo, mediaFinal } from "@/lib/admissao";
+import { criarContaEstudante } from "@/lib/estudante-conta";
 import { CURSOS_DOCENCIA, type CursoDocenciaSlug } from "@/lib/docencia";
 import {
   cmsError,
@@ -2114,46 +2115,19 @@ function Candidaturas() {
    * assim que um resultado passa a "Admitido").
    */
   const criarContaNucleo = async (c: CandidaturaItem) => {
-    const cursoInfo = cursoPorTitulo(c.curso);
-    if (!cursoInfo) throw new Error(`Curso "${c.curso}" não reconhecido — não foi possível criar a conta.`);
-    if (!c.email) throw new Error(`A candidatura de ${c.nome} não tem e-mail — não é possível criar a conta.`);
-    const regime = c.turno === "Pós-laboral" ? "pos-laboral" : "diurno";
-
-    const numRes = await fetch("/api/numeracao-estudantes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ curso: cursoInfo.slug, regime, ano: c.ano_lectivo || ANO_LECTIVO }),
+    const resultado = await criarContaEstudante({
+      protocolo: c.protocolo,
+      nome: c.nome,
+      email: c.email,
+      curso: c.curso,
+      turno: c.turno,
+      anoLectivo: c.ano_lectivo,
     });
-    const numJson = await numRes.json();
-    if (!numRes.ok) throw new Error(numJson.error || "Não foi possível gerar o número de estudante.");
-    const numeroEstudante = numJson.numeroAtribuido as string;
-
-    const contaRes = await fetch("/api/estudantes-contas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "criar_unico",
-        numeroEstudante,
-        nome: c.nome,
-        curso: cursoInfo.slug,
-        regime,
-        ano: 1,
-        email: c.email,
-        candidaturaProtocolo: c.protocolo,
-      }),
-    });
-    const contaJson = await contaRes.json();
-    if (!contaRes.ok) throw new Error(contaJson.error || "Não foi possível criar a conta.");
-
-    setTurmaPorProtocolo((prev) => ({ ...prev, [c.protocolo]: { numero_estudante: numeroEstudante } }));
-    return {
-      numeroEstudante,
-      emailEnviado: Boolean(contaJson.emailEnviado),
-      avisoEmail: (contaJson.avisoEmail as string | null) || null,
-      // Só vem preenchida quando o e-mail falhou — é o único caso em que a
-      // secretaria precisa de a comunicar à mão.
-      passwordTemporaria: contaJson.passwordTemporaria as string | null,
-    };
+    setTurmaPorProtocolo((prev) => ({
+      ...prev,
+      [c.protocolo]: { numero_estudante: resultado.numeroEstudante },
+    }));
+    return resultado;
   };
 
   const criarConta = async (c: CandidaturaItem) => {
