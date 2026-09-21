@@ -31,7 +31,7 @@ begin
   values (ano, 2)
   on conflict (ano_lectivo) do update set proximo = protocolo_candidatura_seq.proximo + 1
   returning proximo - 1 into seq;
-  return 'ESJ-CA' || ano || lpad(seq::text, 2, '0');
+  return 'ESJ-CA' || ano || lpad(seq::text, 3, '0');
 end;
 $$;
 
