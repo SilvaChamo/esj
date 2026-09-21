@@ -64,7 +64,7 @@ export default async function PautaCursoPage({ params, searchParams }: Props) {
       />
 
       <section className="mx-auto max-w-7xl px-4 py-6 md:py-8 print:py-0 print:px-0 print:max-w-full">
-        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start print:block">
+        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-5 items-start print:block">
           <Suspense fallback={<CarregandoTexto texto="A carregar o menu de admissão…" />}>
             <div className="lg:sticky lg:top-24 print:hidden">
               <AdmissaoSidebar inscricoesHref />

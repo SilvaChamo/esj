@@ -31,11 +31,11 @@ export default function InscricaoPage() {
       />
 
       <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
+        <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-5 items-start">
           <Suspense fallback={null}>
             <div className="space-y-5">
               <InscricaoSidebar />
-              <AdmissaoSidebar mostrarMedia={false} />
+              <AdmissaoSidebar />
             </div>
           </Suspense>
           <div className="min-w-0 max-w-full">

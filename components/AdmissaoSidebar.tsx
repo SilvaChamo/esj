@@ -14,10 +14,9 @@ import {
 
 type Props = {
   inscricoesHref?: boolean;
-  mostrarMedia?: boolean;
 };
 
-export default function AdmissaoSidebar({ inscricoesHref = false, mostrarMedia = true }: Props) {
+export default function AdmissaoSidebar({ inscricoesHref = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -82,17 +81,6 @@ export default function AdmissaoSidebar({ inscricoesHref = false, mostrarMedia =
           </Link>
         )}
       </div>
-
-      {mostrarMedia && (
-        <div className="bg-white border border-navy-100 p-5">
-          <h2 className="font-serif font-bold text-navy-900">Cálculo da média</h2>
-          <ul className="mt-3 space-y-1.5 text-sm text-navy-900/75">
-            <li>Português — 50%</li>
-            <li>História — 50%</li>
-            <li>Admitido: média ≥ 10,00</li>
-          </ul>
-        </div>
-      )}
     </aside>
   );
 }

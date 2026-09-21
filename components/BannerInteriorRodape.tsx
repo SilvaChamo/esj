@@ -50,7 +50,7 @@ export default function BannerInteriorRodape({
         />
         <div
           className={`relative z-[1] mx-auto max-w-7xl px-4 py-4 md:py-6${
-            actions ? " flex flex-col md:flex-row md:items-end justify-between gap-6" : ""
+            actions ? " flex flex-col md:flex-row md:items-end justify-between gap-5" : ""
           }`}
         >
           <div

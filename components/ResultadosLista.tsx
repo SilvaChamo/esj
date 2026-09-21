@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Award, FileX } from "lucide-react";
+import { Award } from "lucide-react";
 import AdmissaoSidebar, { useFiltroAdmissao } from "@/components/AdmissaoSidebar";
 import { cursosDoNivel, filtroQuery, REGIME_LABEL } from "@/lib/admissao";
 
@@ -12,7 +12,7 @@ export default function ResultadosLista() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">
-      <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8 items-start">
+      <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-5 items-start">
         <AdmissaoSidebar inscricoesHref />
         <div className="min-w-0">
           <div className="grid sm:grid-cols-2 gap-5">
@@ -35,11 +35,6 @@ export default function ResultadosLista() {
               </Link>
             ))}
           </div>
-          <p className="mt-8 text-xs text-navy-900/45 flex items-center gap-2">
-            <FileX size={14} />
-            Se a pauta ainda não estiver publicada, a lista aparece vazia depois de
-            correr o SQL da tabela.
-          </p>
         </div>
       </div>
     </section>

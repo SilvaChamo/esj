@@ -29,7 +29,7 @@ export default function BannerInterior({
       ) : null}
       <h1
         className={`font-serif font-bold leading-tight text-[36px] ${
-          compact ? "max-w-lg" : ""
+          compact ? "sm:whitespace-nowrap" : ""
         }`}
       >
         {title}
