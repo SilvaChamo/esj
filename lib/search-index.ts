@@ -5,6 +5,7 @@ import {
   labelTipo,
   type ProjectoCientifico,
 } from "@/lib/producao-cientifica";
+import type { Noticia } from "@/lib/noticias";
 
 export type SearchItem = {
   title: string;
@@ -196,6 +197,16 @@ export function searchItemDeProjecto(p: ProjectoCientifico): SearchItem {
   };
 }
 
+export function searchItemDeNoticia(n: Noticia): SearchItem {
+  return {
+    title: n.title,
+    excerpt: n.excerpt,
+    href: `/noticias/${n.slug}`,
+    category: "Notícias",
+    keywords: `${n.date} notícia notícias`,
+  };
+}
+
 /** Junta exemplares locais com o acervo remoto (remoto ganha no mesmo slug). */
 export function fundirProjectos(remotos: ProjectoCientifico[] | null | undefined): ProjectoCientifico[] {
   const porSlug = new Map<string, ProjectoCientifico>();
@@ -206,7 +217,11 @@ export function fundirProjectos(remotos: ProjectoCientifico[] | null | undefined
   return Array.from(porSlug.values());
 }
 
-export function searchSite(query: string, projectosExtra: ProjectoCientifico[] = []): SearchItem[] {
+export function searchSite(
+  query: string,
+  projectosExtra: ProjectoCientifico[] = [],
+  noticias: Noticia[] = []
+): SearchItem[] {
   const q = normalize(query);
   if (!q) return [];
 
@@ -214,6 +229,7 @@ export function searchSite(query: string, projectosExtra: ProjectoCientifico[] =
   const indice: SearchItem[] = [
     ...searchIndex,
     ...projectos.map(searchItemDeProjecto),
+    ...noticias.map(searchItemDeNoticia),
   ];
 
   const palavras = q.split(/\s+/).filter((w) => w.length >= 2);

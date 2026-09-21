@@ -33,6 +33,7 @@ export default async function NoticiasPage({
         kicker="BLOG"
         title="Notícias"
         description="Acompanhe os lançamentos, as conferências e a vida da Escola Superior de Jornalismo."
+        secao="Notícias"
       />
 
       <section className="mx-auto max-w-7xl px-4 py-6 md:py-8">

@@ -11,6 +11,7 @@ export default function BannerInterior({
   busca = true,
   imagem,
   voltar = true,
+  secao,
 }: {
   kicker?: ReactNode;
   title?: ReactNode;
@@ -24,6 +25,8 @@ export default function BannerInterior({
   imagem?: string;
   /** Mostrar o link "Voltar". Desligar quando o banner não precisa dele. */
   voltar?: boolean;
+  /** Limita a pesquisa deste banner à secção do site onde se encontra (ex: "Notícias"). */
+  secao?: string;
 }) {
   const conteudo = (
     <div>
@@ -56,7 +59,14 @@ export default function BannerInterior({
 
   return (
     <div className={printHidden ? "print:hidden" : undefined}>
-      <BannerInteriorRodape actions={actions} busca={busca} compact={compact} imagem={imagem} voltar={voltar}>
+      <BannerInteriorRodape
+        actions={actions}
+        busca={busca}
+        compact={compact}
+        imagem={imagem}
+        voltar={voltar}
+        secao={secao}
+      >
         {conteudo}
       </BannerInteriorRodape>
     </div>

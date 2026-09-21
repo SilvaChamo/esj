@@ -12,6 +12,7 @@ export default function BannerInteriorRodape({
   compact,
   imagem,
   voltar = true,
+  secao,
 }: {
   children: ReactNode;
   actions?: ReactNode;
@@ -19,6 +20,8 @@ export default function BannerInteriorRodape({
   compact?: boolean;
   imagem?: string;
   voltar?: boolean;
+  /** Limita a pesquisa deste banner à secção do site onde se encontra (ex: "Notícias"). */
+  secao?: string;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -37,7 +40,8 @@ export default function BannerInteriorRodape({
   const pesquisar = () => {
     const q = query.trim();
     if (!q) return;
-    router.push(`/busca?q=${encodeURIComponent(q)}`);
+    const secaoParam = secao ? `&secao=${encodeURIComponent(secao)}` : "";
+    router.push(`/busca?q=${encodeURIComponent(q)}${secaoParam}`);
     fechar();
   };
 

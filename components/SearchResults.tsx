@@ -7,18 +7,30 @@ import { Search } from "lucide-react";
 import { searchSite, type SearchItem } from "@/lib/search-index";
 import { listProjectosPublicos } from "@/lib/biblioteca-cientifica-cms";
 import type { ProjectoCientifico } from "@/lib/producao-cientifica";
+import { listNoticias, type Noticia } from "@/lib/noticias";
+
+function normalizarSeccao(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
 
 export default function SearchResults() {
   const params = useSearchParams();
   const query = (params.get("q") ?? "").trim();
+  const secao = (params.get("secao") ?? "").trim();
   const [remotos, setRemotos] = useState<ProjectoCientifico[] | null>(null);
+  const [noticias, setNoticias] = useState<Noticia[] | null>(null);
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
-    void listProjectosPublicos().then((lista) => {
+    void Promise.all([listProjectosPublicos(), listNoticias()]).then(([lista, listaNoticias]) => {
       if (cancelado) return;
       setRemotos(lista);
+      setNoticias(listaNoticias);
       setPronto(true);
     });
     return () => {
@@ -26,7 +38,12 @@ export default function SearchResults() {
     };
   }, []);
 
-  const results: SearchItem[] = pronto ? searchSite(query, remotos ?? []) : searchSite(query, []);
+  const todos: SearchItem[] = pronto
+    ? searchSite(query, remotos ?? [], noticias ?? [])
+    : searchSite(query, [], []);
+  const results: SearchItem[] = secao
+    ? todos.filter((item) => normalizarSeccao(item.category) === normalizarSeccao(secao))
+    : todos;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 md:py-8 min-h-[40vh]">
@@ -35,6 +52,7 @@ export default function SearchResults() {
           {results.length === 1
             ? `1 resultado para “${query}”`
             : `${results.length} resultados para “${query}”`}
+          {secao ? ` em ${secao}` : ""}
         </p>
       ) : (
         <p className="mt-3 text-navy-900/70">Escreva um termo na barra de pesquisa e prima Enter.</p>
