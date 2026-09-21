@@ -60,7 +60,6 @@ import {
   separarNome,
 } from "@/lib/admissao";
 import { criarContaEstudante } from "@/lib/estudante-conta";
-import { CURSOS_DOCENCIA } from "@/lib/docencia";
 import {
   cmsError,
   isMissingTable,
@@ -796,7 +795,7 @@ function Painel({ onGo, userEmail }: { onGo: (s: Section) => void; userEmail: st
           Olá, {userEmail || "utilizador"}. Este é o seu painel de gestão.
         </p>
 
-        <div className="mt-6 pt-6 border-t border-navy-100 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mt-6 pt-6 border-t border-navy-100 grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           <div>
             <p className="text-[11px] font-bold tracking-widest text-sky">INTRODUÇÃO</p>
             <p className="mt-2 text-sm text-navy-900/65">Veja todas as notícias ou</p>
@@ -1039,7 +1038,7 @@ function Edital({ onAction }: { onAction: (m: string) => void }) {
                 <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">
                   {item.title}
                 </p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => abrirEditar(item)}
@@ -1279,7 +1278,7 @@ function Publicacoes({
                 <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">
                   {item.title}
                 </p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -1754,7 +1753,7 @@ function Videos({ onAction }: { onAction: (m: string) => void }) {
                 </div>
                 <div className="p-2.5">
                   <p className="text-[13px] font-semibold text-navy-900 leading-snug line-clamp-2">{v.title}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
                       onClick={() => abrirEditar(v)}
@@ -1981,15 +1980,6 @@ function Candidaturas() {
   >([]);
   const [modalFalhasAberto, setModalFalhasAberto] = useState(false);
 
-  // Modal "Numeração" — a secretaria digita o número inicial UMA vez por
-  // curso/regime; o sistema gera os seguintes sozinho a partir daí.
-  const [modalNumeracaoAberto, setModalNumeracaoAberto] = useState(false);
-  const [numAtual, setNumAtual] = useState<string | null>(null);
-  const [numSugestao, setNumSugestao] = useState<string | null>(null);
-  const [numInicial, setNumInicial] = useState("");
-  const [numBusy, setNumBusy] = useState(false);
-  const [numMsg, setNumMsg] = useState<{ texto: string; erro: boolean } | null>(null);
-
   const carregar = () => {
     listInscricoesGestao()
       .then((rows) =>
@@ -2193,63 +2183,6 @@ function Candidaturas() {
     return resultado;
   };
 
-  const abrirNumeracao = () => {
-    setModalNumeracaoAberto(true);
-    setNumMsg(null);
-    setNumInicial("");
-  };
-
-  useEffect(() => {
-    if (!modalNumeracaoAberto) return;
-    setNumAtual(null);
-    setNumSugestao(null);
-    // curso/regime são só uma formalidade aceite pela API — o contador em
-    // si é único por ano, não por curso (ver /api/numeracao-estudantes).
-    fetch(
-      `/api/numeracao-estudantes?curso=${CURSOS_DOCENCIA[0].slug}&regime=diurno&ano=${anoSelecionado}`
-    )
-      .then((r) => r.json())
-      .then((j) => {
-        setNumAtual(j.proximoNumero ?? null);
-        setNumSugestao(j.sugestao ?? null);
-        // Sem semente ainda para este ano: pré-preenche com a sugestão, a
-        // secretaria só precisa de confirmar em vez de inventar o número.
-        if (!j.proximoNumero && j.sugestao) setNumInicial((prev) => prev || j.sugestao);
-      })
-      .catch(() => setNumAtual(null));
-  }, [modalNumeracaoAberto, anoSelecionado]);
-
-  const guardarNumeracao = async () => {
-    if (!numInicial.trim()) {
-      setNumMsg({ texto: "Indique o número inicial.", erro: true });
-      return;
-    }
-    setNumBusy(true);
-    setNumMsg(null);
-    try {
-      const res = await fetch("/api/numeracao-estudantes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          curso: CURSOS_DOCENCIA[0].slug,
-          regime: "diurno",
-          ano: anoSelecionado,
-          numeroInicial: numInicial.trim(),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Não foi possível guardar.");
-      setNumAtual(json.proximoNumero);
-      setNumSugestao(null);
-      setNumInicial("");
-      setNumMsg({ texto: "Número inicial guardado.", erro: false });
-    } catch (err) {
-      setNumMsg({ texto: err instanceof Error ? err.message : "Erro ao guardar.", erro: true });
-    } finally {
-      setNumBusy(false);
-    }
-  };
-
   /** Coluna "Resultados" — sempre editável (ver LinhaNotas), nunca precisa de um clique para "abrir" antes de corrigir. */
   const colunaNotas = (c: CandidaturaItem) => (
     <LinhaNotas
@@ -2280,7 +2213,7 @@ function Candidaturas() {
   return (
     <>
     <div className="gestao-list-card">
-      <div className="gestao-list-header flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="gestao-list-header flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex flex-wrap items-center gap-3">
           Candidatura
           <select
@@ -2312,13 +2245,6 @@ function Candidaturas() {
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={abrirNumeracao}
-            className="normal-case tracking-normal text-[11px] font-semibold text-sky hover:underline"
-          >
-            Numeração de estudantes
-          </button>
           {falhasEmail.length > 0 && (
             <button
               type="button"
@@ -2484,87 +2410,6 @@ function Candidaturas() {
         </>
       )}
     </div>
-
-    {/* MODAL: Numeração de estudantes — fora do gestao-list-card, mesmo
-        padrão de todos os outros popups "fixed" neste painel. */}
-    {modalNumeracaoAberto && (
-      <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl border border-navy-100 w-full max-w-md p-6 space-y-4 animate-scale-in">
-          <div className="flex items-center justify-between border-b border-navy-100 pb-3">
-            <h3 className="font-serif font-bold text-navy-900 text-base flex items-center gap-2">
-              <Users size={16} className="text-sky" /> Numeração de estudantes — {anoSelecionado}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setModalNumeracaoAberto(false)}
-              className="text-navy-900/50 hover:text-navy-900"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <p className="text-xs text-navy-900/60 leading-relaxed">
-            Um único número de estudante para {anoSelecionado} — conta todos os Admitidos desse ano, em qualquer
-            curso ou regime, não um contador por curso. O número nunca precisa de ser digitado à mão: assim que a
-            primeira candidatura do ano é aprovada, o sistema gera logo o número inicial sozinho (ex.:{" "}
-            <span className="font-mono">20260001MP</span>) e os seguintes seguem a mesma sequência automaticamente,
-            pela ordem em que forem sendo aprovados. Só candidatos Admitidos consomem número; reprovados nunca abrem
-            um buraco na sequência. Este ecrã é só para corrigir a convenção se for preciso — nunca é um passo
-            obrigatório antes de aprovar alguém.
-          </p>
-          <p className="text-xs text-navy-900/70">
-            Próximo número em {anoSelecionado}:{" "}
-            <span className="font-mono font-bold text-navy-900">
-              {numAtual ?? (numSugestao ? `${numSugestao} (automático ao aprovar)` : "…")}
-            </span>
-          </p>
-          <div>
-            <label className="block text-xs font-bold text-navy-900 mb-1">
-              {numAtual ? "Substituir por" : "Ajustar número inicial (opcional)"}
-            </label>
-            <input
-              type="text"
-              value={numInicial}
-              onChange={(e) => setNumInicial(e.target.value)}
-              placeholder="Ex.: 20260001MP"
-              className="w-full p-2 bg-cream/40 border border-navy-100 rounded text-xs font-mono text-navy-900 focus:outline-none focus:border-sky"
-            />
-            {!numAtual && numSugestao && (
-              <p className="text-[11px] text-navy-900/50 mt-1">
-                Sugestão a partir do último ano:{" "}
-                <button
-                  type="button"
-                  onClick={() => setNumInicial(numSugestao)}
-                  className="font-mono font-semibold text-sky hover:underline"
-                >
-                  {numSugestao}
-                </button>{" "}
-                — confirme ou edite antes de guardar.
-              </p>
-            )}
-          </div>
-          {numMsg && (
-            <p className={`text-xs font-semibold ${numMsg.erro ? "text-crimson" : "text-leaf"}`}>{numMsg.texto}</p>
-          )}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-navy-100">
-            <button
-              type="button"
-              onClick={() => setModalNumeracaoAberto(false)}
-              className="px-3 py-2 border border-navy-100 text-xs font-semibold rounded text-navy-900/70 hover:bg-cream"
-            >
-              Fechar
-            </button>
-            <button
-              type="button"
-              disabled={numBusy}
-              onClick={() => void guardarNumeracao()}
-              className="px-4 py-2 bg-sky hover:bg-sky/90 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
-            >
-              {numBusy ? "A guardar…" : "Guardar"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
 
     {/* MODAL: Falhas de envio — fila persistente de contas cujo e-mail
         falhou, para nunca se perder uma senha só porque a seguinte
@@ -2829,7 +2674,7 @@ function Subscritores({
             </span>
             <span className={`text-xs font-semibold text-navy-900 ${celulaComLinha}`}>Nº</span>
             {escolhidos.length > 0 ? (
-              <span className={`flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0 ${celulaComLinha}`}>
+              <span className={`flex flex-wrap items-center gap-3 min-w-0 ${celulaComLinha}`}>
                 <span className="text-navy-900/70 font-semibold shrink-0">
                   {escolhidos.length} selecionado{escolhidos.length === 1 ? "" : "s"}
                 </span>
@@ -3019,7 +2864,7 @@ function Anuncios({
   };
 
   return (
-    <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
+    <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
       <form className="bg-white border border-navy-100 p-8 space-y-4" onSubmit={onSubmit}>
         <h2 className="font-serif text-2xl font-bold text-navy-900">SMS aos estudantes</h2>
         <p className="text-sm text-navy-900/65 leading-relaxed">
