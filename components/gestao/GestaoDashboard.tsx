@@ -101,6 +101,7 @@ import AlbunsGaleria from "@/components/gestao/AlbunsGaleria";
 import ImageSelector from "@/components/gestao/ImageSelector";
 import NoticiaEditor from "@/components/gestao/NoticiaEditor";
 import Documentos from "@/components/gestao/Documentos";
+import EventosEsjGestao from "@/components/gestao/EventosEsjGestao";
 import ContasDocentes from "@/components/gestao/ContasDocentes";
 import ContasEstudantes from "@/components/gestao/ContasEstudantes";
 import ContasAdministradores from "@/components/gestao/ContasAdministradores";
@@ -248,7 +249,9 @@ export default function GestaoDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [smsBloqueado, setSmsBloqueado] = useState<{ telefones: string[] } | null>(null);
-  const [eventosTab, setEventosTab] = useState<"coloquio" | "livro">("coloquio");
+  const [eventosTab, setEventosTab] = useState<"conferencia" | "semana" | "coloquio" | "livro">(
+    "coloquio"
+  );
   // Filtro inicial da lista de estudantes quando se chega lá a partir de uma
   // cadeira específica na lista de docentes (ver comentário em verEstudantesCadeira).
   const [filtroEstudantesInicial, setFiltroEstudantesInicial] = useState<{ curso: string; ano: number } | null>(
@@ -564,13 +567,13 @@ export default function GestaoDashboard() {
                 onClick={() =>
                   document
                     .getElementById(
-                      eventosTab === "livro" ? "livros-adicionar" : "eventos-adicionar"
+                      eventosTab === "livro" ? "livros-adicionar" : "eventos-esj-adicionar"
                     )
                     ?.click()
                 }
                 className="flex items-center px-3 py-2 bg-white border border-[#2271b1] text-[#2271b1] text-sm font-semibold hover:bg-[#f6f7f7] whitespace-nowrap"
               >
-                {eventosTab === "livro" ? "Adicionar livro" : "Adicionar cartaz"}
+                {eventosTab === "livro" ? "Adicionar livro" : "Adicionar evento"}
               </button>
             )}
             {isBibSection(section) && (
@@ -664,9 +667,11 @@ export default function GestaoDashboard() {
 
         {section === "eventos" && (
           <div className="bg-white border-b border-navy-100 px-4 sm:px-8">
-            <div className="flex">
+            <div className="flex flex-wrap">
               {(
                 [
+                  { id: "conferencia" as const, label: "Conferência" },
+                  { id: "semana" as const, label: "Semana da Comunicação" },
                   { id: "coloquio" as const, label: "Colóquios" },
                   { id: "livro" as const, label: "Lançamento de livro" },
                 ] as const
@@ -675,7 +680,7 @@ export default function GestaoDashboard() {
                   key={t.id}
                   type="button"
                   onClick={() => setEventosTab(t.id)}
-                  className={`relative -mb-px px-5 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+                  className={`relative -mb-px px-4 py-2.5 text-sm font-bold tracking-wide transition-colors ${
                     eventosTab === t.id
                       ? "z-10 text-navy-900 border-b-2 border-sky"
                       : "text-navy-900/55 hover:text-navy-900"
@@ -701,12 +706,11 @@ export default function GestaoDashboard() {
             />
           )}
           {section === "edital" && <Edital onAction={showNote} />}
-          {section === "eventos" && (
-            <Publicacoes
-              key={eventosTab}
-              onAction={showNote}
-              categoria={eventosTab === "livro" ? "livro" : "evento"}
-            />
+          {section === "eventos" && eventosTab === "livro" && (
+            <Publicacoes key="livro" onAction={showNote} categoria="livro" />
+          )}
+          {section === "eventos" && eventosTab !== "livro" && (
+            <EventosEsjGestao key={eventosTab} tipo={eventosTab} onAction={showNote} />
           )}
           {isBibSection(section) && (
             <BibliotecaCientificaGestao

@@ -133,11 +133,13 @@ const menu: MenuItem[] = [
   },
   {
     label: "EVENTOS",
+    href: "/eventos",
     children: [
-      { label: "Conferência Internacional" },
-      { label: "Semana da Comunicação e Informação" },
+      { label: "Conferência Internacional", href: "/eventos/conferencia-internacional" },
+      { label: "Semana da Comunicação e Informação", href: "/eventos/semana-da-comunicacao" },
       { label: "Cerimónia de Graduação" },
-      { label: "Colóquios" },
+      { label: "Colóquios", href: "/eventos/coloquios" },
+      { label: "Arquivo de Eventos", href: "/eventos/arquivo" },
     ],
   },
   { label: "NOTÍCIAS", href: "/noticias" },
