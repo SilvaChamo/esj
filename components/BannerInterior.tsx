@@ -10,6 +10,7 @@ export default function BannerInterior({
   printHidden,
   busca = true,
   imagem,
+  voltar = true,
 }: {
   kicker?: ReactNode;
   title?: ReactNode;
@@ -21,6 +22,8 @@ export default function BannerInterior({
   busca?: boolean;
   /** Foto de fundo do banner (estática, sem slide). Substitui o fundo navy liso. */
   imagem?: string;
+  /** Mostrar o link "Voltar". Desligar quando o banner não precisa dele. */
+  voltar?: boolean;
 }) {
   const conteudo = (
     <div>
@@ -53,7 +56,7 @@ export default function BannerInterior({
 
   return (
     <div className={printHidden ? "print:hidden" : undefined}>
-      <BannerInteriorRodape actions={actions} busca={busca} compact={compact} imagem={imagem}>
+      <BannerInteriorRodape actions={actions} busca={busca} compact={compact} imagem={imagem} voltar={voltar}>
         {conteudo}
       </BannerInteriorRodape>
     </div>

@@ -11,12 +11,14 @@ export default function BannerInteriorRodape({
   busca = true,
   compact,
   imagem,
+  voltar = true,
 }: {
   children: ReactNode;
   actions?: ReactNode;
   busca?: boolean;
   compact?: boolean;
   imagem?: string;
+  voltar?: boolean;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -76,12 +78,13 @@ export default function BannerInteriorRodape({
         >
           <div
             className={`min-w-0 flex-1 ${
-              compact && !imagem ? "" : "flex flex-col justify-center min-h-[212px]"
-            } ${imagem ? "md:min-h-[320px]" : ""}`}
+              compact ? "" : "flex flex-col justify-center min-h-[212px]"
+            }`}
           >
             {children}
+            {(voltar || busca) && (
             <div className={`mt-4 flex items-center gap-4 ${busca ? "justify-between" : ""}`}>
-              <VoltarBanner className="mt-0" />
+              {voltar ? <VoltarBanner className="mt-0" /> : <span />}
               {busca ? (
                 <button
                   type="button"
@@ -102,6 +105,7 @@ export default function BannerInteriorRodape({
                 </button>
               ) : null}
             </div>
+            )}
           </div>
           {actions ? <div className="flex flex-wrap gap-3 shrink-0">{actions}</div> : null}
         </div>

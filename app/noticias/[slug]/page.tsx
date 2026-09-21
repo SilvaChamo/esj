@@ -31,7 +31,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
 
   return (
     <main className="bg-cream min-h-[70vh]">
-      <BannerInterior imagem={item.image} compact busca={false} />
+      <BannerInterior imagem={item.image} compact busca={false} voltar={false} />
 
       <article className="mx-auto max-w-7xl px-4 py-6 md:py-8">
         <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-stretch">
@@ -82,7 +82,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold tracking-widest text-sky">{n.date}</p>
-                      <p className="mt-0.5 text-sm font-semibold text-navy-900 leading-snug line-clamp-2 group-hover:text-crimson transition-colors">
+                      <p className="mt-0.5 text-[11px] font-semibold text-navy-900 leading-snug line-clamp-2 group-hover:text-crimson transition-colors">
                         {n.title}
                       </p>
                     </div>
@@ -95,7 +95,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
       </article>
 
       {relacionadas.length > 0 && (
-        <section className="bg-white mt-12 md:mt-16 py-10 md:py-12">
+        <section className="bg-white mt-3 md:mt-4 py-10 md:py-12">
           <div className="mx-auto max-w-7xl px-4">
             <div className="flex items-end mb-6">
               <span className="shrink-0 bg-crimson text-white text-xs font-bold tracking-wide px-4 py-2 uppercase">
@@ -108,7 +108,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
                 <Link
                   key={n.slug}
                   href={`/noticias/${n.slug}`}
-                  className="esj-card-move group border border-navy-100 hover:border-crimson flex flex-col"
+                  className="esj-card-move group bg-cream border border-navy-100 hover:border-crimson flex flex-col"
                 >
                   <div className="relative h-48 overflow-hidden">
                     <FotoACarregar
@@ -123,7 +123,7 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
                   </div>
                   <div className="p-5 flex-1 flex flex-col">
                     <p className="text-[10px] font-bold tracking-widest text-sky">{n.date}</p>
-                    <h3 className="mt-2 font-serif font-bold text-lg text-navy-900 leading-normal group-hover:text-crimson transition-colors">
+                    <h3 className="mt-2 font-serif font-bold text-base text-navy-900 leading-normal group-hover:text-crimson transition-colors">
                       {n.title}
                     </h3>
                   </div>
