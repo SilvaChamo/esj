@@ -53,7 +53,7 @@ export default function MegaMenuCarousel({ items }: { items: CarouselItem[] }) {
     <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
       <div className="overflow-hidden">
         <div
-          className={`flex items-start ${semTransicao ? "" : "transition-transform duration-500 ease-in-out"}`}
+          className={`flex items-stretch ${semTransicao ? "" : "transition-transform duration-500 ease-in-out"}`}
           style={{ transform: `translateX(-${index * (100 / visiveis)}%)` }}
         >
           {estendido.map((item, i) => (
@@ -63,7 +63,7 @@ export default function MegaMenuCarousel({ items }: { items: CarouselItem[] }) {
               style={{ width: `${100 / visiveis}%` }}
               className="group/card shrink-0 block px-2"
             >
-              <div className="border border-navy-100 p-4 bg-white group-hover/card:border-sky group-hover/card:bg-cream transition-colors">
+              <div className="h-full border border-navy-100 p-4 bg-white group-hover/card:border-sky group-hover/card:bg-cream transition-colors">
                 <h3 className="text-sm font-bold text-navy-900 group-hover/card:text-crimson transition-colors">
                   {item.label}
                 </h3>
