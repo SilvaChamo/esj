@@ -70,7 +70,7 @@ export default function NewsSeccao({
                 <EntradaHome key={item.slug} atraso={i * 0.05}>
                   <Link
                     href={`/noticias/${item.slug}`}
-                    className="esj-card-move group bg-white border border-navy-100 hover:border-crimson flex flex-col h-full"
+                    className="esj-card-move group bg-cream border border-navy-100 hover:border-crimson flex flex-col h-full"
                   >
                     <div className="relative overflow-hidden h-44">
                       <FotoACarregar

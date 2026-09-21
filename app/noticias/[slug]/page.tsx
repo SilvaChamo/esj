@@ -93,6 +93,9 @@ export default async function NoticiaPage({ params }: { params: { slug: string }
                       <p className="mt-0.5 text-[11px] font-semibold text-navy-900 leading-snug line-clamp-2 group-hover:text-crimson transition-colors">
                         {n.title}
                       </p>
+                      <p className="mt-0.5 text-[10px] text-navy-900/45">
+                        {(n.views ?? 0).toLocaleString("pt-PT")} cliques
+                      </p>
                     </div>
                   </Link>
                 ))}
