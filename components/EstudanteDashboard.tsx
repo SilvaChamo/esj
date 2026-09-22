@@ -12,7 +12,6 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
-  CreditCard,
   Download,
   ExternalLink,
   Eye,
@@ -24,7 +23,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Printer,
-  Receipt,
   Save,
   Search,
   Settings,
@@ -34,7 +32,6 @@ import {
   KeyRound,
   X,
 } from "lucide-react";
-import { MINUTAS } from "@/lib/ensino-docs";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
   CURSOS_DOCENCIA,
@@ -47,12 +44,19 @@ import {
 } from "@/lib/docencia";
 import {
   readCalendarioDetalhado,
+  loadCalendarioDetalhado,
   labelCategoriaCalendario,
-  type EventoCalendarioDetalhado,
+  type CalendarioAcademicoAnual,
 } from "@/lib/calendario-detalhado";
-import { getCurriculoPorCurso, type CadeiraCurriculo, type RegimeCurso } from "@/lib/curriculo";
+import { getCurriculoPorCurso, type RegimeCurso } from "@/lib/curriculo";
 import { exportarEpautaPDF, montarEpauta } from "@/lib/epauta";
-import { listarMinhasNotas, listarPautaCadeira, type NotaEstudante } from "@/lib/notas";
+import {
+  listarMinhasNotas,
+  listarPautaFinalPublica,
+  resumoNotaParaEstudante,
+  type NotaEstudante,
+} from "@/lib/notas";
+import { obterMinhaTurma } from "@/lib/turma";
 import { getPerfilActual, savePerfilActual, clearPerfilActual, type PerfilUtilizador } from "@/lib/auth-perfil";
 import { getSituacaoEstudante } from "@/lib/cms";
 import LeitorDocumento from "@/components/LeitorDocumento";
@@ -60,7 +64,6 @@ import LeitorDocumento from "@/components/LeitorDocumento";
 type Section =
   | "conta"
   | "configuracoes"
-  | "financeiro"
   | "materiais"
   | "curso-jornalismo"
   | "curso-publicidade"
@@ -99,10 +102,6 @@ export default function EstudanteDashboard({
   const [anoSelecionado, setAnoSelecionado] = useState<1 | 2 | 3 | 4>(1);
   const [semestreSelecionado, setSemestreSelecionado] = useState<number>(0);
   const [cadeirasExpandidas, setCadeirasExpandidas] = useState<Record<string, boolean>>({});
-  const [abaFinanceira, setAbaFinanceira] = useState<"recibos" | "recorrencia" | "mudanca" | "taxas">("recibos");
-  const [metodoPagamento, setMetodoPagamento] = useState<"mpesa" | "emola" | "banco">("mpesa");
-  const [telefonePagamento, setTelefonePagamento] = useState("");
-  const [sucessoFin, setSucessoFin] = useState<string | null>(null);
   const [ler, setLer] = useState<MaterialDocencia | null>(null);
 
   // Notas reais lançadas pelos docentes (substituem o histórico estático quando existem)
@@ -130,8 +129,8 @@ export default function EstudanteDashboard({
   const [erroConfig, setErroConfig] = useState<string | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
 
-  // Calendário
-  const calendario = readCalendarioDetalhado();
+  // Calendário (partilhado com a gestão)
+  const [calendario, setCalendario] = useState<CalendarioAcademicoAnual>(() => readCalendarioDetalhado());
 
   // Calcula o semestre académico actual com base na data real do sistema
   // Calendário ESJ: 1º Sem (Fev–Jul) · 2º Sem (Ago–Jan)
@@ -153,7 +152,6 @@ export default function EstudanteDashboard({
   const semestreActual = getSemestreActual();
 
   useEffect(() => {
-    // 1. Verificar se já temos perfil guardado localmente (vindo do registo ou sessão anterior)
     const perfilGuardado = getPerfilActual();
     if (perfilGuardado && perfilGuardado.tipo === "estudante") {
       setPerfil(perfilGuardado);
@@ -161,36 +159,58 @@ export default function EstudanteDashboard({
       if (perfilGuardado.regime) setRegime(perfilGuardado.regime);
     }
 
-    // 2. Sempre ir buscar os dados reais ao Supabase para garantir que estão actualizados
+    void loadCalendarioDetalhado().then(setCalendario);
+
     const supabase = createBrowserSupabase();
-    void supabase.auth.getUser().then(({ data }) => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const refrescarNotas = () => {
+      listarMinhasNotas()
+        .then(setMinhasNotas)
+        .catch(() => setMinhasNotas([]));
+    };
+
+    void supabase.auth.getUser().then(async ({ data }) => {
       const user = data.user;
-      if (!user?.email) return; // Não há sessão activa
+      if (!user?.email) return;
 
       const meta = user.user_metadata ?? {};
-
-      // Extrair nome real: prioridade full_name > nome > name > prefixo do email
       const nomeReal: string =
         meta.full_name ||
         meta.nome ||
         meta.name ||
         user.email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
 
-      // Extrair curso, regime e número de estudante do user_metadata
-      const cursoReal = (meta.curso as CursoDocenciaSlug) || perfilGuardado?.curso || "jornalismo";
-      const regimeReal = (meta.regime as RegimeCurso) || perfilGuardado?.regime || "diurno";
       const numEstudante: string =
         meta.numero_estudante ||
         meta.numeroEstudante ||
         perfilGuardado?.numeroEstudante ||
-        "20260104MP";
+        "";
+
+      let cursoReal = (meta.curso as CursoDocenciaSlug) || perfilGuardado?.curso || "jornalismo";
+      let regimeReal = (meta.regime as RegimeCurso) || perfilGuardado?.regime || "diurno";
+      let anoTurma: 1 | 2 | 3 | 4 = 1;
+
+      if (numEstudante) {
+        try {
+          const turma = await obterMinhaTurma(numEstudante);
+          if (turma?.curso) cursoReal = turma.curso;
+          if (turma?.regime) regimeReal = turma.regime;
+          if (turma?.ano && turma.ano >= 1 && turma.ano <= 4) {
+            anoTurma = turma.ano as 1 | 2 | 3 | 4;
+            setAnoSelecionado(anoTurma);
+          }
+        } catch {
+          /* tabela em falta — mantém metadata */
+        }
+      }
 
       const perfilActualizado: PerfilUtilizador = {
         id: user.id,
         email: user.email,
         nome: nomeReal,
         tipo: "estudante",
-        numeroEstudante: numEstudante,
+        numeroEstudante: numEstudante || undefined,
         curso: cursoReal,
         regime: regimeReal,
         anoLectivo: meta.anoLectivo || "2026",
@@ -198,25 +218,36 @@ export default function EstudanteDashboard({
         avatar_url: meta.avatar_url || perfilGuardado?.avatar_url,
       };
 
-      // Guardar o perfil actualizado no localStorage
       savePerfilActual(perfilActualizado);
-
       setPerfil(perfilActualizado);
       setCurso(cursoReal);
       setRegime(regimeReal);
 
-      // 3. Confirmar a situação real (regularizado/não) junto da secretaria.
-      void getSituacaoEstudante(numEstudante)
-        .then((situacao) => {
-          const regularizadoReal = situacao ? situacao.regularizado : true;
-          setPerfil((actual) =>
-            actual ? { ...actual, regularizado: regularizadoReal } : actual
-          );
-          savePerfilActual({ ...perfilActualizado, regularizado: regularizadoReal });
-        })
-        .catch(() => {
-          /* sem tabela ainda ou sem ligação — mantém o último valor conhecido */
-        });
+      if (numEstudante) {
+        void getSituacaoEstudante(numEstudante)
+          .then((situacao) => {
+            const regularizadoReal = situacao ? situacao.regularizado : true;
+            setPerfil((actual) =>
+              actual ? { ...actual, regularizado: regularizadoReal } : actual
+            );
+            savePerfilActual({ ...perfilActualizado, regularizado: regularizadoReal });
+          })
+          .catch(() => {});
+      }
+
+      channel = supabase
+        .channel(`notas-estudante-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "estudantes_notas",
+            filter: `estudante_id=eq.${user.id}`,
+          },
+          () => refrescarNotas()
+        )
+        .subscribe();
     });
 
     setLoading(true);
@@ -225,9 +256,11 @@ export default function EstudanteDashboard({
       .catch(() => setMateriais([]))
       .finally(() => setLoading(false));
 
-    listarMinhasNotas()
-      .then(setMinhasNotas)
-      .catch(() => setMinhasNotas([]));
+    refrescarNotas();
+
+    return () => {
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -254,7 +287,7 @@ export default function EstudanteDashboard({
         tipo: "estudante",
         nome: nomeForm,
         email: emailForm,
-        numeroEstudante: perfil?.numeroEstudante || "20260104MP",
+        numeroEstudante: perfil?.numeroEstudante || "",
         curso: perfil?.curso || curso,
         regime: perfil?.regime || regime,
         regularizado: perfil?.regularizado !== false,
@@ -373,10 +406,10 @@ export default function EstudanteDashboard({
       return;
     }
     setCarregandoPauta(true);
-    listarPautaCadeira(curso, cadeiraPautaInfo.codigo)
+    listarPautaFinalPublica(curso, regime, cadeiraPautaInfo.codigo)
       .then(setPautaCadeiraAtual)
       .finally(() => setCarregandoPauta(false));
-  }, [curso, cadeiraPautaInfo]);
+  }, [curso, regime, cadeiraPautaInfo]);
 
   const materiaisFiltrados = useMemo(() => {
     let lista = (materiais ?? []).filter((m) => m.curso === curso);
@@ -490,7 +523,7 @@ export default function EstudanteDashboard({
             {!isSidebarCollapsed && <span>DASHBOARD</span>}
           </button>
 
-          {/* MENU PAI: MINHA CONTA (Submenus: Configurações & Situação Financeira) */}
+          {/* MENU PAI: MINHA CONTA */}
           <div>
             <button
               type="button"
@@ -520,20 +553,6 @@ export default function EstudanteDashboard({
                 >
                   <Settings size={14} className="shrink-0" />
                   <span>Configurações</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSection("financeiro");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left py-2 px-3 text-xs font-semibold rounded transition-colors flex items-center gap-2 ${section === "financeiro"
-                    ? "bg-sky/20 text-sky-300 font-bold"
-                    : "text-white/60 hover:text-white"
-                    }`}
-                >
-                  <CreditCard size={14} className="shrink-0 text-leaf" />
-                  <span>Situação Financeira</span>
                 </button>
               </div>
             )}
@@ -663,7 +682,7 @@ export default function EstudanteDashboard({
             </div>
             {!isSidebarCollapsed && (
               <div className="min-w-0 overflow-hidden">
-                <p className="text-xs font-bold text-white truncate">{perfil?.nome || "Amélia Zacarias Macuácua"}</p>
+                <p className="text-xs font-bold text-white truncate">{perfil?.nome || "Estudante"}</p>
                 <p className="text-[10px] text-white/60 truncate">{perfil?.email || "estudante@esj.ac.mz"}</p>
               </div>
             )}
@@ -689,7 +708,6 @@ export default function EstudanteDashboard({
             <h2 className="font-serif font-[800] text-2xl text-navy-900 tracking-tight" style={{ fontWeight: 800 }}>
               {section === "conta" && "DASHBOARD"}
               {section === "configuracoes" && "Configurações da Conta & Segurança"}
-              {section === "financeiro" && "Situação Financeira & Pagamentos Online"}
               {(section.startsWith("curso-") || section === "materiais") && `Material de Estudo — ${CURSOS_DOCENCIA.find((c) => c.slug === curso)?.titulo || "Meu Curso"}`}
               {section === "cadeiras" && `Cadeiras e Docentes Leccionadores (${regime.toUpperCase()})`}
               {section === "pautas" && "Pautas Eletrónicas e Frequências"}
@@ -710,7 +728,7 @@ export default function EstudanteDashboard({
           <div className="flex items-center gap-3">
             <div className="inline-flex items-center gap-2 bg-leaf/10 border border-leaf/30 text-leaf text-xs font-bold px-3 py-1.5 rounded">
               <UserCheck size={14} />
-              <span>Nº {perfil?.numeroEstudante || "20260104MP"}</span>
+              <span>Nº {perfil?.numeroEstudante || "—"}</span>
             </div>
 
             {/* Botão Sair no topo */}
@@ -748,10 +766,10 @@ export default function EstudanteDashboard({
                     </div>
                     <div>
                       <h3 className="font-serif font-bold text-2xl text-white">
-                        {perfil?.nome || "Amélia Zacarias Macuácua"}
+                        {perfil?.nome || "Estudante"}
                       </h3>
                       <div className="text-xs text-white/70 mt-2 space-y-1">
-                        <div>N.º de Estudante: <strong className="text-sky-300 font-mono text-sm">{perfil?.numeroEstudante || "20260104MP"}</strong></div>
+                        <div>N.º de Estudante: <strong className="text-sky-300 font-mono text-sm">{perfil?.numeroEstudante || "—"}</strong></div>
                         <div className="text-emerald-400 text-xs font-bold tracking-wide mt-0.5">{semestreActual}</div>
                       </div>
                     </div>
@@ -770,7 +788,15 @@ export default function EstudanteDashboard({
               );
             })()}
 
-            {/* Painel de Indicadores (Resumo de Desempenho) */}
+            {/* Painel de Indicadores — só pautas finais aprovadas pelo DP */}
+            {(() => {
+              const notas = minhasNotas ?? [];
+              const aprovadas = notas.filter((n) => n.publicado && n.resultado === "Aprovado").length;
+              const emFreq = notas.filter((n) => !n.publicado || n.resultado === "Em Frequência" || n.resultado === "Admitido").length;
+              const reprovadas = notas.filter((n) => n.publicado && (n.resultado === "Reprovado" || n.resultado === "Excluído")).length;
+              const finais = notas.filter((n) => n.publicado && n.mediaFinal != null).map((n) => Number(n.mediaFinal));
+              const media = finais.length ? finais.reduce((a, b) => a + b, 0) / finais.length : null;
+              return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-lg border border-navy-100 shadow-sm flex items-center gap-4">
                 <div className="p-3 bg-leaf/10 text-leaf rounded-lg shrink-0">
@@ -778,8 +804,8 @@ export default function EstudanteDashboard({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-navy-900/60 uppercase tracking-wider">Cadeiras Aprovadas</p>
-                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">7 Cadeiras</p>
-                  <p className="text-[11px] text-leaf font-bold">Passado com Sucesso</p>
+                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">{aprovadas}</p>
+                  <p className="text-[11px] text-leaf font-bold">Pauta final aprovada</p>
                 </div>
               </div>
 
@@ -789,8 +815,8 @@ export default function EstudanteDashboard({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-navy-900/60 uppercase tracking-wider">Em Frequência</p>
-                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">2 Cadeiras</p>
-                  <p className="text-[11px] text-sky font-bold">Aulas Em Curso</p>
+                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">{emFreq}</p>
+                  <p className="text-[11px] text-sky font-bold">Notas de frequência</p>
                 </div>
               </div>
 
@@ -800,8 +826,8 @@ export default function EstudanteDashboard({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-navy-900/60 uppercase tracking-wider">Chumbadas / Reprovadas</p>
-                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">1 Cadeira</p>
-                  <p className="text-[11px] text-crimson font-bold">Necessita de Recorrência</p>
+                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">{reprovadas}</p>
+                  <p className="text-[11px] text-crimson font-bold">Pauta final</p>
                 </div>
               </div>
 
@@ -811,11 +837,16 @@ export default function EstudanteDashboard({
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-navy-900/60 uppercase tracking-wider">Média Acumulada</p>
-                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">14.8 <span className="text-xs font-sans font-normal text-navy-900/50">/ 20 V</span></p>
-                  <p className="text-[11px] text-navy-900/70 font-bold">Bom Desempenho</p>
+                  <p className="font-serif font-bold text-2xl text-navy-900 mt-0.5">
+                    {media != null ? media.toFixed(1) : "—"}{" "}
+                    <span className="text-xs font-sans font-normal text-navy-900/50">/ 20 V</span>
+                  </p>
+                  <p className="text-[11px] text-navy-900/70 font-bold">Só cadeiras aprovadas pelo DP</p>
                 </div>
               </div>
             </div>
+              );
+            })()}
 
             {/* Tabela da Situação Académica por Disciplina com Tabs de Anos */}
             <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden">
@@ -883,20 +914,19 @@ export default function EstudanteDashboard({
                   return cadeirasDoPeriodo.map((cad) => {
                     const isExpanded = cadeirasExpandidas[cad.id];
                     const notaReal = (minhasNotas ?? []).find((n) => n.cadeiraCodigo === cad.codigo);
-                    const notaFinalEfetiva = notaReal?.mediaFinal ?? cad.notaFinal ?? null;
-                    const temNota = notaFinalEfetiva !== null && notaFinalEfetiva !== undefined;
-                    const notaStr = temNota ? `${Number(notaFinalEfetiva).toFixed(1)} V` : "—";
-                    const res = notaReal?.resultado ?? cad.resultado ?? "Aprovado";
-                    const isAprovado = res === "Aprovado";
-                    const isFrequencia = res === "Em Frequência";
+                    const r = resumoNotaParaEstudante(notaReal);
+                    const notaMostrada = r.pautaFinalAprovada
+                      ? r.mediaFinal
+                      : r.notaFrequencia;
+                    const notaStr = notaMostrada != null ? `${Number(notaMostrada).toFixed(1)} V` : "—";
+                    const res = r.resultado;
+                    const isAprovado = res === "Aprovado" || res === "Dispensado";
+                    const isFrequencia = res === "Em Frequência" || res === "Admitido" || (!r.pautaFinalAprovada && r.temLancamento);
                     const isReprovado = res === "Reprovado" || res === "Excluído";
-                    const lancadaPeloDocente = Boolean(notaReal);
-                    const t1 =
-                      notaReal?.teste1 ?? cad.teste1 ?? (temNota ? Number((Number(notaFinalEfetiva) - 0.5).toFixed(1)) : 14.0);
-                    const t2 =
-                      notaReal?.teste2 ?? cad.teste2 ?? (temNota ? Number((Number(notaFinalEfetiva) + 0.5).toFixed(1)) : 14.5);
-                    const trab =
-                      notaReal?.trabalho ?? cad.trabalho ?? (temNota ? Number(Number(notaFinalEfetiva).toFixed(1)) : 15.0);
+                    const lancadaPeloDocente = r.temLancamento;
+                    const t1 = r.t1;
+                    const t2 = r.t2;
+                    const trab = r.trabalho;
                     return (
                       <div
                         key={cad.id}
@@ -921,7 +951,7 @@ export default function EstudanteDashboard({
                             </p>
                             {lancadaPeloDocente && (
                               <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-leaf bg-leaf/10 border border-leaf/30 px-1.5 py-0.5 rounded mt-1">
-                                <CheckCircle2 size={10} /> Lançada
+                                <CheckCircle2 size={10} /> {r.pautaFinalAprovada ? "Pauta final" : "Frequência"}
                               </span>
                             )}
                           </div>
@@ -954,19 +984,19 @@ export default function EstudanteDashboard({
                           <div className="grid grid-cols-2 gap-2 pl-6 pt-1">
                             <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
                               <span className="text-navy-900/60 text-[10px] uppercase font-bold block">1º Teste (30%)</span>
-                              <span className="font-mono font-bold text-sm text-navy-900">{t1.toFixed(1)} V</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{t1 != null ? `${t1.toFixed(1)} V` : "—"}</span>
                             </div>
                             <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
                               <span className="text-navy-900/60 text-[10px] uppercase font-bold block">2º Teste (30%)</span>
-                              <span className="font-mono font-bold text-sm text-navy-900">{t2.toFixed(1)} V</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{t2 != null ? `${t2.toFixed(1)} V` : "—"}</span>
                             </div>
                             <div className="p-2.5 bg-white rounded border border-navy-100 shadow-sm">
                               <span className="text-navy-900/60 text-[10px] uppercase font-bold block">Trabalho (40%)</span>
-                              <span className="font-mono font-bold text-sm text-navy-900">{trab.toFixed(1)} V</span>
+                              <span className="font-mono font-bold text-sm text-navy-900">{trab != null ? `${trab.toFixed(1)} V` : "—"}</span>
                             </div>
                             <div className={`p-2.5 bg-white rounded border shadow-sm ${isReprovado ? "border-crimson/40" : "border-leaf/40"}`}>
                               <span className={`text-[10px] uppercase font-bold block ${isReprovado ? "text-crimson" : "text-leaf"}`}>
-                                Média Final
+                                {r.pautaFinalAprovada ? "Média Final" : "Nota de Frequência"}
                               </span>
                               <span className={`font-mono font-bold text-sm ${isReprovado ? "text-crimson" : "text-leaf"}`}>
                                 {notaStr}
@@ -986,7 +1016,7 @@ export default function EstudanteDashboard({
                     <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
                       <th className="p-4">Cadeira / Disciplina</th>
                       <th className="p-4">Ano & Semestre</th>
-                      <th className="p-4 text-center">Nota Final</th>
+                      <th className="p-4 text-center">Nota</th>
                       <th className="p-4 text-center">Resultado</th>
                       <th className="p-4 text-right">Situação</th>
                     </tr>
@@ -1013,21 +1043,20 @@ export default function EstudanteDashboard({
                         const isExpanded = cadeirasExpandidas[cad.id];
                         // Nota lançada pelo docente (real) tem sempre prioridade sobre o histórico estático
                         const notaReal = (minhasNotas ?? []).find((n) => n.cadeiraCodigo === cad.codigo);
-                        const notaFinalEfetiva = notaReal?.mediaFinal ?? cad.notaFinal ?? null;
-                        const temNota = notaFinalEfetiva !== null && notaFinalEfetiva !== undefined;
-                        const notaStr = temNota ? `${Number(notaFinalEfetiva).toFixed(1)} V` : "—";
-                        const res = notaReal?.resultado ?? cad.resultado ?? "Aprovado";
-                        const isAprovado = res === "Aprovado";
-                        const isFrequencia = res === "Em Frequência";
+                        const r = resumoNotaParaEstudante(notaReal);
+                        const notaMostrada = r.pautaFinalAprovada
+                          ? r.mediaFinal
+                          : r.notaFrequencia;
+                        const notaStr = notaMostrada != null ? `${Number(notaMostrada).toFixed(1)} V` : "—";
+                        const res = r.resultado;
+                        const isAprovado = res === "Aprovado" || res === "Dispensado";
+                        const isFrequencia = res === "Em Frequência" || res === "Admitido" || (!r.pautaFinalAprovada && r.temLancamento);
                         const isReprovado = res === "Reprovado" || res === "Excluído";
-                        const lancadaPeloDocente = Boolean(notaReal);
+                        const lancadaPeloDocente = r.temLancamento;
 
-                        const t1 =
-                          notaReal?.teste1 ?? cad.teste1 ?? (temNota ? Number((Number(notaFinalEfetiva) - 0.5).toFixed(1)) : 14.0);
-                        const t2 =
-                          notaReal?.teste2 ?? cad.teste2 ?? (temNota ? Number((Number(notaFinalEfetiva) + 0.5).toFixed(1)) : 14.5);
-                        const trab =
-                          notaReal?.trabalho ?? cad.trabalho ?? (temNota ? Number(Number(notaFinalEfetiva).toFixed(1)) : 15.0);
+                        const t1 = r.t1;
+                        const t2 = r.t2;
+                        const trab = r.trabalho;
 
                         return (
                           <Fragment key={cad.id}>
@@ -1139,7 +1168,7 @@ export default function EstudanteDashboard({
                                         1º Teste Escrito (30%)
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {t1.toFixed(1)} V
+                                        {t1 != null ? `${t1.toFixed(1)} V` : "—"}
                                       </span>
                                     </div>
                                     <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
@@ -1147,7 +1176,7 @@ export default function EstudanteDashboard({
                                         2º Teste Escrito (30%)
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {t2.toFixed(1)} V
+                                        {t2 != null ? `${t2.toFixed(1)} V` : "—"}
                                       </span>
                                     </div>
                                     <div className="p-3 bg-white rounded border border-navy-100 shadow-sm">
@@ -1155,7 +1184,7 @@ export default function EstudanteDashboard({
                                         Trabalho / Pesquisa (40%)
                                       </span>
                                       <span className="font-mono font-bold text-sm text-navy-900">
-                                        {trab.toFixed(1)} V
+                                        {trab != null ? `${trab.toFixed(1)} V` : "—"}
                                       </span>
                                     </div>
                                     <div
@@ -1170,7 +1199,7 @@ export default function EstudanteDashboard({
                                           isReprovado ? "text-crimson" : "text-leaf"
                                         }`}
                                       >
-                                        Média Final (MF)
+                                        {r.pautaFinalAprovada ? "Média Final (MF)" : "Nota de Frequência"}
                                       </span>
                                       <span
                                         className={`font-mono font-bold text-sm ${
@@ -1184,7 +1213,7 @@ export default function EstudanteDashboard({
                                           isReprovado ? "text-crimson" : "text-leaf"
                                         }`}
                                       >
-                                        {res}
+                                        {res ?? "—"}
                                       </span>
                                     </div>
                                   </div>
@@ -1199,560 +1228,6 @@ export default function EstudanteDashboard({
                 </table>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* SECÇÃO: SITUAÇÃO FINANCEIRA E PAGAMENTOS ONLINE */}
-        {section === "financeiro" && (
-          <div className="p-6 md:p-8 space-y-8">
-            {/* Cartão de Situação Financeira com Fundo Azul — Estilo Perfil */}
-            {(() => {
-              const isRegularizado = perfil?.regularizado !== false;
-              return (
-                <div className={`rounded-xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${isRegularizado
-                    ? "bg-gradient-to-r from-navy-900 to-navy-800 text-white border border-navy-800"
-                    : "bg-gradient-to-r from-navy-900 via-crimson/30 to-navy-900 text-white border-2 border-crimson/60"
-                  }`}>
-                  {/* Esquerda: Dados do Estudante */}
-                  <div className="flex items-center gap-5">
-                    <div className="relative h-16 w-16 rounded-full bg-leaf flex items-center justify-center text-white font-bold text-2xl shadow-inner border-2 border-white/20 shrink-0 overflow-hidden">
-                      {perfil?.avatar_url ? (
-                        <img src={perfil.avatar_url} alt={perfil.nome} className="h-full w-full object-cover" />
-                      ) : (
-                        <span>{perfil?.nome ? perfil.nome[0].toUpperCase() : "E"}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-serif font-bold text-2xl text-white">
-                        {perfil?.nome || "Amélia Zacarias Macuácua"}
-                      </h3>
-                      <div className="text-xs text-white/70 mt-1 space-y-1">
-                        <div>N.º de Estudante: <strong className="text-sky-300 font-mono text-sm">{perfil?.numeroEstudante || "20260104MP"}</strong></div>
-                        <div className="text-emerald-400 text-xs font-bold tracking-wide mt-0.5">{semestreActual}</div>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Direita: Resumo Financeiro */}
-                  <div className="border-t md:border-t-0 md:border-l border-white/15 pt-4 md:pt-0 md:pl-6 shrink-0 space-y-2 text-xs">
-                    <p className="text-white/60 text-[11px] uppercase font-bold tracking-wider">Situação Financeira 2026</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/70">Total Pendente:</span>
-                      <span className="font-serif font-bold text-lg text-leaf-300">0,00 MT</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/70">Matrícula 2026:</span>
-                      <span className="font-bold text-white text-xs">1.500,00 MT</span>
-                      <span className="text-[10px] text-leaf-300 font-bold">✓ Pago</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/70">Mensalidades:</span>
-                      <span className="font-bold text-white text-xs">Fev — Set 2026</span>
-                      <span className="text-[10px] text-leaf-300 font-bold">✓ Pagas</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* 3 Cards de Estatísticas Financeiras (fora do card azul) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-5 rounded-lg border border-navy-100 shadow-sm space-y-1">
-                <p className="text-[11px] text-navy-900/60 font-bold uppercase tracking-wider">TOTAL PENDENTE / DÍVIDA</p>
-                <p className="font-serif font-extrabold text-2xl text-leaf">0,00 MT</p>
-                <p className="text-[11px] text-leaf font-bold">Propinas em dia</p>
-              </div>
-              <div className="bg-white p-5 rounded-lg border border-navy-100 shadow-sm space-y-1">
-                <p className="text-[11px] text-navy-900/60 font-bold uppercase tracking-wider">TAXA DE MATRÍCULA 2026</p>
-                <p className="font-serif font-extrabold text-2xl text-navy-900">1.500,00 MT</p>
-                <p className="text-[11px] text-leaf font-bold">✓ Liquidado</p>
-              </div>
-              <div className="bg-white p-5 rounded-lg border border-navy-100 shadow-sm space-y-1">
-                <p className="text-[11px] text-navy-900/60 font-bold uppercase tracking-wider">MENSALIDADES 2026</p>
-                <p className="font-serif font-extrabold text-2xl text-navy-900">Fev — Set 2026</p>
-                <p className="text-[11px] text-leaf font-bold">✓ Todas Pagas</p>
-              </div>
-            </div>
-
-            {/* Submenu de Tabs Financeiras */}
-            <div className="bg-white border border-navy-100 rounded-lg p-1.5 flex flex-wrap items-center gap-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setAbaFinanceira("recibos")}
-                className={`flex-1 min-w-[140px] px-4 py-3 text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 ${abaFinanceira === "recibos"
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "text-navy-900/70 hover:text-navy-900 hover:bg-cream"
-                  }`}
-              >
-                <Receipt size={16} />
-                <span>a) Recibos de Pagamento</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAbaFinanceira("recorrencia")}
-                className={`flex-1 min-w-[140px] px-4 py-3 text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 ${abaFinanceira === "recorrencia"
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "text-navy-900/70 hover:text-navy-900 hover:bg-cream"
-                  }`}
-              >
-                <AlertTriangle size={16} />
-                <span>b) Pagamento de Recorrências</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAbaFinanceira("mudanca")}
-                className={`flex-1 min-w-[140px] px-4 py-3 text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 ${abaFinanceira === "mudanca"
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "text-navy-900/70 hover:text-navy-900 hover:bg-cream"
-                  }`}
-              >
-                <FileText size={16} />
-                <span>c) Mudança de Curso/Regime</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAbaFinanceira("taxas")}
-                className={`flex-1 min-w-[140px] px-4 py-3 text-xs font-bold rounded transition-colors flex items-center justify-center gap-2 ${abaFinanceira === "taxas"
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "text-navy-900/70 hover:text-navy-900 hover:bg-cream"
-                  }`}
-              >
-                <Download size={16} />
-                <span>d) Outras Taxas & Minutas</span>
-              </button>
-            </div>
-
-            {/* Toast de Sucesso para Transações Financeiras */}
-            {sucessoFin && (
-              <div className="p-4 bg-leaf/15 border border-leaf/40 rounded-lg text-xs font-bold text-leaf flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={18} />
-                  <span>{sucessoFin}</span>
-                </div>
-                <button type="button" onClick={() => setSucessoFin(null)} className="text-leaf hover:underline">
-                  Fechar
-                </button>
-              </div>
-            )}
-
-            {/* TAB a) RECIBOS DE PAGAMENTO */}
-            {abaFinanceira === "recibos" && (
-              <div className="bg-white border border-navy-100 rounded-lg shadow-sm overflow-hidden space-y-4">
-                <div className="p-6 border-b border-navy-100 bg-cream/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="font-serif text-lg font-bold text-navy-900">
-                      Histórico de Recibos & Propinas Pagas em 2026
-                    </h4>
-                    <p className="text-xs text-navy-900/60 mt-0.5">
-                      Descarregue ou consulte a via oficial dos seus recibos de matrícula e mensalidades.
-                    </p>
-                  </div>
-                  <div className="text-xs font-bold text-navy-900 bg-white px-3 py-1.5 border border-navy-100 rounded shrink-0">
-                    Total Quitado: 27.100,00 MT
-                  </div>
-                </div>
-
-                {(() => {
-                  const recibos = [
-                    {
-                      numero: "REC-2026-00412",
-                      desc: "Taxa de Matrícula & Inscrição 2026",
-                      data: "12/01/2026",
-                      valor: "1.500,00 MT",
-                      metodo: "Millennium BIM",
-                      metodoCor: "bg-navy-900/10 text-navy-900",
-                    },
-                    {
-                      numero: "REC-2026-01102",
-                      desc: "Propina Mensal — Fevereiro 2026",
-                      data: "03/02/2026",
-                      valor: "3.200,00 MT",
-                      metodo: "M-Pesa",
-                      metodoCor: "bg-leaf/10 text-leaf",
-                    },
-                    {
-                      numero: "REC-2026-02450",
-                      desc: "Propina Mensal — Março 2026",
-                      data: "04/03/2026",
-                      valor: "3.200,00 MT",
-                      metodo: "M-Pesa",
-                      metodoCor: "bg-leaf/10 text-leaf",
-                    },
-                    {
-                      numero: "REC-2026-08991",
-                      desc: "Propina Mensal — Abril a Setembro 2026 (Pacote Semestral)",
-                      data: "05/04/2026",
-                      valor: "19.200,00 MT",
-                      metodo: "BCI Net",
-                      metodoCor: "bg-navy-900/10 text-navy-900",
-                    },
-                  ];
-                  return (
-                    <>
-                      <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-px bg-navy-100">
-                        {recibos.map((r) => (
-                          <div key={r.numero} className="bg-white p-4 space-y-1.5 text-xs">
-                            <p className="font-mono font-bold text-sky">{r.numero}</p>
-                            <p className="font-bold font-serif text-navy-900">{r.desc}</p>
-                            <div className="flex flex-wrap items-center gap-1.5 text-navy-900/70">
-                              <span>{r.data}</span>
-                              <span className="font-mono font-bold text-navy-900">{r.valor}</span>
-                              <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${r.metodoCor}`}>{r.metodo}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setSucessoFin(`Recibo ${r.numero} transferido com sucesso!`)}
-                              className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                            >
-                              <Download size={13} /> Baixar Recibo PDF
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="hidden lg:block overflow-x-auto">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="bg-navy-900/5 border-b border-navy-100 text-navy-900 font-bold uppercase tracking-wider">
-                              <th className="p-4">N.º do Recibo</th>
-                              <th className="p-4">Descrição do Serviço / Mês</th>
-                              <th className="p-4 text-center">Data do Pagamento</th>
-                              <th className="p-4 text-center">Valor Pago</th>
-                              <th className="p-4 text-center">Método</th>
-                              <th className="p-4 text-right">Ação</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-navy-100 font-medium text-navy-900">
-                            {recibos.map((r) => (
-                              <tr key={r.numero} className="hover:bg-cream/40 transition-colors">
-                                <td className="p-4 font-mono font-bold text-sky">{r.numero}</td>
-                                <td className="p-4 font-bold font-serif">{r.desc}</td>
-                                <td className="p-4 text-center text-navy-900/70">{r.data}</td>
-                                <td className="p-4 text-center font-mono font-bold">{r.valor}</td>
-                                <td className="p-4 text-center">
-                                  <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${r.metodoCor}`}>{r.metodo}</span>
-                                </td>
-                                <td className="p-4 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSucessoFin(`Recibo ${r.numero} transferido com sucesso!`)}
-                                    className="inline-flex items-center gap-1 bg-navy-900 hover:bg-sky text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                                  >
-                                    <Download size={13} /> Baixar Recibo PDF
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* TAB b) PAGAMENTO DE RECORRÊNCIAS */}
-            {abaFinanceira === "recorrencia" && (
-              <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm space-y-6">
-                <div>
-                  <h4 className="font-serif text-lg font-bold text-navy-900">
-                    Pagamento Online de Exame de Recorrência
-                  </h4>
-                  <p className="text-xs text-navy-900/60 mt-0.5">
-                    Selecione a cadeira pendente para efetuar o pagamento da taxa de inscrição de exame de recorrência (500,00 MT por disciplina).
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Cadeira Elegível para Recorrência *
-                      </label>
-                      <select className="w-full p-3 bg-white border border-navy-100 rounded text-xs font-semibold text-navy-900">
-                        <option value="jor108">Economia Política da Comunicação (Nota: 8.5 V - Reprovado)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Taxa do Exame
-                      </label>
-                      <input
-                        type="text"
-                        disabled
-                        value="500,00 MT (Fixado por cadeira)"
-                        className="w-full p-3 bg-cream/70 border border-navy-100 rounded text-xs font-bold text-navy-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Método de Pagamento Online *
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setMetodoPagamento("mpesa")}
-                          className={`p-3 border rounded text-xs font-bold text-center transition-colors ${metodoPagamento === "mpesa" ? "bg-leaf/10 border-leaf text-leaf" : "bg-white border-navy-100 text-navy-900/70"
-                            }`}
-                        >
-                          M-Pesa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMetodoPagamento("emola")}
-                          className={`p-3 border rounded text-xs font-bold text-center transition-colors ${metodoPagamento === "emola" ? "bg-leaf/10 border-leaf text-leaf" : "bg-white border-navy-100 text-navy-900/70"
-                            }`}
-                        >
-                          e-Mola
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMetodoPagamento("banco")}
-                          className={`p-3 border rounded text-xs font-bold text-center transition-colors ${metodoPagamento === "banco" ? "bg-leaf/10 border-leaf text-leaf" : "bg-white border-navy-100 text-navy-900/70"
-                            }`}
-                        >
-                          BIM / BCI
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Número de Telefone M-Pesa / Referência Bancária *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="ex: 84 123 4567 ou Referência Bancária"
-                        value={telefonePagamento}
-                        onChange={(e) => setTelefonePagamento(e.target.value)}
-                        className="w-full p-3 bg-white border border-navy-100 rounded text-xs text-navy-900"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSucessoFin("Pagamento de 500,00 MT para Exame de Recorrência (Economia Política) efetuado com sucesso! Guia de exame emitida e registada na sua conta.");
-                        setTelefonePagamento("");
-                      }}
-                      className="w-full bg-leaf hover:bg-navy-900 text-white font-bold text-xs py-3.5 rounded transition-colors shadow-sm"
-                    >
-                      PAGAR RECORRÊNCIA ONLINE (500,00 MT)
-                    </button>
-                  </div>
-
-                  <div className="p-5 bg-cream/60 border border-navy-100 rounded-lg space-y-3 text-xs">
-                    <h5 className="font-serif font-bold text-sm text-navy-900 flex items-center gap-2">
-                      <ShieldCheck size={16} className="text-leaf" /> Instalações de Exames de Recorrência
-                    </h5>
-                    <ul className="space-y-2 text-navy-900/80 leading-relaxed list-disc pl-4">
-                      <li>O pagamento confere acesso automático à pauta de Exames de Recorrência da época especial.</li>
-                      <li>A confirmação do pagamento é processada em tempo real e notificada na conta do estudante.</li>
-                      <li>Dúvidas pedagógicas devem ser remetidas ao regente da cadeira através da aba Cadeiras.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB c) PAGAMENTO DE PEDIDO DE MUDANÇA DE CURSO / REGIME */}
-            {abaFinanceira === "mudanca" && (
-              <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm space-y-6">
-                <div>
-                  <h4 className="font-serif text-lg font-bold text-navy-900">
-                    Pedido & Pagamento de Mudança de Curso ou Regime
-                  </h4>
-                  <p className="text-xs text-navy-900/60 mt-0.5">
-                    Submeta o seu pedido oficial de transferência interna de curso ou alteração de regime (Diurno / Pós-laboral) com taxa de 1.200,00 MT.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Tipo de Solicitação *
-                      </label>
-                      <select className="w-full p-3 bg-white border border-navy-100 rounded text-xs font-semibold text-navy-900">
-                        <option value="curso">Mudança de Curso (Atual: Jornalismo)</option>
-                        <option value="regime">Mudança de Regime (Atual: Diurno para Pós-Laboral)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Curso / Regime Pretendido *
-                      </label>
-                      <select className="w-full p-3 bg-white border border-navy-100 rounded text-xs font-semibold text-navy-900">
-                        <option value="rp">Licenciatura em Relações Públicas</option>
-                        <option value="pm">Licenciatura em Publicidade e Marketing</option>
-                        <option value="bd">Licenciatura em Biblioteconomia e Documentação</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Minuta Oficial Exigida (Download)
-                      </label>
-                      <a
-                        href="https://esj.ac.mz/wp-content/uploads/2026/05/Minuta-de-Pedido-de-Mudanca-de-Curso.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-xs font-bold text-sky hover:underline"
-                      >
-                        <Download size={14} /> Descarregar Minuta de Pedido de Mudança de Curso (PDF)
-                      </a>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Taxa Administrativa (1.200,00 MT)
-                      </label>
-                      <input
-                        type="text"
-                        disabled
-                        value="1.200,00 MT"
-                        className="w-full p-3 bg-cream/70 border border-navy-100 rounded text-xs font-bold text-navy-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Número para Pagamento (M-Pesa / e-Mola) *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="84 / 86 123 4567"
-                        value={telefonePagamento}
-                        onChange={(e) => setTelefonePagamento(e.target.value)}
-                        className="w-full p-3 bg-white border border-navy-100 rounded text-xs text-navy-900"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSucessoFin("Pedido de Mudança de Curso & Pagamento de 1.200,00 MT submetido com sucesso! Acompanhe o despacho da Secretaria Académica na sua conta.");
-                        setTelefonePagamento("");
-                      }}
-                      className="w-full bg-navy-800 hover:bg-sky text-white font-bold text-xs py-3.5 rounded transition-colors shadow-sm"
-                    >
-                      SUBMETER PEDIDO & PAGAR ONLINE (1.200,00 MT)
-                    </button>
-                  </div>
-
-                  <div className="p-5 bg-cream/60 border border-navy-100 rounded-lg space-y-3 text-xs">
-                    <h5 className="font-serif font-bold text-sm text-navy-900">
-                      Regulamento de Mudança de Curso ESJ
-                    </h5>
-                    <p className="text-navy-900/80 leading-relaxed">
-                      Os pedidos de mudança de curso decorrem mediante o preenchimento da minuta regulamentar, liquidação da taxa e validação das equivalências pelo Conselho Científico.
-                    </p>
-                    <div className="p-3 bg-white border border-navy-100 rounded">
-                      <p className="font-bold text-navy-900">Estado dos Pedidos Anteriores:</p>
-                      <p className="text-navy-900/60 mt-1">Nenhum pedido pendente registrado.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB d) OUTRAS TAXAS & MINUTAS ONLINE */}
-            {abaFinanceira === "taxas" && (
-              <div className="bg-white border border-navy-100 rounded-lg p-6 shadow-sm space-y-6">
-                <div>
-                  <h4 className="font-serif text-lg font-bold text-navy-900">
-                    Solicitação & Pagamento de Requerimentos / Documentos
-                  </h4>
-                  <p className="text-xs text-navy-900/60 mt-0.5">
-                    Requeira declarações de notas, certificados ou revisões com integração de minuta oficial e pagamento online.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Selecione o Requerimento / Documento Pretendido *
-                      </label>
-                      <select className="w-full p-3 bg-white border border-navy-100 rounded text-xs font-semibold text-navy-900">
-                        <option value="notas">Declaração de Notas / Histórico (Taxa: 350,00 MT)</option>
-                        <option value="freq">Declaração de Frequência (Taxa: 250,00 MT)</option>
-                        <option value="cert">Certificado de Licenciatura (Taxa: 2.500,00 MT)</option>
-                        <option value="cartao">2ª Via de Cartão de Estudante (Taxa: 300,00 MT)</option>
-                        <option value="revisao">Revisão de Prova / Exame (Taxa: 450,00 MT)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Minuta Oficial Correspondente (Download)
-                      </label>
-                      <a
-                        href="https://esj.ac.mz/wp-content/uploads/2026/05/Minuta-de-Pedido-de-Declaracao-de-Notas.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-xs font-bold text-sky hover:underline"
-                      >
-                        <Download size={14} /> Descarregar Minuta Oficial do Requerimento (PDF)
-                      </a>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-navy-900 mb-1">
-                        Número M-Pesa / e-Mola para Validação do Pagamento *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="84 / 86 123 4567"
-                        value={telefonePagamento}
-                        onChange={(e) => setTelefonePagamento(e.target.value)}
-                        className="w-full p-3 bg-white border border-navy-100 rounded text-xs text-navy-900"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSucessoFin("Pedido de Requerimento e Pagamento Efetuado com Sucesso! A Declaração/Documento estará disponível para download na sua conta assim que for assinado.");
-                        setTelefonePagamento("");
-                      }}
-                      className="w-full bg-leaf hover:bg-navy-900 text-white font-bold text-xs py-3.5 rounded transition-colors shadow-sm"
-                    >
-                      PAGAR & SUBMETER REQUERIMENTO ONLINE
-                    </button>
-                  </div>
-
-                  <div className="p-5 bg-cream/60 border border-navy-100 rounded-lg space-y-4 text-xs">
-                    <h5 className="font-serif font-bold text-sm text-navy-900 flex items-center gap-2">
-                      <FileText size={16} className="text-sky" /> Lista de Minutas Académicas Rápidas
-                    </h5>
-                    <ul className="space-y-2 text-navy-900/80">
-                      {MINUTAS.slice(0, 5).map((m, idx) => (
-                        <li key={idx} className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-navy-100/60">
-                          <span className="font-medium truncate">{m.label}</span>
-                          <a
-                            href={m.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sky font-bold hover:underline shrink-0"
-                          >
-                            PDF
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1779,7 +1254,7 @@ export default function EstudanteDashboard({
                 </div>
               </div>
               <div className="px-3.5 py-2 bg-white/10 rounded-lg text-xs font-semibold text-sky-300 border border-white/15 shrink-0">
-                N.º de Estudante: {perfil?.numeroEstudante || "20260104MP"}
+                N.º de Estudante: {perfil?.numeroEstudante || "—"}
               </div>
             </div>
 
@@ -2246,7 +1721,7 @@ export default function EstudanteDashboard({
                     Pauta Eletrónica de Avaliação
                   </h3>
                   <p className="text-xs text-navy-900/60 mt-1">
-                    Escolha a cadeira para consultar os resultados publicados pelo docente.
+                    Pauta final da turma — só após aprovação do Director Pedagógico (DP).
                   </p>
                 </div>
 
@@ -2297,9 +1772,9 @@ export default function EstudanteDashboard({
               ) : !pautaCadeiraAtual || pautaCadeiraAtual.length === 0 ? (
                 <div className="p-8 text-center border border-navy-100 rounded bg-cream/40">
                   <ClipboardList size={28} className="mx-auto text-navy-900/30 mb-2" />
-                  <p className="text-sm font-bold text-navy-900">Pauta ainda não publicada</p>
+                  <p className="text-sm font-bold text-navy-900">Pauta final ainda não aprovada</p>
                   <p className="text-xs text-navy-900/60 mt-1">
-                    O docente ainda não lançou notas para esta cadeira.
+                    As notas de frequência aparecem no Dashboard assim que o docente as lança. A pauta final só fica disponível aqui depois da aprovação do DP.
                   </p>
                 </div>
               ) : (
@@ -2430,6 +1905,14 @@ export default function EstudanteDashboard({
                       </div>
                       <h4 className="font-serif font-bold text-navy-900 text-base">{ev.titulo}</h4>
                       {ev.descricao && <p className="text-xs text-navy-900/60 mt-1">{ev.descricao}</p>}
+                      {ev.consideracaoEsj && (
+                        <div className="mt-3 pt-3 border-t border-navy-100/80">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-sky mb-1">
+                            Para estudantes da ESJ
+                          </p>
+                          <p className="text-xs text-navy-900/80 leading-relaxed">{ev.consideracaoEsj}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

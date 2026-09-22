@@ -94,6 +94,47 @@ function deLinha(row: NotaRow): NotaEstudante {
   };
 }
 
+/**
+ * O que o estudante pode ver no cartão da cadeira:
+ * - frequência (testes/trabalhos/NF) sempre que o docente lançar;
+ * - média final / resultado oficial só com pauta aprovada pelo DP (publicado).
+ */
+export function resumoNotaParaEstudante(nota: NotaEstudante | undefined) {
+  if (!nota) {
+    return {
+      temLancamento: false,
+      t1: null as number | null,
+      t2: null as number | null,
+      trabalho: null as number | null,
+      notaFrequencia: null as number | null,
+      estadoFrequencia: null as NotaEstudante["estadoFrequencia"] | null,
+      mediaFinal: null as number | null,
+      resultado: null as NotaEstudante["resultado"] | null,
+      pautaFinalAprovada: false,
+    };
+  }
+  const pautaFinalAprovada = Boolean(nota.publicado);
+  return {
+    temLancamento: true,
+    t1: nota.teste1,
+    t2: nota.teste2,
+    trabalho: nota.trabalho,
+    notaFrequencia: nota.notaFrequencia,
+    estadoFrequencia: nota.estadoFrequencia,
+    mediaFinal: pautaFinalAprovada ? nota.mediaFinal : null,
+    resultado: pautaFinalAprovada
+      ? nota.resultado
+      : nota.estadoFrequencia === "Excluído"
+        ? ("Excluído" as const)
+        : nota.estadoFrequencia === "Dispensado"
+          ? ("Dispensado" as const)
+          : nota.estadoFrequencia === "Admitido"
+            ? ("Admitido" as const)
+            : ("Em Frequência" as const),
+    pautaFinalAprovada,
+  };
+}
+
 /** Todas as notas já lançadas para o estudante autenticado. Devolve null se a tabela ainda não existir. */
 export async function listarMinhasNotas(): Promise<NotaEstudante[] | null> {
   const supabase = createBrowserSupabase();

@@ -36,9 +36,13 @@ export async function updateSession(request: NextRequest) {
   const admin = eSuperAdmin(user);
   const soDocente = eDocente(user) && !admin;
 
-  if ((path.startsWith("/gestao") || path.startsWith("/docencia")) && !user) {
+  if (
+    (path.startsWith("/gestao") || path.startsWith("/docencia") || path.startsWith("/estudantes")) &&
+    !user
+  ) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/entrar";
+    redirect.searchParams.set("next", path);
     return NextResponse.redirect(redirect);
   }
   // Só super-admin tem acesso ao painel de gestão — docente vai para a

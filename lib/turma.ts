@@ -7,7 +7,40 @@ export type EstudanteTurma = {
   id: string;
   numeroEstudante: string;
   nome: string;
+  curso?: CursoDocenciaSlug;
+  regime?: RegimeCurso;
+  ano?: number;
 };
+
+/**
+ * Dados da turma do estudante autenticado (curso, regime, ano) — alinhados
+ * com o que a secretaria mantém em turma_estudantes.
+ */
+export async function obterMinhaTurma(
+  numeroEstudante: string
+): Promise<EstudanteTurma | null> {
+  const num = numeroEstudante.trim();
+  if (!num) return null;
+  const supabase = createBrowserSupabase();
+  const { data, error } = await supabase
+    .from("turma_estudantes")
+    .select("id, numero_estudante, nome, curso, regime, ano")
+    .ilike("numero_estudante", num)
+    .maybeSingle();
+  if (error) {
+    if (isMissingTable(error)) return null;
+    throw error;
+  }
+  if (!data) return null;
+  return {
+    id: data.id,
+    numeroEstudante: data.numero_estudante,
+    nome: data.nome,
+    curso: data.curso as CursoDocenciaSlug,
+    regime: data.regime as RegimeCurso,
+    ano: data.ano,
+  };
+}
 
 /**
  * Lista real dos estudantes de uma turma (curso + regime + ano) — vem da

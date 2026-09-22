@@ -158,9 +158,10 @@ export async function POST(request: Request) {
         resultado: resVal,
         docente_id: user.id,
         docente_nome: rotuloAutorConta(user),
-        // Sem passo de aprovação por agora: a nota fica visível assim que o
-        // docente a lança (a pauta pública em /pautas filtra por publicado).
-        publicado: true,
+        // Frequência actualiza em tempo real no painel do estudante; a pauta
+        // final (e /pautas público) só depois da aprovação do DP (publicado).
+        // Cada novo lançamento/alteração do docente volta a exigir aprovação.
+        publicado: false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "estudante_id,curso,cadeira_codigo" }

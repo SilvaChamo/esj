@@ -317,6 +317,34 @@ export function readCalendarioDetalhado(): CalendarioAcademicoAnual {
 export function writeCalendarioDetalhado(data: CalendarioAcademicoAnual) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(CALENDARIO_DETALHADO_KEY, JSON.stringify(data));
+  // Grava também no Supabase para o painel do estudante e outros browsers.
+  void fetch("/api/calendario-detalhado", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  }).catch(() => {
+    /* sem API/tabela — localStorage continua a funcionar na gestão */
+  });
+}
+
+/** Lê o calendário partilhado (Supabase) com fallback local / defaults. */
+export async function loadCalendarioDetalhado(): Promise<CalendarioAcademicoAnual> {
+  try {
+    const res = await fetch("/api/calendario-detalhado", { cache: "no-store" });
+    if (res.ok) {
+      const data = (await res.json()) as CalendarioAcademicoAnual;
+      if (data?.eventos?.length) {
+        const merged = mergeCalendarioComDefaults(data);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(CALENDARIO_DETALHADO_KEY, JSON.stringify(merged));
+        }
+        return merged;
+      }
+    }
+  } catch {
+    /* offline / sem tabela */
+  }
+  return readCalendarioDetalhado();
 }
 
 export function labelCategoriaCalendario(cat: CategoriaEventoCalendario): {

@@ -109,6 +109,7 @@ import ContasAdministradores from "@/components/gestao/ContasAdministradores";
 import Cadeiras from "@/components/gestao/Cadeiras";
 import SituacaoEstudantes from "@/components/gestao/SituacaoEstudantes";
 import CalendarioAcademicoGestao from "@/components/gestao/CalendarioAcademicoGestao";
+import PautasAcademicas from "@/components/gestao/PautasAcademicas";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
@@ -121,6 +122,7 @@ type Section =
   | "resultados"
   | "calendario"
   | "calendario-datas"
+  | "pautas-academicas"
   | "edital"
   | "noticias"
   | "anuncios"
@@ -176,6 +178,7 @@ const NAV: NavEntry[] = [
     children: [
       { id: "candidaturas", label: "Candidaturas", icon: Users },
       { id: "resultados", label: "Pautas", icon: ClipboardList },
+      { id: "pautas-academicas", label: "Pautas académicas", icon: ClipboardList },
       { id: "calendario", label: "Resumo do Calendário", icon: Calendar },
       { id: "calendario-datas", label: "Calendário Académico", icon: CalendarCheck },
       { id: "edital", label: "Edital", icon: FileText },
@@ -737,6 +740,7 @@ export default function GestaoDashboard() {
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
           {section === "calendario-datas" && <CalendarioAcademicoGestao onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
+          {section === "pautas-academicas" && <PautasAcademicas onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "newsletter" && <NewsletterEnvio onAction={showNote} />}
           {section === "folha" && <FolhaAcademica onAction={showNote} />}
