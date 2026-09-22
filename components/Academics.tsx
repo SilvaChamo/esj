@@ -240,7 +240,7 @@ export default function Academics() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4">
-        <div className="py-16 md:py-20">
+        <div className={tab === "calendario" ? "pt-16 md:pt-20" : "py-16 md:py-20"}>
         {tab === "internacional" && (
           <EntradaHome>
             <div>
@@ -425,19 +425,21 @@ export default function Academics() {
             </div>
 
             <EntradaHome atraso={0.48}>
-              <div className="mt-16 border-t border-navy-100/80 bg-navy-50/60 px-4 py-5 sm:px-6 flex flex-wrap gap-3 justify-center">
-                <Link
-                  href="/edital"
-                  className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
-                >
-                  VER EDITAL DE ADMISSÃO
-                </Link>
-                <Link
-                  href="/inscricoes"
-                  className="esj-btn-move inline-flex items-center bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
-                >
-                  ESTADO DAS INSCRIÇÕES
-                </Link>
+              <div className="mt-16 w-screen relative left-1/2 -translate-x-1/2 border-t border-navy-100/80 bg-navy-50/60">
+                <div className="mx-auto max-w-7xl px-4 py-5 sm:py-6 flex flex-wrap gap-3 justify-center">
+                  <Link
+                    href="/edital"
+                    className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+                  >
+                    VER EDITAL DE ADMISSÃO
+                  </Link>
+                  <Link
+                    href="/inscricoes"
+                    className="esj-btn-move inline-flex items-center bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
+                  >
+                    ESTADO DAS INSCRIÇÕES
+                  </Link>
+                </div>
               </div>
             </EntradaHome>
           </div>
