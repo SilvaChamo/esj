@@ -7,6 +7,7 @@ import {
   readCalendarioDetalhado,
   labelCategoriaCalendario,
   formatarDataPt,
+  diaDaSemanaPt,
   MESES,
   DIAS_SEMANA,
   parseISO,
@@ -309,12 +310,17 @@ export default function CalendarioAnual() {
                             {cat.label}
                           </span>
                           <span className="text-[11px] font-bold text-navy-900/60">
-                            {ev.dataRepresentativa}
+                            {diaDaSemanaPt(diaSelecionado)}
                           </span>
                         </div>
                         <h4 className="font-serif font-bold text-navy-900 text-sm">{ev.titulo}</h4>
                         {ev.descricao && (
                           <p className="text-xs text-navy-900/60 mt-0.5 leading-relaxed">{ev.descricao}</p>
+                        )}
+                        {ev.consideracaoEsj && (
+                          <p className="mt-2 pt-2 border-t border-navy-100 text-xs text-navy-900/60 leading-relaxed">
+                            {ev.consideracaoEsj}
+                          </p>
                         )}
                       </div>
                     </li>

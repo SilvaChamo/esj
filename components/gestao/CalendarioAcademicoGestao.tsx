@@ -55,6 +55,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
   const [formDataFim, setFormDataFim] = useState("");
   const [formDataRepresentativa, setFormDataRepresentativa] = useState("");
   const [formDescricao, setFormDescricao] = useState("");
+  const [formConsideracaoEsj, setFormConsideracaoEsj] = useState("");
 
   const eventosPorDia = useMemo(() => {
     const mapa = new Map<string, EventoCalendarioDetalhado[]>();
@@ -108,6 +109,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setFormDataFim("");
     setFormDataRepresentativa(formatarDataPt(key));
     setFormDescricao("");
+    setFormConsideracaoEsj("");
   }
 
   function iniciarEdicao(ev: EventoCalendarioDetalhado) {
@@ -120,6 +122,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setFormDataFim(ev.dataFim ?? "");
     setFormDataRepresentativa(ev.dataRepresentativa);
     setFormDescricao(ev.descricao);
+    setFormConsideracaoEsj(ev.consideracaoEsj ?? "");
   }
 
   function abrirDia(key: string) {
@@ -152,6 +155,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
       dataFim: formDataFim || undefined,
       dataRepresentativa: formDataRepresentativa.trim() || formatarDataPt(diaModal),
       descricao: formDescricao.trim(),
+      consideracaoEsj: formConsideracaoEsj.trim() || undefined,
       destaque: true,
     };
     const eventos = eventoEditId
@@ -539,6 +543,20 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                 <textarea
                   value={formDescricao}
                   onChange={(e) => setFormDescricao(e.target.value)}
+                  className="box-border w-full max-w-full min-w-0 min-h-[6.5rem] h-auto border border-navy-100 bg-white px-3 py-3 text-sm font-medium text-navy-900 leading-relaxed outline-none transition-colors focus:border-sky resize-y"
+                />
+              </label>
+
+              <label className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">Consideração da ESJ</span>
+                <span className="block text-xs text-navy-900/55 mb-1.5">
+                  Como a escola lida com este dia — se há aulas, quando retomam, etc. Aparece no calendário
+                  público a seguir à descrição.
+                </span>
+                <textarea
+                  value={formConsideracaoEsj}
+                  onChange={(e) => setFormConsideracaoEsj(e.target.value)}
+                  placeholder="Ex: A ESJ concede aos estudantes um intervalo alusivo a esta data. As aulas retomam no dia seguinte."
                   className="box-border w-full max-w-full min-w-0 min-h-[6.5rem] h-auto border border-navy-100 bg-white px-3 py-3 text-sm font-medium text-navy-900 leading-relaxed outline-none transition-colors focus:border-sky resize-y"
                 />
               </label>

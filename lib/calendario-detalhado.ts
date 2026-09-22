@@ -18,6 +18,9 @@ export type EventoCalendarioDetalhado = {
   dataRepresentativa: string; // ex: "25 de Junho", "10 - 20 de Fevereiro"
   descricao: string;
   destaque?: boolean;
+  // Como a ESJ lida com esta data em concreto (aulas suspensas, quando retomam, etc.),
+  // mostrado no calendário público a seguir à descrição.
+  consideracaoEsj?: string;
 };
 
 export type CalendarioAcademicoAnual = {
@@ -40,6 +43,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "1 de Janeiro de 2026",
       descricao: "Feriado Nacional.",
       destaque: false,
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo encerra no dia 1 de Janeiro, assinalando a passagem de ano. A actividade lectiva mantém-se suspensa até ao início do período de pré-inscrições, a 5 de Janeiro.",
     },
     {
       id: "ev-2",
@@ -50,6 +55,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "5 a 25 de Janeiro de 2026",
       descricao: "Receção de candidaturas e boletins de inscrição para os novos estudantes.",
       destaque: true,
+      consideracaoEsj:
+        "Durante este período, a Secretaria Académica está disponível para receber candidaturas e boletins de inscrição. Não há aulas em curso, por corresponder ao período que antecede o início do ano lectivo.",
     },
     {
       id: "ev-3",
@@ -58,6 +65,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-02-03",
       dataRepresentativa: "3 de Fevereiro de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia dos Heróis Moçambicanos. As aulas retomam no dia 4 de Fevereiro.",
     },
     {
       id: "ev-4",
@@ -68,6 +77,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "9 a 13 de Fevereiro de 2026",
       descricao: "Exames presenciais de Português e História no campus da ESJ.",
       destaque: true,
+      consideracaoEsj:
+        "Este período é dedicado às provas de admissão dos novos candidatos. Não há aulas para estudantes já matriculados, uma vez que o ano lectivo ainda não teve início.",
     },
     {
       id: "ev-5",
@@ -77,6 +88,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "2 de Março de 2026",
       descricao: "Início das aulas para os regimes Diurno e Pós-Laboral.",
       destaque: true,
+      consideracaoEsj:
+        "Arrancam as aulas do 1º Semestre para os regimes Diurno e Pós-Laboral, segundo o horário definido por curso e ano.",
     },
     {
       id: "ev-6",
@@ -85,6 +98,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-04-07",
       dataRepresentativa: "7 de Abril de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo suspende as aulas neste feriado nacional. A actividade lectiva retoma no dia seguinte, 8 de Abril.",
     },
     {
       id: "ev-7",
@@ -93,6 +108,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-05-01",
       dataRepresentativa: "1 de Maio de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "Não há aulas na ESJ neste feriado nacional. As actividades lectivas retomam no dia 2 de Maio.",
     },
     {
       id: "ev-8",
@@ -103,6 +120,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "18 a 22 de Maio de 2026",
       descricao: "Palestras, workshops, amostra de curtas e exposição de trabalhos dos estudantes.",
       destaque: true,
+      consideracaoEsj:
+        "Durante esta semana, o horário normal de aulas dá lugar à programação do festival — palestras, workshops e exposições abertos a toda a comunidade académica. As aulas regulares retomam na semana seguinte.",
     },
     {
       id: "ev-9",
@@ -111,6 +130,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-06-25",
       dataRepresentativa: "25 de Junho de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo encerra neste feriado nacional. As aulas retomam no dia 26 de Junho.",
     },
     {
       id: "ev-10",
@@ -121,6 +142,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "6 a 17 de Julho de 2026",
       descricao: "Avaliação final das disciplinas do 1º Semestre.",
       destaque: true,
+      consideracaoEsj:
+        "Período de avaliação final das disciplinas do 1º Semestre. Não há aulas regulares — o horário é substituído pelo calendário de exames de cada curso.",
     },
     {
       id: "ev-11",
@@ -131,6 +154,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "20 de Julho a 7 de Agosto de 2026",
       descricao: "Férias intercalares para estudantes e corpo docente.",
       destaque: true,
+      consideracaoEsj:
+        "Período de férias intercalares para estudantes e corpo docente. As aulas do 2º Semestre têm início a 10 de Agosto.",
     },
     {
       id: "ev-12",
@@ -139,6 +164,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-08-10",
       dataRepresentativa: "10 de Agosto de 2026",
       descricao: "Reinicio das atividades académicas do 2º semestre.",
+      consideracaoEsj:
+        "Reinício das actividades lectivas do 2º Semestre, segundo o horário definido por curso e ano.",
     },
     {
       id: "ev-13",
@@ -147,6 +174,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-09-07",
       dataRepresentativa: "7 de Setembro de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo suspende as aulas neste feriado nacional. A actividade lectiva retoma no dia seguinte, 8 de Setembro.",
     },
     {
       id: "ev-14",
@@ -155,6 +184,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-09-25",
       dataRepresentativa: "25 de Setembro de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "Não há aulas na ESJ neste feriado nacional. As actividades lectivas retomam no dia 26 de Setembro.",
     },
     {
       id: "ev-15",
@@ -163,6 +194,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataInicio: "2026-10-04",
       dataRepresentativa: "4 de Outubro de 2026",
       descricao: "Feriado Nacional.",
+      consideracaoEsj:
+        "A Escola Superior de Jornalismo encerra neste feriado nacional. As aulas retomam no dia 5 de Outubro.",
     },
     {
       id: "ev-16",
@@ -172,6 +205,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "6 de Novembro de 2026",
       descricao: "Outorga de diplomas de Licenciatura aos finalistas da ESJ.",
       destaque: true,
+      consideracaoEsj:
+        "Dia dedicado à cerimónia de outorga de diplomas aos finalistas. As aulas dos restantes cursos e anos decorrem normalmente, salvo alterações pontuais de horário anunciadas pela Secretaria Académica.",
     },
     {
       id: "ev-17",
@@ -182,6 +217,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "23 de Novembro a 4 de Dezembro de 2026",
       descricao: "Avaliação final das cadeiras do 2º semestre.",
       destaque: true,
+      consideracaoEsj:
+        "Período de avaliação final das disciplinas do 2º Semestre. Não há aulas regulares — o horário é substituído pelo calendário de exames de cada curso.",
     },
     {
       id: "ev-18",
@@ -192,6 +229,8 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       dataRepresentativa: "18 de Dezembro de 2026 a 15 de Janeiro de 2027",
       descricao: "Fim do ano académico 2026.",
       destaque: true,
+      consideracaoEsj:
+        "Encerramento do ano lectivo 2026. A actividade académica é retomada com o período de pré-inscrições do ano lectivo seguinte.",
     },
   ],
 };
@@ -288,4 +327,18 @@ export function diasPartilhamEvento(
 export function formatarDataPt(iso: string) {
   const d = parseISO(iso);
   return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+const DIAS_SEMANA_EXTENSO = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+export function diaDaSemanaPt(iso: string) {
+  return DIAS_SEMANA_EXTENSO[parseISO(iso).getDay()];
 }
