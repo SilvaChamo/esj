@@ -28,6 +28,8 @@ const CATEGORIAS: { value: CategoriaEventoCalendario; label: string }[] = [
   { value: "academico", label: "Actividade Académica" },
 ];
 
+const CATEGORIA_OUTRA = "__outra__";
+
 function formatarDataPt(iso: string) {
   const d = parseISO(iso);
   return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
@@ -52,7 +54,8 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
   const [diaModal, setDiaModal] = useState<string | null>(null);
   const [eventoEditId, setEventoEditId] = useState<string | null>(null);
   const [formTitulo, setFormTitulo] = useState("");
-  const [formCategoria, setFormCategoria] = useState<CategoriaEventoCalendario>("academico");
+  const [formCategoria, setFormCategoria] = useState<string>("academico");
+  const [formCategoriaOutra, setFormCategoriaOutra] = useState("");
   const [formDataFim, setFormDataFim] = useState("");
   const [formDataRepresentativa, setFormDataRepresentativa] = useState("");
   const [formDescricao, setFormDescricao] = useState("");
@@ -105,6 +108,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setEventoEditId(null);
     setFormTitulo("");
     setFormCategoria("academico");
+    setFormCategoriaOutra("");
     setFormDataFim("");
     setFormDataRepresentativa(formatarDataPt(key));
     setFormDescricao("");
@@ -114,7 +118,9 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setDiaModal(ev.dataInicio);
     setEventoEditId(ev.id);
     setFormTitulo(ev.titulo);
-    setFormCategoria(ev.categoria);
+    const conhecida = CATEGORIAS.some((c) => c.value === ev.categoria);
+    setFormCategoria(conhecida ? ev.categoria : CATEGORIA_OUTRA);
+    setFormCategoriaOutra(conhecida ? "" : ev.categoria);
     setFormDataFim(ev.dataFim ?? "");
     setFormDataRepresentativa(ev.dataRepresentativa);
     setFormDescricao(ev.descricao);
@@ -133,14 +139,19 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
 
   function guardarEvento(e: FormEvent) {
     e.preventDefault();
+    const categoria = formCategoria === CATEGORIA_OUTRA ? formCategoriaOutra.trim() : formCategoria;
     if (!formTitulo.trim() || !diaModal) {
       onAction("Indique o título da data comemorativa.");
+      return;
+    }
+    if (!categoria) {
+      onAction("Escreva o nome da categoria.");
       return;
     }
     const eventoBase: EventoCalendarioDetalhado = {
       id: eventoEditId ?? `ev-${Date.now()}`,
       titulo: formTitulo.trim(),
-      categoria: formCategoria,
+      categoria,
       dataInicio: diaModal,
       dataFim: formDataFim || undefined,
       dataRepresentativa: formDataRepresentativa.trim() || formatarDataPt(diaModal),
@@ -489,7 +500,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                   <span className="block text-sm font-bold text-navy-900 mb-1.5">Categoria *</span>
                   <select
                     value={formCategoria}
-                    onChange={(e) => setFormCategoria(e.target.value as CategoriaEventoCalendario)}
+                    onChange={(e) => setFormCategoria(e.target.value)}
                     className="esj-field"
                   >
                     {CATEGORIAS.map((c) => (
@@ -497,7 +508,17 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                         {c.label}
                       </option>
                     ))}
+                    <option value={CATEGORIA_OUTRA}>Outra categoria…</option>
                   </select>
+                  {formCategoria === CATEGORIA_OUTRA && (
+                    <input
+                      value={formCategoriaOutra}
+                      onChange={(e) => setFormCategoriaOutra(e.target.value)}
+                      placeholder="Nome da categoria"
+                      required
+                      className="esj-field mt-2"
+                    />
+                  )}
                 </label>
                 <label className="block">
                   <span className="block text-sm font-bold text-navy-900 mb-1.5">Termina em (opcional)</span>
@@ -527,7 +548,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                 <textarea
                   value={formDescricao}
                   onChange={(e) => setFormDescricao(e.target.value)}
-                  className="esj-field-area"
+                  className="box-border w-full max-w-full min-w-0 min-h-[6.5rem] h-auto border border-navy-100 bg-white px-3 py-3 text-sm font-medium text-navy-900 leading-relaxed outline-none transition-colors focus:border-sky resize-y"
                 />
               </label>
 

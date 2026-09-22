@@ -4,7 +4,10 @@ export type CategoriaEventoCalendario =
   | "festival"
   | "ferias"
   | "inscricao"
-  | "academico";
+  | "academico"
+  // Além das categorias fixas acima, a gestão permite escrever uma categoria
+  // livre; guarda-se tal e qual e é apresentada com uma cor neutra.
+  | (string & {});
 
 export type EventoCalendarioDetalhado = {
   id: string;
@@ -227,6 +230,8 @@ export function labelCategoriaCalendario(cat: CategoriaEventoCalendario): {
       return { label: "Inscrições & Matrículas", color: "text-sky", bg: "bg-sky/10 border-sky/30" };
     case "academico":
       return { label: "Actividade Académica", color: "text-navy-900", bg: "bg-navy-100 border-navy-300" };
+    default:
+      return { label: cat, color: "text-navy-900/70", bg: "bg-navy-100/60 border-navy-200" };
   }
 }
 
