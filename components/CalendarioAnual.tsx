@@ -123,12 +123,14 @@ export default function CalendarioAnual() {
   return (
     <div className="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
       <div className="lg:col-span-2 bg-white border border-navy-100 p-6">
-        <div className="flex items-baseline justify-between mb-6">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-navy-900">{ano}</h2>
+        <div className="flex items-center justify-between -mx-6 -mt-6 mb-6 px-6 py-4 bg-cream border-b border-navy-100">
+          <h2 className="font-serif text-xl md:text-2xl font-bold text-navy-900">
+            Calendário Académico {ano}
+          </h2>
           <button
             type="button"
             onClick={() => selecionarMes(hoje.getFullYear() === ano ? hoje.getMonth() : 0)}
-            className="text-xs font-semibold text-navy-900/60 hover:text-crimson hover:border-crimson/40 border border-navy-200 rounded px-3 py-1.5 transition-colors"
+            className="text-xs font-semibold text-navy-900/60 hover:text-crimson hover:border-crimson/40 border border-navy-200 rounded px-3 py-1.5 transition-colors bg-white shrink-0"
           >
             Hoje
           </button>
@@ -159,7 +161,7 @@ export default function CalendarioAnual() {
                 >
                   {nome}
                 </p>
-                <div className="grid grid-cols-7 gap-y-1">
+                <div className="grid grid-cols-7 gap-y-2">
                   {DIAS_SEMANA.map((d, i) => (
                     <span key={i} className="text-center text-[9px] text-navy-900/40 pb-1">
                       {d}
@@ -191,7 +193,7 @@ export default function CalendarioAnual() {
                               ? "bg-crimson text-white font-bold"
                               : !noMes
                                 ? "text-navy-900/20"
-                                : fimDeSemana
+                                : fimDeSemana && !temEvento
                                   ? "text-navy-900/45"
                                   : "text-navy-900 font-semibold"
                           }`}
@@ -228,10 +230,10 @@ export default function CalendarioAnual() {
 
       <aside className="mt-10 lg:mt-0 lg:sticky lg:top-24 bg-white border border-navy-100 p-6">
         {/* Calendário mensal do mês clicado */}
-        <p className="font-serif font-bold text-navy-900 text-base">
+        <p className="-mx-6 -mt-6 mb-4 px-6 py-4 bg-cream border-b border-navy-100 font-serif font-bold text-navy-900 text-base">
           {MESES[mesSelecionado]} {ano}
         </p>
-        <div className="mt-3 grid grid-cols-7 text-center">
+        <div className="grid grid-cols-7 text-center">
           {DIAS_SEMANA.map((d, i) => (
             <span key={i} className="text-[10px] font-bold text-navy-900/40 uppercase tracking-wide pb-1.5">
               {d}
