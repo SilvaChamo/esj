@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function EstudantesPage() {
-  return <EstudanteDashboard initialSection="materiais" />;
+  return <EstudanteDashboard initialSection="conta" />;
 }

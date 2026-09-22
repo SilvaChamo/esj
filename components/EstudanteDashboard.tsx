@@ -76,7 +76,7 @@ type Section =
   | "doc-requerimentos";
 
 export default function EstudanteDashboard({
-  initialSection = "materiais",
+  initialSection = "conta",
 }: {
   initialSection?: Section;
 }) {
