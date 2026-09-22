@@ -366,7 +366,7 @@ export default function Academics() {
                           </span>
                         </span>
                         <div
-                          className={`relative overflow-hidden bg-cream p-6 flex gap-4 ${
+                          className={`relative overflow-hidden bg-cream p-6 flex gap-4 sm:row-start-1 ${
                             isRight ? "sm:col-start-2" : "sm:col-start-1"
                           }`}
                         >
@@ -391,13 +391,13 @@ export default function Academics() {
                           </div>
                         </div>
                         <div
-                          className={`mt-4 sm:mt-0 flex ${
+                          className={`mt-4 sm:mt-0 flex sm:row-start-1 ${
                             isRight ? "sm:col-start-1 sm:justify-end" : "sm:col-start-2 sm:justify-start"
                           }`}
                         >
                           <Link
                             href={`/calendario?dia=${d.dataCalendario}`}
-                            className="inline-flex items-center gap-2 bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                            className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3"
                           >
                             <CalendarDays size={14} />
                             Ver no calendário
