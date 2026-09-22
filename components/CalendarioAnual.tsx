@@ -121,10 +121,10 @@ export default function CalendarioAnual() {
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
+    <div className="lg:grid lg:grid-cols-3 lg:gap-5 lg:items-start">
       <div className="lg:col-span-2 bg-white border border-navy-100 p-6">
-        <div className="flex items-center justify-between -mx-6 -mt-6 mb-6 px-6 py-4 bg-cream border-b border-navy-100">
-          <h2 className="font-serif text-xl md:text-2xl font-bold text-navy-900">
+        <div className="flex items-center justify-between -mx-6 -mt-6 mb-6 px-6 h-16 bg-navy-50 border-b border-navy-100">
+          <h2 className="font-serif text-base font-bold text-navy-900">
             Calendário Académico {ano}
           </h2>
           <button
@@ -163,7 +163,7 @@ export default function CalendarioAnual() {
                 </p>
                 <div className="grid grid-cols-7 gap-y-2">
                   {DIAS_SEMANA.map((d, i) => (
-                    <span key={i} className="text-center text-[9px] text-navy-900/40 pb-1">
+                    <span key={i} className="text-left text-[9px] text-navy-900/40 pb-1">
                       {d}
                     </span>
                   ))}
@@ -186,7 +186,7 @@ export default function CalendarioAnual() {
                       !!diaSeguinte &&
                       diasPartilhamEvento(eventosPorDia, key, chaveDia(diaSeguinte));
                     return (
-                      <div key={key} className="flex flex-col items-center gap-0.5">
+                      <div key={key} className="flex flex-col items-start gap-0.5">
                         <span
                           className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none ${
                             ehHoje
@@ -200,21 +200,21 @@ export default function CalendarioAnual() {
                         >
                           {dia.getDate()}
                         </span>
-                        <div className="relative flex h-1 w-full items-center justify-center">
+                        <div className="relative h-1 w-full">
                           {ligaEsquerda && (
                             <span
-                              className="absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                              className="absolute left-1 top-1/2 h-px w-1.5 -translate-y-1/2 bg-crimson/35"
                               aria-hidden
                             />
                           )}
                           {ligaDireita && (
                             <span
-                              className="absolute right-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                              className="absolute left-2.5 right-1 top-1/2 h-px -translate-y-1/2 bg-crimson/35"
                               aria-hidden
                             />
                           )}
                           <span
-                            className={`relative z-10 h-1 w-1 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
+                            className={`absolute left-2.5 top-1/2 z-10 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full ${temEvento ? "bg-crimson/60" : "bg-transparent"}`}
                             aria-hidden
                           />
                         </div>
@@ -230,9 +230,10 @@ export default function CalendarioAnual() {
 
       <aside className="mt-10 lg:mt-0 lg:sticky lg:top-24 bg-white border border-navy-100 p-6">
         {/* Calendário mensal do mês clicado */}
-        <p className="-mx-6 -mt-6 mb-4 px-6 py-4 bg-cream border-b border-navy-100 font-serif font-bold text-navy-900 text-base">
+        <p className="flex items-center -mx-6 -mt-6 mb-4 px-6 h-16 bg-navy-50 border-b border-navy-100 font-serif font-bold text-navy-900 text-base">
           {MESES[mesSelecionado]} {ano}
         </p>
+        <div className="rounded-xl border border-navy-100 p-3">
         <div className="grid grid-cols-7 text-center">
           {DIAS_SEMANA.map((d, i) => (
             <span key={i} className="text-[10px] font-bold text-navy-900/40 uppercase tracking-wide pb-1.5">
@@ -294,24 +295,25 @@ export default function CalendarioAnual() {
                 <div className="relative flex h-1.5 w-full items-center justify-center">
                   {ligaEsquerda && (
                     <span
-                      className="absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                      className="absolute left-[15%] top-1/2 h-px w-[35%] -translate-y-1/2 bg-crimson/35"
                       aria-hidden
                     />
                   )}
                   {ligaDireita && (
                     <span
-                      className="absolute right-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                      className="absolute left-1/2 top-1/2 h-px w-[35%] -translate-y-1/2 bg-crimson/35"
                       aria-hidden
                     />
                   )}
                   <span
-                    className={`relative z-10 h-1.5 w-1.5 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
+                    className={`relative z-10 h-1.5 w-1.5 rounded-full ${temEvento ? "bg-crimson/60" : "bg-transparent"}`}
                     aria-hidden
                   />
                 </div>
               </div>
             );
           })}
+        </div>
         </div>
 
         <div className="mt-6 pt-5 border-t border-navy-100">
