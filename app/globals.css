@@ -142,6 +142,36 @@ body {
   }
 }
 
+/* Mega menu: painel desliza de cima para baixo */
+@keyframes esj-mega-deslizar {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -1rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes esj-mega-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.esj-mega-painel {
+  animation: esj-mega-deslizar 0.32s ease-out both;
+  transform-origin: top center;
+}
+
+.esj-mega-overlay {
+  animation: esj-mega-fade 0.28s ease-out both;
+}
+
 /* Álbum: cantos L — movimento suave fora → dentro no hover */
 @keyframes album-canto-tl {
   0%,
@@ -228,7 +258,9 @@ body {
   .esj-btn-move,
   .esj-btn-move:hover,
   .esj-card-move,
-  .esj-card-move:hover {
+  .esj-card-move:hover,
+  .esj-mega-painel,
+  .esj-mega-overlay {
     transform: none;
     animation: none;
     transition: none;

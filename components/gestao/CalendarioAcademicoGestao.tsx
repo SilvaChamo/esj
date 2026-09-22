@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
+import ImageSelector from "@/components/gestao/ImageSelector";
 import {
   CALENDARIO_2026_DEFAULT,
   readCalendarioDetalhado,
@@ -56,6 +57,8 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
   const [formDataRepresentativa, setFormDataRepresentativa] = useState("");
   const [formDescricao, setFormDescricao] = useState("");
   const [formConsideracaoEsj, setFormConsideracaoEsj] = useState("");
+  const [formImagemFundo, setFormImagemFundo] = useState("");
+  const [galeriaAberta, setGaleriaAberta] = useState(false);
 
   const eventosPorDia = useMemo(() => {
     const mapa = new Map<string, EventoCalendarioDetalhado[]>();
@@ -110,6 +113,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setFormDataRepresentativa(formatarDataPt(key));
     setFormDescricao("");
     setFormConsideracaoEsj("");
+    setFormImagemFundo("");
   }
 
   function iniciarEdicao(ev: EventoCalendarioDetalhado) {
@@ -123,6 +127,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
     setFormDataRepresentativa(ev.dataRepresentativa);
     setFormDescricao(ev.descricao);
     setFormConsideracaoEsj(ev.consideracaoEsj ?? "");
+    setFormImagemFundo(ev.imagemFundo ?? "");
   }
 
   function abrirDia(key: string) {
@@ -156,6 +161,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
       dataRepresentativa: formDataRepresentativa.trim() || formatarDataPt(diaModal),
       descricao: formDescricao.trim(),
       consideracaoEsj: formConsideracaoEsj.trim() || undefined,
+      imagemFundo: formImagemFundo.trim() || undefined,
       destaque: true,
     };
     const eventos = eventoEditId
@@ -428,17 +434,20 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
 
       {diaModal && (
         <div className="fixed inset-0 z-[180] bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white border border-navy-100 p-6 sm:p-8">
-            <div className="flex items-center justify-between gap-4 mb-1">
-              <h2 className="font-serif text-xl font-bold text-navy-900">
-                {eventoEditId ? "Editar data comemorativa" : "Nova data comemorativa"}
-              </h2>
-              <button type="button" onClick={fecharModal} className="text-navy-900/50 hover:text-navy-900">
-                <X size={18} />
-              </button>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-navy-100">
+            <div className="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-navy-100/70">
+              <div className="flex items-center justify-between gap-4 mb-1">
+                <h2 className="font-serif text-xl font-bold text-navy-900">
+                  {eventoEditId ? "Editar data comemorativa" : "Nova data comemorativa"}
+                </h2>
+                <button type="button" onClick={fecharModal} className="text-navy-900/50 hover:text-navy-900">
+                  <X size={18} />
+                </button>
+              </div>
+              <p className="text-xs text-navy-900/55">{formatarDataPt(diaModal)}</p>
             </div>
-            <p className="text-xs text-navy-900/55 mb-6">{formatarDataPt(diaModal)}</p>
 
+            <div className="px-6 sm:px-8 py-6 sm:py-8">
             {eventosDoDiaModal.length > 0 && (
               <div className="mb-6 space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-navy-900/50">
@@ -561,6 +570,51 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                 />
               </label>
 
+              <div className="block">
+                <span className="block text-sm font-bold text-navy-900 mb-1.5">Imagem de fundo do painel</span>
+                <span className="block text-xs text-navy-900/55 mb-1.5">
+                  Foto alusiva à comemoração — aparece suave atrás do mini calendário e da descrição.
+                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  {formImagemFundo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={formImagemFundo}
+                      alt=""
+                      className="h-16 w-24 object-cover border border-navy-100"
+                    />
+                  ) : (
+                    <div className="h-16 w-24 border border-dashed border-navy-100 bg-cream flex items-center justify-center text-[10px] text-navy-900/40">
+                      Sem imagem
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setGaleriaAberta(true)}
+                      className="text-xs font-bold text-sky hover:underline text-left"
+                    >
+                      Escolher imagem…
+                    </button>
+                    {formImagemFundo && (
+                      <button
+                        type="button"
+                        onClick={() => setFormImagemFundo("")}
+                        className="text-xs font-semibold text-crimson hover:underline text-left"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  value={formImagemFundo}
+                  onChange={(e) => setFormImagemFundo(e.target.value)}
+                  placeholder="URL da imagem (opcional)"
+                  className="esj-field mt-2"
+                />
+              </div>
+
               <div className="flex items-center gap-4 pt-1">
                 <button
                   type="submit"
@@ -580,8 +634,21 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                 )}
               </div>
             </form>
+            </div>
           </div>
         </div>
+      )}
+
+      {galeriaAberta && (
+        <ImageSelector
+          titulo="Imagem de fundo da data"
+          initialTab="galeria"
+          onClose={() => setGaleriaAberta(false)}
+          onSelect={(url) => {
+            setFormImagemFundo(url);
+            setGaleriaAberta(false);
+          }}
+        />
       )}
     </div>
   );

@@ -151,7 +151,7 @@ const menu: MenuItem[] = [
       { label: "Conselho Científico-Pedagógico", href: "/sobre#conselho-cientifico-pedagogico" },
     ],
   },
-  { label: "CONTACTO", href: "/contacto" },
+  { label: "CONTACTO", href: "/#contacto" },
 ];
 
 export default function Header() {
@@ -445,12 +445,12 @@ export default function Header() {
               <div
                 aria-hidden
                 onClick={() => setOpenSub(null)}
-                className="fixed inset-x-0 top-[124px] bottom-0 bg-navy-900/40 z-40"
+                className="esj-mega-overlay fixed inset-x-0 top-[124px] bottom-0 bg-navy-900/40 z-40"
               />
               <div
                 onMouseEnter={() => setOpenSub(megaItem.label)}
                 onMouseLeave={() => setOpenSub(null)}
-                className="absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
+                className="esj-mega-painel absolute left-0 right-0 top-full bg-white shadow-lg border-t-2 border-sky z-50"
               >
                 <div className="mx-auto max-w-7xl px-4 py-6">
                   {megaItem.carousel ? (

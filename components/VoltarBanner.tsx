@@ -88,7 +88,7 @@ function destinoHierarquico(pathname: string) {
     return { href: "/#ensino", label: voltar("ao", "Ensino") };
   }
 
-  if (p === "/videos" || p === "/contacto" || p === "/busca") {
+  if (p === "/videos" || p === "/busca") {
     return { href: "/", label: voltar("à", "Home") };
   }
 

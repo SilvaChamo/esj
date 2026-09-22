@@ -82,7 +82,9 @@ export default function BannerInteriorRodape({
         >
           <div
             className={`min-w-0 flex-1 ${
-              compact && !imagem ? "" : "flex flex-col justify-center min-h-[212px]"
+              compact && !imagem
+                ? ""
+                : `flex flex-col min-h-[212px] ${actions ? "justify-end" : "justify-center"}`
             }`}
           >
             {children}

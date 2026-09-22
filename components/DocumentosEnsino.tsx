@@ -118,7 +118,7 @@ export default function DocumentosEnsino() {
 
             <p className="mt-6 text-sm text-navy-900/55">
               Precisa de ajuda?{" "}
-              <Link href="/contacto" className="text-sky hover:underline">
+              <Link href="/#contacto" className="text-sky hover:underline">
                 Contacte a Secretaria Académica
               </Link>
               .

@@ -648,102 +648,108 @@ export default function Cadeiras() {
                   </div>
                 );
               })()
-            : catalogo
-                .filter((grupo) => cursoFiltro === "todos" || grupo.curso === cursoFiltro)
-                .map((grupo) => {
-                  const cadeiras = grupo.cadeiras
-                    .filter((c) => !q || c.nome.toLowerCase().includes(q) || c.codigo.toLowerCase().includes(q))
-                    .filter((c) => anoFiltro === "todos" || String(c.ano) === anoFiltro)
-                    .filter((c) => semestreFiltro === "todos" || String(c.semestre) === semestreFiltro)
-                    .sort((a, b) => a.ano - b.ano || a.semestre - b.semestre || a.nome.localeCompare(b.nome, "pt"));
-                  if (cadeiras.length === 0) return null;
-                  const todasSelecionadasGrupo = cadeiras.every((c) =>
-                    selecionadas.has(`${grupo.curso}::${c.codigo}`)
-                  );
-                  return (
-                    <div key={grupo.curso}>
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-sky mb-2">
-                        {grupo.cursoNome}{" "}
-                        <span className="text-navy-900/40 normal-case font-semibold">({cadeiras.length})</span>
-                      </p>
-                      <div className="border border-navy-100">
-                        <div className="hidden sm:grid grid-cols-[24px_28px_80px_1fr_60px_92px_76px] gap-3 px-3 py-1.5 bg-cream/50 border-b border-navy-100 text-[10px] font-bold uppercase tracking-wider text-navy-900/45">
-                          <span className="flex items-center justify-center">
+            : (() => {
+                const grupos = catalogo
+                  .filter((grupo) => cursoFiltro === "todos" || grupo.curso === cursoFiltro)
+                  .map((grupo) => {
+                    const cadeiras = grupo.cadeiras
+                      .filter((c) => !q || c.nome.toLowerCase().includes(q) || c.codigo.toLowerCase().includes(q))
+                      .filter((c) => anoFiltro === "todos" || String(c.ano) === anoFiltro)
+                      .filter((c) => semestreFiltro === "todos" || String(c.semestre) === semestreFiltro)
+                      .sort((a, b) => a.ano - b.ano || a.semestre - b.semestre || a.nome.localeCompare(b.nome, "pt"));
+                    return { grupo, cadeiras };
+                  })
+                  .filter((g) => g.cadeiras.length > 0);
+
+                if (grupos.length === 0) {
+                  return <p className="text-xs text-navy-900/45 italic">Sem cadeiras neste filtro.</p>;
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+                    {grupos.map(({ grupo, cadeiras }) => {
+                      const todasSelecionadasGrupo = cadeiras.every((c) =>
+                        selecionadas.has(`${grupo.curso}::${c.codigo}`)
+                      );
+                      return (
+                        <div key={grupo.curso} className="border border-navy-100 min-w-0">
+                          <div className="flex items-center gap-2 px-3 py-2.5 bg-cream/50 border-b border-navy-100">
                             <input
                               type="checkbox"
                               checked={todasSelecionadasGrupo}
                               onChange={() =>
                                 toggleTodasNaLista(cadeiras.map((c) => ({ curso: grupo.curso, codigo: c.codigo })))
                               }
-                              className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer"
+                              className="w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0"
+                              title="Seleccionar todas deste curso"
                             />
-                          </span>
-                          <span>Nº</span>
-                          <span className="border-r border-navy-100/60 pr-3">Código</span>
-                          <span>Nome</span>
-                          <span>Ano</span>
-                          <span>Semestre</span>
-                          <span className="text-right">Gestão</span>
-                        </div>
-                        <div className="divide-y divide-navy-100">
-                          {cadeiras.map((cad, idx) => {
-                            const extra = extrasPorChave.get(`${grupo.curso}::${cad.codigo}`);
-                            const chave = `${grupo.curso}::${cad.codigo}`;
-                            const selecionada = selecionadas.has(chave);
-                            return (
-                              <div
-                                key={cad.id}
-                                className={`flex items-start gap-3 px-3 py-2.5 sm:grid sm:grid-cols-[24px_28px_80px_1fr_60px_92px_76px] sm:items-center sm:py-2 text-xs ${
-                                  selecionada ? "bg-sky/5" : idx % 2 === 1 ? "bg-slate-100/70" : ""
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selecionada}
-                                  onChange={() => toggleSelecionada(grupo.curso, cad.codigo)}
-                                  className="mt-0.5 sm:mt-0 w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0 sm:justify-self-center"
-                                />
-                                <span className="text-navy-900/40 font-mono text-[11px] shrink-0 sm:text-center">
-                                  {idx + 1}
-                                </span>
-                                <div className="min-w-0 flex-1 sm:contents">
-                                  <span className="font-mono text-navy-900/50 block sm:inline sm:border-r sm:border-navy-100/60 sm:pr-2">
-                                    {cad.codigo}
-                                  </span>
-                                  <span className="text-navy-900 block sm:inline truncate">{cad.nome}</span>
-                                  <span className="text-navy-900/40 block sm:inline">{cad.ano}º ano</span>
-                                  <span className="text-navy-900/40 block sm:inline">{cad.semestre}º semestre</span>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-sky leading-snug min-w-0">
+                              {grupo.cursoNome}{" "}
+                              <span className="text-navy-900/40 normal-case font-semibold">({cadeiras.length})</span>
+                            </p>
+                          </div>
+                          <div className="divide-y divide-navy-100">
+                            {cadeiras.map((cad, idx) => {
+                              const extra = extrasPorChave.get(`${grupo.curso}::${cad.codigo}`);
+                              const chave = `${grupo.curso}::${cad.codigo}`;
+                              const selecionada = selecionadas.has(chave);
+                              return (
+                                <div
+                                  key={cad.id}
+                                  className={`px-3 py-2 text-xs ${
+                                    selecionada ? "bg-sky/5" : idx % 2 === 1 ? "bg-slate-100/70" : ""
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selecionada}
+                                      onChange={() => toggleSelecionada(grupo.curso, cad.codigo)}
+                                      className="mt-0.5 w-3 h-3 rounded-[2px] border-navy-300 accent-sky cursor-pointer shrink-0"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-medium text-navy-900 leading-snug">{cad.nome}</p>
+                                      <p className="mt-0.5 text-[10px] text-navy-900/45 font-mono">
+                                        {cad.codigo} · {cad.ano}º ano · {cad.semestre}º sem.
+                                      </p>
+                                    </div>
+                                    <span className="flex items-center gap-0.5 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          extra
+                                            ? abrirModalEdicaoExtra(extra)
+                                            : abrirModalEdicaoBase(grupo.curso, cad)
+                                        }
+                                        title="Editar cadeira"
+                                        aria-label={`Editar ${cad.nome}`}
+                                        className="p-1 text-navy-900/40 hover:text-sky transition-colors"
+                                      >
+                                        <Pencil size={13} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void (extra ? eliminarExtra(extra) : eliminarBase(grupo.curso, cad))
+                                        }
+                                        title={extra ? "Eliminar cadeira" : "Esconder cadeira"}
+                                        aria-label={`${extra ? "Eliminar" : "Esconder"} ${cad.nome}`}
+                                        className="p-1 text-navy-900/40 hover:text-crimson transition-colors"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </span>
+                                  </div>
                                 </div>
-                                <span className="flex items-center justify-end gap-1 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      extra ? abrirModalEdicaoExtra(extra) : abrirModalEdicaoBase(grupo.curso, cad)
-                                    }
-                                    title="Editar cadeira"
-                                    aria-label={`Editar ${cad.nome}`}
-                                    className="shrink-0 p-1.5 text-navy-900/40 hover:text-sky transition-colors"
-                                  >
-                                    <Pencil size={13} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void (extra ? eliminarExtra(extra) : eliminarBase(grupo.curso, cad))}
-                                    title={extra ? "Eliminar cadeira" : "Esconder cadeira"}
-                                    aria-label={`${extra ? "Eliminar" : "Esconder"} ${cad.nome}`}
-                                    className="shrink-0 p-1.5 text-navy-900/40 hover:text-crimson transition-colors"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </span>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
         </div>
       </div>
     </div>

@@ -21,6 +21,8 @@ export type EventoCalendarioDetalhado = {
   // Como a ESJ lida com esta data em concreto (aulas suspensas, quando retomam, etc.),
   // mostrado no calendário público a seguir à descrição.
   consideracaoEsj?: string;
+  // Imagem de fundo do painel lateral (comemorações / atmosfera). Editável no painel.
+  imagemFundo?: string;
 };
 
 export type CalendarioAcademicoAnual = {
@@ -29,7 +31,7 @@ export type CalendarioAcademicoAnual = {
   eventos: EventoCalendarioDetalhado[];
 };
 
-export const CALENDARIO_DETALHADO_KEY = "esj-calendario-detalhado-2026";
+export const CALENDARIO_DETALHADO_KEY = "esj-calendario-detalhado-2026-v2";
 
 export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
   anoLectivo: "2026",
@@ -41,10 +43,12 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-01-01",
       dataRepresentativa: "1 de Janeiro de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Celebra-se a passagem de ano e o Dia de Fraternidade Universal, assinalando o início do calendário civil.",
       destaque: false,
       consideracaoEsj:
         "A Escola Superior de Jornalismo encerra no dia 1 de Janeiro, assinalando a passagem de ano. A actividade lectiva mantém-se suspensa até ao início do período de pré-inscrições, a 5 de Janeiro.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-2",
@@ -57,6 +61,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Durante este período, a Secretaria Académica está disponível para receber candidaturas e boletins de inscrição. Não há aulas em curso, por corresponder ao período que antecede o início do ano lectivo.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-3",
@@ -64,9 +69,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-02-03",
       dataRepresentativa: "3 de Fevereiro de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Homenageia os heróis da luta de libertação nacional, em memória do assassinato de Eduardo Mondlane a 3 de Fevereiro de 1969.",
       consideracaoEsj:
         "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia dos Heróis Moçambicanos. As aulas retomam no dia 4 de Fevereiro.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-4",
@@ -79,6 +86,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Este período é dedicado às provas de admissão dos novos candidatos. Não há aulas para estudantes já matriculados, uma vez que o ano lectivo ainda não teve início.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-5",
@@ -90,6 +98,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Arrancam as aulas do 1º Semestre para os regimes Diurno e Pós-Laboral, segundo o horário definido por curso e ano.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-6",
@@ -97,9 +106,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-04-07",
       dataRepresentativa: "7 de Abril de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Assinala o papel das mulheres na história de Moçambique, em memória de Josina Machel, falecida a 7 de Abril de 1971.",
       consideracaoEsj:
-        "A Escola Superior de Jornalismo suspende as aulas neste feriado nacional. A actividade lectiva retoma no dia seguinte, 8 de Abril.",
+        "A Escola Superior de Jornalismo suspende as aulas neste dia. A actividade lectiva retoma no dia seguinte, 8 de Abril.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-7",
@@ -107,9 +118,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-05-01",
       dataRepresentativa: "1 de Maio de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Comemora-se a 1 de Maio o Dia Internacional do Trabalhador, em solidariedade com os direitos e as conquistas laborais.",
       consideracaoEsj:
-        "Não há aulas na ESJ neste feriado nacional. As actividades lectivas retomam no dia 2 de Maio.",
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia Internacional do Trabalhador. As aulas retomam no dia 2 de Maio.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-8",
@@ -122,6 +135,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Durante esta semana, o horário normal de aulas dá lugar à programação do festival — palestras, workshops e exposições abertos a toda a comunidade académica. As aulas regulares retomam na semana seguinte.",
+      imagemFundo: "/Graduacao-ESJ.jpg",
     },
     {
       id: "ev-9",
@@ -129,9 +143,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-06-25",
       dataRepresentativa: "25 de Junho de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Celebra a proclamação da Independência de Moçambique, a 25 de Junho de 1975.",
       consideracaoEsj:
-        "A Escola Superior de Jornalismo encerra neste feriado nacional. As aulas retomam no dia 26 de Junho.",
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia da Independência Nacional. As aulas retomam no dia 26 de Junho.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-10",
@@ -144,6 +160,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Período de avaliação final das disciplinas do 1º Semestre. Não há aulas regulares — o horário é substituído pelo calendário de exames de cada curso.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-11",
@@ -156,6 +173,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Período de férias intercalares para estudantes e corpo docente. As aulas do 2º Semestre têm início a 10 de Agosto.",
+      imagemFundo: "/Biblioteca.webp",
     },
     {
       id: "ev-12",
@@ -166,6 +184,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       descricao: "Reinicio das atividades académicas do 2º semestre.",
       consideracaoEsj:
         "Reinício das actividades lectivas do 2º Semestre, segundo o horário definido por curso e ano.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-13",
@@ -173,9 +192,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-09-07",
       dataRepresentativa: "7 de Setembro de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Assinala a assinatura dos Acordos de Lusaka, a 7 de Setembro de 1974, marco da vitória da luta de libertação.",
       consideracaoEsj:
-        "A Escola Superior de Jornalismo suspende as aulas neste feriado nacional. A actividade lectiva retoma no dia seguinte, 8 de Setembro.",
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia da Vitória. As aulas retomam no dia 8 de Setembro.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-14",
@@ -183,9 +204,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-09-25",
       dataRepresentativa: "25 de Setembro de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Homenageia as Forças Armadas de Libertação Nacional e a data histórica associada à FRELIMO, a 25 de Setembro.",
       consideracaoEsj:
-        "Não há aulas na ESJ neste feriado nacional. As actividades lectivas retomam no dia 26 de Setembro.",
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo a esta comemoração. As aulas retomam no dia 26 de Setembro.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-15",
@@ -193,9 +216,11 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       categoria: "feriado",
       dataInicio: "2026-10-04",
       dataRepresentativa: "4 de Outubro de 2026",
-      descricao: "Feriado Nacional.",
+      descricao:
+        "Celebra a assinatura do Acordo Geral de Paz em Roma, a 4 de Outubro de 1992.",
       consideracaoEsj:
-        "A Escola Superior de Jornalismo encerra neste feriado nacional. As aulas retomam no dia 5 de Outubro.",
+        "A Escola Superior de Jornalismo concede aos estudantes um intervalo alusivo à comemoração do Dia da Paz e Reconciliação. As aulas retomam no dia 5 de Outubro.",
+      imagemFundo: "/Cnderencias.jpg",
     },
     {
       id: "ev-16",
@@ -207,6 +232,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Dia dedicado à cerimónia de outorga de diplomas aos finalistas. As aulas dos restantes cursos e anos decorrem normalmente, salvo alterações pontuais de horário anunciadas pela Secretaria Académica.",
+      imagemFundo: "/Graduacao-ESJ.jpg",
     },
     {
       id: "ev-17",
@@ -219,6 +245,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Período de avaliação final das disciplinas do 2º Semestre. Não há aulas regulares — o horário é substituído pelo calendário de exames de cada curso.",
+      imagemFundo: "/esj-2026.webp",
     },
     {
       id: "ev-18",
@@ -231,20 +258,61 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
       destaque: true,
       consideracaoEsj:
         "Encerramento do ano lectivo 2026. A actividade académica é retomada com o período de pré-inscrições do ano lectivo seguinte.",
+      imagemFundo: "/Biblioteca.webp",
     },
   ],
 };
+
+function descricaoRedundante(descricao: string) {
+  return /^feriado nacional\.?$/i.test(descricao.trim());
+}
+
+/** Junta dados gravados com os defaults (descrições históricas + consideração ESJ). */
+export function mergeCalendarioComDefaults(saved: CalendarioAcademicoAnual): CalendarioAcademicoAnual {
+  const defaultsPorId = new Map(CALENDARIO_2026_DEFAULT.eventos.map((e) => [e.id, e]));
+  const eventos = saved.eventos.map((ev) => {
+    const def = defaultsPorId.get(ev.id);
+    if (!def) return ev;
+    return {
+      ...def,
+      ...ev,
+      descricao:
+        !ev.descricao?.trim() || descricaoRedundante(ev.descricao) ? def.descricao : ev.descricao,
+      consideracaoEsj: ev.consideracaoEsj?.trim() ? ev.consideracaoEsj : def.consideracaoEsj,
+      imagemFundo: ev.imagemFundo?.trim() ? ev.imagemFundo : def.imagemFundo,
+    };
+  });
+  const idsGuardados = new Set(eventos.map((e) => e.id));
+  for (const def of CALENDARIO_2026_DEFAULT.eventos) {
+    if (!idsGuardados.has(def.id)) eventos.push(def);
+  }
+  return {
+    anoLectivo: saved.anoLectivo || CALENDARIO_2026_DEFAULT.anoLectivo,
+    subtitulo: saved.subtitulo || CALENDARIO_2026_DEFAULT.subtitulo,
+    eventos,
+  };
+}
 
 export function readCalendarioDetalhado(): CalendarioAcademicoAnual {
   if (typeof window === "undefined") return CALENDARIO_2026_DEFAULT;
   try {
     const raw = window.localStorage.getItem(CALENDARIO_DETALHADO_KEY);
-    if (!raw) return CALENDARIO_2026_DEFAULT;
-    return JSON.parse(raw);
+    if (!raw) {
+      // Migra chave antiga, se existir.
+      const antigo = window.localStorage.getItem("esj-calendario-detalhado-2026");
+      if (antigo) {
+        const merged = mergeCalendarioComDefaults(JSON.parse(antigo) as CalendarioAcademicoAnual);
+        writeCalendarioDetalhado(merged);
+        return merged;
+      }
+      return CALENDARIO_2026_DEFAULT;
+    }
+    return mergeCalendarioComDefaults(JSON.parse(raw) as CalendarioAcademicoAnual);
   } catch {
     return CALENDARIO_2026_DEFAULT;
   }
 }
+
 
 export function writeCalendarioDetalhado(data: CalendarioAcademicoAnual) {
   if (typeof window === "undefined") return;

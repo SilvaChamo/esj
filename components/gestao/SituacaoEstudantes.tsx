@@ -133,23 +133,7 @@ export default function SituacaoEstudantes({ onAction }: { onAction: (m: string)
 
   return (
     <div className="w-full space-y-6">
-      <div className="bg-white border border-navy-100 p-6 md:p-8">
-        <h2 className="font-serif text-2xl font-bold text-navy-900">Situação dos estudantes</h2>
-        <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-          Marca manualmente se um estudante está regularizado (sem dívida de mensalidade/matrícula
-          nem de notas), depois de o estudante apresentar o recibo de pagamento. Não há cálculo
-          automático de dívida — isto é só a confirmação da secretaria, visível no painel do
-          próprio estudante.
-        </p>
-        <p className="mt-2 text-sm text-navy-900/65 leading-relaxed">
-          O estado de matrícula (Activo/Trancado/Desistiu) marca quem sai da turma activa —{" "}
-          <span className="font-semibold text-navy-900">o número de estudante nunca é reatribuído</span>, mesmo
-          desistindo: um Trancado mantém o número reservado para o regresso, um Desistiu tem o número
-          arquivado. A lista de{" "}
-          <span className="font-semibold text-navy-900">Estudantes</span> mostra Activos por omissão.
-        </p>
-        {missing && <SchemaInstall />}
-      </div>
+      {missing && <SchemaInstall />}
 
       <form
         onSubmit={onSubmit}

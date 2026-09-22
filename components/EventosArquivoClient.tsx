@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import EventoCartazCard from "@/components/EventoCartazCard";
@@ -41,17 +40,7 @@ export default function EventosArquivoClient() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 lg:px-8 py-12 md:py-16">
-      <Link href="/eventos" className="text-sm text-sky font-semibold hover:underline">
-        ← Eventos ESJ
-      </Link>
-      <h1 className="mt-6 font-serif text-3xl md:text-4xl font-bold text-navy-900">
-        Arquivo de <span className="text-sky">eventos</span>
-      </h1>
-      <p className="mt-3 max-w-2xl text-navy-900/65 leading-relaxed">
-        Memória visual da actividade académica — navegue pelos cartazes e edições ao longo dos anos.
-      </p>
-
-      <div className="mt-8 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setFiltro("todos")}

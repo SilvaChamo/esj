@@ -6,9 +6,11 @@
 export type DataInternacional = { mesDia: string; titulo: string };
 
 export const DATAS_INTERNACIONAIS: DataInternacional[] = [
+  { mesDia: "01-01", titulo: "Ano Novo (observância internacional)" },
   { mesDia: "01-04", titulo: "Dia Mundial do Braille" },
   { mesDia: "01-24", titulo: "Dia Internacional da Educação" },
   { mesDia: "01-27", titulo: "Dia Internacional em Memória das Vítimas do Holocausto" },
+  { mesDia: "02-03", titulo: "Dia Internacional da Fraternidade Humana (assinalado a 4 de Fevereiro)" },
   { mesDia: "02-04", titulo: "Dia Mundial do Cancro" },
   { mesDia: "02-04", titulo: "Dia Internacional da Fraternidade Humana" },
   { mesDia: "02-06", titulo: "Dia Internacional de Tolerância Zero à Mutilação Genital Feminina" },
@@ -34,6 +36,7 @@ export const DATAS_INTERNACIONAIS: DataInternacional[] = [
   { mesDia: "04-26", titulo: "Dia Mundial da Propriedade Intelectual" },
   { mesDia: "04-28", titulo: "Dia Mundial da Segurança e Saúde no Trabalho" },
   { mesDia: "04-29", titulo: "Dia Internacional da Dança" },
+  { mesDia: "05-01", titulo: "Dia Internacional do Trabalhador" },
   { mesDia: "05-03", titulo: "Dia Mundial da Liberdade de Imprensa" },
   { mesDia: "05-15", titulo: "Dia Internacional das Famílias" },
   { mesDia: "05-17", titulo: "Dia Mundial das Telecomunicações e da Sociedade da Informação" },
@@ -51,6 +54,7 @@ export const DATAS_INTERNACIONAIS: DataInternacional[] = [
   { mesDia: "06-21", titulo: "Dia Internacional da Música" },
   { mesDia: "06-21", titulo: "Dia Internacional do Yoga" },
   { mesDia: "06-23", titulo: "Dia das Nações Unidas para o Serviço Público" },
+  { mesDia: "06-25", titulo: "Dia Internacional da Independência dos Povos (alusivo às independências africanas)" },
   { mesDia: "06-26", titulo: "Dia Internacional de Apoio às Vítimas de Tortura" },
   { mesDia: "06-26", titulo: "Dia Internacional de Luta contra o Uso Indevido e o Tráfico Ilícito de Drogas" },
   { mesDia: "07-11", titulo: "Dia Mundial da População" },
@@ -63,15 +67,18 @@ export const DATAS_INTERNACIONAIS: DataInternacional[] = [
   { mesDia: "08-19", titulo: "Dia Mundial Humanitário" },
   { mesDia: "08-23", titulo: "Dia Internacional de Lembrança do Tráfico de Escravos e da sua Abolição" },
   { mesDia: "08-29", titulo: "Dia Internacional contra os Testes Nucleares" },
+  { mesDia: "09-07", titulo: "Dia Internacional da Alfabetização (assinalado a 8 de Setembro)" },
   { mesDia: "09-08", titulo: "Dia Internacional da Alfabetização" },
   { mesDia: "09-12", titulo: "Dia das Nações Unidas para a Cooperação Sul-Sul" },
   { mesDia: "09-15", titulo: "Dia Internacional da Democracia" },
   { mesDia: "09-16", titulo: "Dia Internacional para a Preservação da Camada de Ozono" },
   { mesDia: "09-21", titulo: "Dia Internacional da Paz" },
+  { mesDia: "09-25", titulo: "Dia Internacional da Paz (assinalado a 21 de Setembro)" },
   { mesDia: "09-27", titulo: "Dia Mundial do Turismo" },
   { mesDia: "09-28", titulo: "Dia Mundial do Acesso Universal à Informação" },
   { mesDia: "09-29", titulo: "Dia Internacional de Consciencialização sobre a Perda e Desperdício de Alimentos" },
   { mesDia: "10-01", titulo: "Dia Internacional das Pessoas Idosas" },
+  { mesDia: "10-04", titulo: "Dia Mundial do Animal" },
   { mesDia: "10-05", titulo: "Dia Mundial dos Professores" },
   { mesDia: "10-09", titulo: "Dia Mundial dos Correios" },
   { mesDia: "10-10", titulo: "Dia Mundial da Saúde Mental" },
@@ -97,4 +104,10 @@ export const DATAS_INTERNACIONAIS: DataInternacional[] = [
 
 export function datasInternacionaisEm(mesDia: string): DataInternacional[] {
   return DATAS_INTERNACIONAIS.filter((d) => d.mesDia === mesDia);
+}
+
+/** Extrai MM-DD de uma chave ISO AAAA-MM-DD. */
+export function mesDiaDeIso(iso: string): string {
+  const m = iso.match(/^\d{4}-(\d{2}-\d{2})/);
+  return m ? m[1] : iso.slice(5, 10);
 }
