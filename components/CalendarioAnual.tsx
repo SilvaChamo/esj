@@ -46,6 +46,17 @@ function diaEstaNoIntervalo(ev: EventoCalendarioDetalhado, diaKey: string) {
   return dia >= inicio && dia <= fim;
 }
 
+function diasPartilhamEvento(
+  eventosPorDia: Map<string, EventoCalendarioDetalhado[]>,
+  keyA: string,
+  keyB: string,
+) {
+  const eventosA = eventosPorDia.get(keyA);
+  const eventosB = eventosPorDia.get(keyB);
+  if (!eventosA || !eventosB) return false;
+  return eventosA.some((ev) => eventosB.some((outro) => outro.id === ev.id));
+}
+
 export default function CalendarioAnual() {
   const [dados, setDados] = useState<CalendarioAcademicoAnual>(CALENDARIO_2026_DEFAULT);
   useEffect(() => {
@@ -89,16 +100,16 @@ export default function CalendarioAnual() {
   );
 
   const eventosDoMesSelecionado = useMemo(() => {
-    const inicioMes = new Date(ano, mesSelecionado, 1);
-    const fimMes = new Date(ano, mesSelecionado + 1, 0);
+    const inicioGrade = diasDoMesSelecionado[0];
+    const fimGrade = diasDoMesSelecionado[diasDoMesSelecionado.length - 1];
     return dados.eventos
       .filter((ev) => {
         const inicio = parseISO(ev.dataInicio);
         const fim = ev.dataFim ? parseISO(ev.dataFim) : inicio;
-        return fim >= inicioMes && inicio <= fimMes;
+        return fim >= inicioGrade && inicio <= fimGrade;
       })
       .sort((a, b) => a.dataInicio.localeCompare(b.dataInicio));
-  }, [dados, ano, mesSelecionado]);
+  }, [dados, diasDoMesSelecionado]);
 
   function selecionarMes(mesIndex: number) {
     setMesSelecionado(mesIndex);
@@ -128,28 +139,50 @@ export default function CalendarioAnual() {
           {mesesComDias.map(({ nome, mesIndex, dias }) => {
             const selecionado = mesSelecionado === mesIndex;
             return (
-              <div key={nome}>
-                <button
-                  type="button"
-                  onClick={() => selecionarMes(mesIndex)}
-                  className={`block text-left font-serif font-bold text-sm mb-2 transition-colors ${
-                    selecionado ? "text-crimson underline underline-offset-2" : "text-crimson/90 hover:text-crimson"
+              <div
+                key={nome}
+                role="button"
+                tabIndex={0}
+                onClick={() => selecionarMes(mesIndex)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selecionarMes(mesIndex);
+                  }
+                }}
+                className="cursor-pointer select-none"
+              >
+                <p
+                  className={`font-serif font-bold text-sm leading-none mb-2 transition-colors ${
+                    selecionado ? "text-crimson underline underline-offset-2" : "text-crimson/90"
                   }`}
                 >
                   {nome}
-                </button>
+                </p>
                 <div className="grid grid-cols-7 gap-y-1">
                   {DIAS_SEMANA.map((d, i) => (
                     <span key={i} className="text-center text-[9px] text-navy-900/40 pb-1">
                       {d}
                     </span>
                   ))}
-                  {dias.map((dia) => {
+                  {dias.map((dia, i) => {
                     const key = chaveDia(dia);
                     const noMes = dia.getMonth() === mesIndex;
                     const fimDeSemana = dia.getDay() === 0 || dia.getDay() === 6;
                     const temEvento = eventosPorDia.has(key);
                     const ehHoje = key === hojeKey;
+                    const diaAnterior = dias[i - 1];
+                    const diaSeguinte = dias[i + 1];
+                    const ligaEsquerda =
+                      temEvento &&
+                      dia.getDay() !== 0 &&
+                      !!diaAnterior &&
+                      diasPartilhamEvento(eventosPorDia, key, chaveDia(diaAnterior));
+                    const ligaDireita =
+                      temEvento &&
+                      dia.getDay() !== 6 &&
+                      !!diaSeguinte &&
+                      diasPartilhamEvento(eventosPorDia, key, chaveDia(diaSeguinte));
                     return (
                       <div key={key} className="flex flex-col items-center gap-0.5">
                         <span
@@ -165,10 +198,24 @@ export default function CalendarioAnual() {
                         >
                           {dia.getDate()}
                         </span>
-                        <span
-                          className={`h-1 w-1 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
-                          aria-hidden
-                        />
+                        <div className="relative flex h-1 w-full items-center justify-center">
+                          {ligaEsquerda && (
+                            <span
+                              className="absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                              aria-hidden
+                            />
+                          )}
+                          {ligaDireita && (
+                            <span
+                              className="absolute right-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                              aria-hidden
+                            />
+                          )}
+                          <span
+                            className={`relative z-10 h-1 w-1 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
+                            aria-hidden
+                          />
+                        </div>
                       </div>
                     );
                   })}
@@ -190,13 +237,25 @@ export default function CalendarioAnual() {
               {d}
             </span>
           ))}
-          {diasDoMesSelecionado.map((dia) => {
+          {diasDoMesSelecionado.map((dia, i) => {
             const key = chaveDia(dia);
             const noMes = dia.getMonth() === mesSelecionado;
             const eventosNoDia = eventosPorDia.get(key);
             const temEvento = !!eventosNoDia?.length;
             const ehHoje = key === hojeKey;
             const ehSelecionado = key === diaSelecionado;
+            const diaAnterior = diasDoMesSelecionado[i - 1];
+            const diaSeguinte = diasDoMesSelecionado[i + 1];
+            const ligaEsquerda =
+              temEvento &&
+              dia.getDay() !== 0 &&
+              !!diaAnterior &&
+              diasPartilhamEvento(eventosPorDia, key, chaveDia(diaAnterior));
+            const ligaDireita =
+              temEvento &&
+              dia.getDay() !== 6 &&
+              !!diaSeguinte &&
+              diasPartilhamEvento(eventosPorDia, key, chaveDia(diaSeguinte));
 
             const numero = (
               <span
@@ -230,10 +289,24 @@ export default function CalendarioAnual() {
                 ) : (
                   numero
                 )}
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
-                  aria-hidden
-                />
+                <div className="relative flex h-1.5 w-full items-center justify-center">
+                  {ligaEsquerda && (
+                    <span
+                      className="absolute left-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                      aria-hidden
+                    />
+                  )}
+                  {ligaDireita && (
+                    <span
+                      className="absolute right-0 top-1/2 h-px w-1/2 -translate-y-1/2 bg-crimson/50"
+                      aria-hidden
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 h-1.5 w-1.5 rounded-full ${temEvento ? "bg-crimson" : "bg-transparent"}`}
+                    aria-hidden
+                  />
+                </div>
               </div>
             );
           })}
