@@ -183,8 +183,8 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
   const eventosDoDiaModal = diaModal ? eventosPorDia.get(diaModal) ?? [] : [];
 
   return (
-    <div className="lg:grid lg:grid-cols-3 lg:gap-5 lg:items-start">
-      <div className="lg:col-span-2 bg-white border border-navy-100 p-6">
+    <div className="lg:grid lg:grid-cols-[3fr_1fr] lg:gap-5 lg:items-start -mt-4 sm:-mt-5 pt-10">
+      <div className="bg-white border border-navy-100 p-6">
         <div className="flex items-center justify-between -mx-6 -mt-6 mb-6 px-6 h-16 bg-navy-50 border-b border-navy-100">
           <h2 className="font-serif text-base font-bold text-navy-900">
             Calendário Académico {ano}
@@ -197,11 +197,6 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
             Hoje
           </button>
         </div>
-
-        <p className="mb-4 text-xs text-navy-900/55 leading-relaxed">
-          Clique num mês para o abrir na barra lateral, e num dia da barra lateral para adicionar ou editar uma
-          data comemorativa.
-        </p>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-8">
           {mesesComDias.map(({ nome, mesIndex, dias }) => {

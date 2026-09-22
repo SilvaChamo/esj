@@ -80,8 +80,8 @@ export default function CalendarioAnual() {
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-3 lg:gap-5 lg:items-start">
-      <div className="lg:col-span-2 bg-white border border-navy-100 p-6">
+    <div className="lg:grid lg:grid-cols-[7fr_3fr] lg:gap-5 lg:items-start">
+      <div className="bg-white border border-navy-100 p-6">
         <div className="flex items-center justify-between -mx-6 -mt-6 mb-6 px-6 h-16 bg-navy-50 border-b border-navy-100">
           <h2 className="font-serif text-base font-bold text-navy-900">
             Calendário Académico {ano}
