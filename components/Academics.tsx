@@ -425,17 +425,17 @@ export default function Academics() {
             </div>
 
             <EntradaHome atraso={0.48}>
-              <div className="mt-16 w-screen relative left-1/2 -translate-x-1/2 border-t border-navy-100/80 bg-navy-50/60">
-                <div className="mx-auto max-w-7xl px-4 py-5 sm:py-6 flex flex-wrap gap-3 justify-center">
+              <div className="mt-16 mb-0 w-screen relative left-1/2 -translate-x-1/2 border-t border-navy-100/80 bg-navy-50/60">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:py-9 flex flex-wrap gap-3 justify-center">
                   <Link
                     href="/edital"
-                    className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
+                    className="esj-btn-move esj-btn-move-right inline-flex items-center bg-white border border-navy-100 text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
                   >
                     VER EDITAL DE ADMISSÃO
                   </Link>
                   <Link
                     href="/inscricoes"
-                    className="esj-btn-move inline-flex items-center bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
+                    className="esj-btn-move inline-flex items-center bg-white border border-navy-100 text-navy-800 font-semibold text-xs tracking-wide px-6 py-3.5"
                   >
                     ESTADO DAS INSCRIÇÕES
                   </Link>

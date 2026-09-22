@@ -288,6 +288,11 @@ body {
     border-color 0.3s ease, transform 0.4s ease-out;
 }
 
+/* Linha vermelha à direita; no hover o vermelho cresce a partir da direita */
+.esj-btn-move.esj-btn-move-right {
+  background-position: right center;
+}
+
 /* Botões vermelhos: linha azul-escura; no hover o slide preenche azul escuro */
 .esj-btn-move.bg-crimson {
   background-image: linear-gradient(#0c1d3b, #0c1d3b), linear-gradient(#0c1d3b, #0c1d3b);
