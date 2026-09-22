@@ -14,6 +14,7 @@ import {
   construirDias,
   diaEstaNoIntervalo,
   diasPartilhamEvento,
+  formatarDataPt,
   type CalendarioAcademicoAnual,
   type CategoriaEventoCalendario,
   type EventoCalendarioDetalhado,
@@ -29,11 +30,6 @@ const CATEGORIAS: { value: CategoriaEventoCalendario; label: string }[] = [
 ];
 
 const CATEGORIA_OUTRA = "__outra__";
-
-function formatarDataPt(iso: string) {
-  const d = parseISO(iso);
-  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
-}
 
 export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: string) => void }) {
   const [dados, setDados] = useState<CalendarioAcademicoAnual>(CALENDARIO_2026_DEFAULT);

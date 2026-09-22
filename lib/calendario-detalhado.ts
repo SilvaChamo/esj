@@ -284,3 +284,8 @@ export function diasPartilhamEvento(
   if (!eventosA || !eventosB) return false;
   return eventosA.some((ev) => eventosB.some((outro) => outro.id === ev.id));
 }
+
+export function formatarDataPt(iso: string) {
+  const d = parseISO(iso);
+  return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}

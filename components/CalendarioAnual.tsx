@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   CALENDARIO_2026_DEFAULT,
   readCalendarioDetalhado,
   labelCategoriaCalendario,
+  formatarDataPt,
   MESES,
   DIAS_SEMANA,
   parseISO,
   chaveDia,
   construirDias,
-  diaEstaNoIntervalo,
   diasPartilhamEvento,
   type CalendarioAcademicoAnual,
   type EventoCalendarioDetalhado,
 } from "@/lib/calendario-detalhado";
+import { datasInternacionaisEm } from "@/lib/datas-internacionais";
 
 export default function CalendarioAnual() {
   const [dados, setDados] = useState<CalendarioAcademicoAnual>(CALENDARIO_2026_DEFAULT);
@@ -26,10 +28,18 @@ export default function CalendarioAnual() {
   const hojeKey = chaveDia(new Date());
   const hoje = new Date();
 
-  const [mesSelecionado, setMesSelecionado] = useState(() =>
-    hoje.getFullYear() === ano ? hoje.getMonth() : 0,
-  );
-  const [diaSelecionado, setDiaSelecionado] = useState<string | null>(null);
+  // Chegar com ?dia=AAAA-MM-DD (ex: a partir de um card da home) selecciona logo essa data.
+  const searchParams = useSearchParams();
+  const diaParam = searchParams.get("dia");
+
+  const [mesSelecionado, setMesSelecionado] = useState(() => {
+    if (diaParam) return parseISO(diaParam).getMonth();
+    return hoje.getFullYear() === ano ? hoje.getMonth() : 0;
+  });
+  const [diaSelecionado, setDiaSelecionado] = useState<string | null>(() => {
+    if (diaParam) return diaParam;
+    return hoje.getFullYear() === ano ? hojeKey : null;
+  });
 
   const eventosPorDia = useMemo(() => {
     const mapa = new Map<string, EventoCalendarioDetalhado[]>();
@@ -58,17 +68,10 @@ export default function CalendarioAnual() {
     [ano, mesSelecionado],
   );
 
-  const eventosDoMesSelecionado = useMemo(() => {
-    const inicioGrade = diasDoMesSelecionado[0];
-    const fimGrade = diasDoMesSelecionado[diasDoMesSelecionado.length - 1];
-    return dados.eventos
-      .filter((ev) => {
-        const inicio = parseISO(ev.dataInicio);
-        const fim = ev.dataFim ? parseISO(ev.dataFim) : inicio;
-        return fim >= inicioGrade && inicio <= fimGrade;
-      })
-      .sort((a, b) => a.dataInicio.localeCompare(b.dataInicio));
-  }, [dados, diasDoMesSelecionado]);
+  const eventosDoDiaSelecionado = diaSelecionado ? eventosPorDia.get(diaSelecionado) ?? [] : [];
+  const ehFeriasNoDiaSelecionado = eventosDoDiaSelecionado.some((ev) => ev.categoria === "ferias");
+  const datasInternacionaisDoDia =
+    diaSelecionado && !ehFeriasNoDiaSelecionado ? datasInternacionaisEm(diaSelecionado.slice(5)) : [];
 
   function selecionarMes(mesIndex: number) {
     setMesSelecionado(mesIndex);
@@ -77,6 +80,16 @@ export default function CalendarioAnual() {
 
   function selecionarDia(key: string) {
     setDiaSelecionado(key);
+  }
+
+  function irParaHoje() {
+    if (hoje.getFullYear() === ano) {
+      setMesSelecionado(hoje.getMonth());
+      setDiaSelecionado(hojeKey);
+    } else {
+      setMesSelecionado(0);
+      setDiaSelecionado(null);
+    }
   }
 
   return (
@@ -88,7 +101,7 @@ export default function CalendarioAnual() {
           </h2>
           <button
             type="button"
-            onClick={() => selecionarMes(hoje.getFullYear() === ano ? hoje.getMonth() : 0)}
+            onClick={irParaHoje}
             className="text-xs font-semibold text-navy-900/60 hover:text-crimson hover:border-crimson/40 border border-navy-200 rounded px-3 py-1.5 transition-colors bg-white shrink-0"
           >
             Hoje
@@ -219,38 +232,34 @@ export default function CalendarioAnual() {
               !!diaSeguinte &&
               diasPartilhamEvento(eventosPorDia, key, chaveDia(diaSeguinte));
 
-            const numero = (
-              <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                  ehHoje
-                    ? "bg-crimson text-white font-bold"
-                    : ehSelecionado
-                      ? "ring-1 ring-crimson font-bold text-navy-900"
-                      : noMes
-                        ? "text-navy-900"
-                        : "text-navy-900/25"
-                }`}
-              >
-                {dia.getDate()}
-              </span>
-            );
-
             return (
               <div key={key} className="flex flex-col items-center gap-1 py-1">
-                {temEvento ? (
-                  <button
-                    type="button"
-                    onClick={() => selecionarDia(key)}
-                    aria-label={`${dia.getDate()} de ${MESES[mesSelecionado]}: ${eventosNoDia!
-                      .map((ev) => ev.titulo)
-                      .join(", ")}`}
-                    className="flex p-0 bg-transparent border-0"
+                <button
+                  type="button"
+                  onClick={() => selecionarDia(key)}
+                  aria-label={
+                    temEvento
+                      ? `${dia.getDate()} de ${MESES[mesSelecionado]}: ${eventosNoDia!
+                          .map((ev) => ev.titulo)
+                          .join(", ")}`
+                      : `${dia.getDate()} de ${MESES[mesSelecionado]}`
+                  }
+                  className="flex p-0 bg-transparent border-0"
+                >
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                      ehHoje
+                        ? "bg-crimson text-white font-bold"
+                        : ehSelecionado
+                          ? "ring-1 ring-crimson font-bold text-navy-900"
+                          : noMes
+                            ? "text-navy-900"
+                            : "text-navy-900/25"
+                    }`}
                   >
-                    {numero}
-                  </button>
-                ) : (
-                  numero
-                )}
+                    {dia.getDate()}
+                  </span>
+                </button>
                 <div className="relative flex h-1.5 w-full items-center justify-center">
                   {ligaEsquerda && (
                     <span
@@ -276,39 +285,60 @@ export default function CalendarioAnual() {
         </div>
 
         <div className="mt-6 pt-5 border-t border-navy-100">
-        {eventosDoMesSelecionado.length === 0 ? (
-          <p className="text-xs text-navy-900/50">Sem datas assinaladas neste mês.</p>
+        {!diaSelecionado ? (
+          <p className="text-xs text-navy-900/50">Escolha um dia no calendário ao lado.</p>
         ) : (
-          <ul className="space-y-4">
-            {eventosDoMesSelecionado.map((ev) => {
-              const cat = labelCategoriaCalendario(ev.categoria);
-              const destacado = diaSelecionado ? diaEstaNoIntervalo(ev, diaSelecionado) : false;
-              return (
-                <li
-                  key={ev.id}
-                  className={`flex gap-3 p-2 -m-2 rounded transition-colors ${
-                    destacado ? "bg-crimson/5 ring-1 ring-crimson/30" : ""
-                  }`}
-                >
-                  <span className="mt-1.5 h-2 w-2 rounded-full bg-crimson shrink-0" aria-hidden />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                      <span
-                        className={`px-1.5 py-0.5 text-[9px] font-bold border rounded ${cat.bg} ${cat.color}`}
-                      >
-                        {cat.label}
-                      </span>
-                      <span className="text-[11px] font-bold text-navy-900/60">{ev.dataRepresentativa}</span>
-                    </div>
-                    <h4 className="font-serif font-bold text-navy-900 text-sm">{ev.titulo}</h4>
-                    {ev.descricao && (
-                      <p className="text-xs text-navy-900/60 mt-0.5 leading-relaxed">{ev.descricao}</p>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-navy-900/50 mb-3">
+              {formatarDataPt(diaSelecionado)}
+            </p>
+            {eventosDoDiaSelecionado.length === 0 ? (
+              <p className="text-xs text-navy-900/50">Sem datas assinaladas neste dia.</p>
+            ) : (
+              <ul className="space-y-4">
+                {eventosDoDiaSelecionado.map((ev) => {
+                  const cat = labelCategoriaCalendario(ev.categoria);
+                  return (
+                    <li key={ev.id} className="flex gap-3">
+                      <span className="mt-1.5 h-2 w-2 rounded-full bg-crimson shrink-0" aria-hidden />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-bold border rounded ${cat.bg} ${cat.color}`}
+                          >
+                            {cat.label}
+                          </span>
+                          <span className="text-[11px] font-bold text-navy-900/60">
+                            {ev.dataRepresentativa}
+                          </span>
+                        </div>
+                        <h4 className="font-serif font-bold text-navy-900 text-sm">{ev.titulo}</h4>
+                        {ev.descricao && (
+                          <p className="text-xs text-navy-900/60 mt-0.5 leading-relaxed">{ev.descricao}</p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {datasInternacionaisDoDia.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-navy-100">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-navy-900/50 mb-2">
+                  Também assinalado neste dia
+                </p>
+                <ul className="space-y-1.5">
+                  {datasInternacionaisDoDia.map((d) => (
+                    <li key={d.titulo} className="flex items-start gap-2 text-xs text-navy-900/60">
+                      <span className="mt-1.5 h-1 w-1 rounded-full bg-navy-900/30 shrink-0" aria-hidden />
+                      {d.titulo}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
         </div>
       </aside>

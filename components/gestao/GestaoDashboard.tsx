@@ -176,8 +176,8 @@ const NAV: NavEntry[] = [
     children: [
       { id: "candidaturas", label: "Candidaturas", icon: Users },
       { id: "resultados", label: "Pautas", icon: ClipboardList },
-      { id: "calendario", label: "Calendário Académico", icon: Calendar },
-      { id: "calendario-datas", label: "Datas Comemorativas", icon: CalendarCheck },
+      { id: "calendario", label: "Resumo do Calendário", icon: Calendar },
+      { id: "calendario-datas", label: "Calendário Académico", icon: CalendarCheck },
       { id: "edital", label: "Edital", icon: FileText },
     ],
   },
@@ -1383,7 +1383,7 @@ function CalendarioAcademico({ onAction }: { onAction: (m: string) => void }) {
 
   return (
     <div className="w-full bg-white border border-navy-100 p-8 space-y-4">
-      <h2 className="font-serif text-2xl font-bold text-navy-900">Calendário Académico</h2>
+      <h2 className="font-serif text-2xl font-bold text-navy-900">Resumo do Calendário</h2>
       <p className="text-sm text-navy-900/65 leading-relaxed">
         Estes textos aparecem na secção Ensino e História, separador &ldquo;Calendário
         Académico&rdquo;, em /#ensino. Máximo de 30 palavras por campo.

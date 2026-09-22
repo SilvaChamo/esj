@@ -166,6 +166,7 @@ export default function Academics() {
     icon: LucideIcon;
     numero: number;
     link?: { href: string; label: string };
+    dataCalendario: string;
   }[] = [
     {
       titulo: "Inscrições",
@@ -173,16 +174,30 @@ export default function Academics() {
       icon: ClipboardList,
       numero: 1,
       link: { href: "/inscricao", label: "Inscrever-se" },
+      dataCalendario: "2026-01-05",
     },
-    { titulo: "Exames de admissão", texto: cal.exames, icon: PenLine, numero: 2 },
+    {
+      titulo: "Exames de admissão",
+      texto: cal.exames,
+      icon: PenLine,
+      numero: 2,
+      dataCalendario: "2026-02-09",
+    },
     {
       titulo: "Publicação de resultados",
       texto: cal.resultados,
       icon: Award,
       numero: 3,
       link: { href: "/resultados", label: "Ver resultados" },
+      dataCalendario: "2026-02-09",
     },
-    { titulo: "Início do ano lectivo", texto: cal.inicioAno, icon: CalendarDays, numero: 4 },
+    {
+      titulo: "Início do ano lectivo",
+      texto: cal.inicioAno,
+      icon: CalendarDays,
+      numero: 4,
+      dataCalendario: "2026-03-02",
+    },
   ];
 
   return (
@@ -344,7 +359,7 @@ export default function Academics() {
                   const isRight = i % 2 === 1;
                   return (
                     <EntradaHome key={d.titulo} atraso={i * 0.12}>
-                      <div className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-5">
+                      <div className="relative pl-12 sm:pl-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:items-center">
                         <span className="absolute left-4 sm:left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full bg-white border-2 border-sky-300">
                           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white text-sm font-bold">
                             {d.numero}
@@ -374,6 +389,19 @@ export default function Academics() {
                               </Link>
                             )}
                           </div>
+                        </div>
+                        <div
+                          className={`mt-4 sm:mt-0 flex ${
+                            isRight ? "sm:col-start-1 sm:justify-end" : "sm:col-start-2 sm:justify-start"
+                          }`}
+                        >
+                          <Link
+                            href={`/calendario?dia=${d.dataCalendario}`}
+                            className="inline-flex items-center gap-2 bg-white border border-navy-100 hover:border-sky text-navy-800 font-semibold text-xs tracking-wide px-5 py-3 transition-colors"
+                          >
+                            <CalendarDays size={14} />
+                            Ver no calendário
+                          </Link>
                         </div>
                       </div>
                     </EntradaHome>
