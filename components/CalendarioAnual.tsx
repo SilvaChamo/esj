@@ -5,57 +5,16 @@ import {
   CALENDARIO_2026_DEFAULT,
   readCalendarioDetalhado,
   labelCategoriaCalendario,
+  MESES,
+  DIAS_SEMANA,
+  parseISO,
+  chaveDia,
+  construirDias,
+  diaEstaNoIntervalo,
+  diasPartilhamEvento,
   type CalendarioAcademicoAnual,
   type EventoCalendarioDetalhado,
 } from "@/lib/calendario-detalhado";
-
-const MESES = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
-const DIAS_SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"];
-
-function parseISO(iso: string) {
-  return new Date(`${iso}T12:00:00`);
-}
-
-function chaveDia(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function construirDias(ano: number, mes: number) {
-  const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
-  return Array.from({ length: 42 }, (_, i) => new Date(ano, mes, 1 - primeiroDiaSemana + i));
-}
-
-function diaEstaNoIntervalo(ev: EventoCalendarioDetalhado, diaKey: string) {
-  const dia = parseISO(diaKey);
-  const inicio = parseISO(ev.dataInicio);
-  const fim = ev.dataFim ? parseISO(ev.dataFim) : inicio;
-  return dia >= inicio && dia <= fim;
-}
-
-function diasPartilhamEvento(
-  eventosPorDia: Map<string, EventoCalendarioDetalhado[]>,
-  keyA: string,
-  keyB: string,
-) {
-  const eventosA = eventosPorDia.get(keyA);
-  const eventosB = eventosPorDia.get(keyB);
-  if (!eventosA || !eventosB) return false;
-  return eventosA.some((ev) => eventosB.some((outro) => outro.id === ev.id));
-}
 
 export default function CalendarioAnual() {
   const [dados, setDados] = useState<CalendarioAcademicoAnual>(CALENDARIO_2026_DEFAULT);

@@ -229,3 +229,53 @@ export function labelCategoriaCalendario(cat: CategoriaEventoCalendario): {
       return { label: "Actividade Académica", color: "text-navy-900", bg: "bg-navy-100 border-navy-300" };
   }
 }
+
+// --- Grelha do calendário anual (partilhado entre a página pública e a gestão) ---
+
+export const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+export const DIAS_SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+export function parseISO(iso: string) {
+  return new Date(`${iso}T12:00:00`);
+}
+
+export function chaveDia(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function construirDias(ano: number, mes: number) {
+  const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
+  return Array.from({ length: 42 }, (_, i) => new Date(ano, mes, 1 - primeiroDiaSemana + i));
+}
+
+export function diaEstaNoIntervalo(ev: EventoCalendarioDetalhado, diaKey: string) {
+  const dia = parseISO(diaKey);
+  const inicio = parseISO(ev.dataInicio);
+  const fim = ev.dataFim ? parseISO(ev.dataFim) : inicio;
+  return dia >= inicio && dia <= fim;
+}
+
+export function diasPartilhamEvento(
+  eventosPorDia: Map<string, EventoCalendarioDetalhado[]>,
+  keyA: string,
+  keyB: string,
+) {
+  const eventosA = eventosPorDia.get(keyA);
+  const eventosB = eventosPorDia.get(keyB);
+  if (!eventosA || !eventosB) return false;
+  return eventosA.some((ev) => eventosB.some((outro) => outro.id === ev.id));
+}

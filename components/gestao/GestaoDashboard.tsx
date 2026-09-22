@@ -10,6 +10,7 @@ import {
   BookOpen,
   BookPlus,
   Calendar,
+  CalendarCheck,
   CalendarDays,
   ChevronRight,
   ChevronUp,
@@ -107,6 +108,7 @@ import ContasEstudantes from "@/components/gestao/ContasEstudantes";
 import ContasAdministradores from "@/components/gestao/ContasAdministradores";
 import Cadeiras from "@/components/gestao/Cadeiras";
 import SituacaoEstudantes from "@/components/gestao/SituacaoEstudantes";
+import CalendarioAcademicoGestao from "@/components/gestao/CalendarioAcademicoGestao";
 import NewsletterEnvio from "@/components/gestao/NewsletterEnvio";
 import FolhaAcademica from "@/components/gestao/FolhaAcademica";
 import BibliotecaCientificaGestao from "@/components/gestao/BibliotecaCientifica";
@@ -118,6 +120,7 @@ type Section =
   | "candidaturas"
   | "resultados"
   | "calendario"
+  | "calendario-datas"
   | "edital"
   | "noticias"
   | "anuncios"
@@ -174,6 +177,7 @@ const NAV: NavEntry[] = [
       { id: "candidaturas", label: "Candidaturas", icon: Users },
       { id: "resultados", label: "Pautas", icon: ClipboardList },
       { id: "calendario", label: "Calendário Académico", icon: Calendar },
+      { id: "calendario-datas", label: "Datas Comemorativas", icon: CalendarCheck },
       { id: "edital", label: "Edital", icon: FileText },
     ],
   },
@@ -519,6 +523,15 @@ export default function GestaoDashboard() {
               <p className="mt-0.5 text-xs text-navy-900/60 font-medium">
                 Gestão de Contas de Estudantes · Visualize e garanta o acesso dos estudantes por curso/regime
               </p>
+            ) : section === "situacao" ? (
+              <p className="mt-0.5 text-xs text-navy-900/60 font-medium">
+                Regularização e matrícula (Activo/Trancado/Desistiu) · o n.º nunca é reatribuído
+              </p>
+            ) : section === "calendario-datas" ? (
+              <p className="mt-0.5 text-xs text-navy-900/60 font-medium">
+                Feriados, exames, férias e outros eventos do calendário público em /calendario · clique num dia
+                para adicionar ou editar
+              </p>
             ) : (
               <p className="mt-0.5 text-[11px] font-bold tracking-widest text-sky">SECRETARIA ACADÉMICA</p>
             )}
@@ -722,6 +735,7 @@ export default function GestaoDashboard() {
           {section === "galeria" && <Galeria />}
           {section === "albuns" && <AlbunsGaleria />}
           {section === "calendario" && <CalendarioAcademico onAction={showNote} />}
+          {section === "calendario-datas" && <CalendarioAcademicoGestao onAction={showNote} />}
           {section === "resultados" && <ResultadosPauta onAction={showNote} />}
           {section === "noticias" && <Noticias onAction={showNote} />}
           {section === "newsletter" && <NewsletterEnvio onAction={showNote} />}
