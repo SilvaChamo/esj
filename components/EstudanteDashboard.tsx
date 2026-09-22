@@ -162,9 +162,11 @@ export default function EstudanteDashboard({
     void loadCalendarioDetalhado().then(setCalendario);
 
     const supabase = createBrowserSupabase();
+    let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     const refrescarNotas = () => {
+      if (cancelled) return;
       listarMinhasNotas()
         .then(setMinhasNotas)
         .catch(() => setMinhasNotas([]));
@@ -172,7 +174,7 @@ export default function EstudanteDashboard({
 
     void supabase.auth.getUser().then(async ({ data }) => {
       const user = data.user;
-      if (!user?.email) return;
+      if (!user?.email || cancelled) return;
 
       const meta = user.user_metadata ?? {};
       const nomeReal: string =
@@ -205,6 +207,8 @@ export default function EstudanteDashboard({
         }
       }
 
+      if (cancelled) return;
+
       const perfilActualizado: PerfilUtilizador = {
         id: user.id,
         email: user.email,
@@ -226,6 +230,7 @@ export default function EstudanteDashboard({
       if (numEstudante) {
         void getSituacaoEstudante(numEstudante)
           .then((situacao) => {
+            if (cancelled) return;
             const regularizadoReal = situacao ? situacao.regularizado : true;
             setPerfil((actual) =>
               actual ? { ...actual, regularizado: regularizadoReal } : actual
@@ -235,19 +240,29 @@ export default function EstudanteDashboard({
           .catch(() => {});
       }
 
-      channel = supabase
-        .channel(`notas-estudante-${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "estudantes_notas",
-            filter: `estudante_id=eq.${user.id}`,
-          },
-          () => refrescarNotas()
-        )
-        .subscribe();
+      // Nome único + limpar canais antigos: o React Strict Mode remonta o
+      // efeito e reutilizar o mesmo tópico já subscrito rebenta o .on().
+      const prefixo = `notas-estudante-${user.id}`;
+      for (const existente of supabase.getChannels()) {
+        if (existente.topic.includes(prefixo)) {
+          await supabase.removeChannel(existente);
+        }
+      }
+      if (cancelled) return;
+
+      const ch = supabase.channel(`${prefixo}-${Date.now()}`);
+      ch.on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "estudantes_notas",
+          filter: `estudante_id=eq.${user.id}`,
+        },
+        () => refrescarNotas()
+      );
+      channel = ch;
+      ch.subscribe();
     });
 
     setLoading(true);
@@ -259,6 +274,7 @@ export default function EstudanteDashboard({
     refrescarNotas();
 
     return () => {
+      cancelled = true;
       if (channel) void supabase.removeChannel(channel);
     };
   }, []);
