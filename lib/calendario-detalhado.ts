@@ -121,7 +121,7 @@ export const CALENDARIO_2026_DEFAULT: CalendarioAcademicoAnual = {
     },
     {
       id: "ev-11",
-      titulo: "Interregno Lectivo (Férias de Meio de Ano)",
+      titulo: "Interregno Lectivo (Férias do fim do 1º semestre)",
       categoria: "ferias",
       dataInicio: "2026-07-20",
       dataFim: "2026-08-07",
