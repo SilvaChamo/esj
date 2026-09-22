@@ -135,9 +135,9 @@ export default function CalendarioAnual() {
                 >
                   {nome}
                 </p>
-                <div className="grid grid-cols-7 gap-y-2">
+                <div className="grid grid-cols-7 gap-y-0.5">
                   {DIAS_SEMANA.map((d, i) => (
-                    <span key={i} className="text-left text-[9px] text-navy-900/65 font-semibold pb-1">
+                    <span key={i} className="text-left text-[9px] text-navy-900/65 font-semibold pb-0.5">
                       {d}
                     </span>
                   ))}
@@ -161,7 +161,7 @@ export default function CalendarioAnual() {
                       !!diaSeguinte &&
                       diasPartilhamEvento(eventosPorDia, key, chaveDia(diaSeguinte));
                     return (
-                      <div key={key} className="flex flex-col items-start gap-0.5">
+                      <div key={key} className="flex flex-col items-start gap-0">
                         <button
                           type="button"
                           disabled={!noMes}
@@ -184,7 +184,7 @@ export default function CalendarioAnual() {
                         >
                           {dia.getDate()}
                         </button>
-                        <div className="relative h-1 w-full">
+                        <div className="relative h-0.5 w-full">
                           {ligaEsquerda && (
                             <span
                               className="absolute left-1 top-1/2 h-px w-1.5 -translate-y-1/2 bg-crimson/35"

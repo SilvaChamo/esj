@@ -370,6 +370,18 @@ export default function Academics() {
                             isRight ? "sm:col-start-2" : "sm:col-start-1"
                           }`}
                         >
+                          {/* Semi-círculo + linha vermelha só nos cards da esquerda (à direita do card, virado ao centro) */}
+                          {!isRight && (
+                            <span
+                              aria-hidden
+                              className="hidden sm:block absolute top-1/2 -right-3 z-[5] -translate-y-1/2"
+                            >
+                              <span className="flex items-center">
+                                <span className="h-px w-4 bg-crimson" />
+                                <span className="h-6 w-3 rounded-r-full border-2 border-l-0 border-crimson bg-white" />
+                              </span>
+                            </span>
+                          )}
                           <span
                             aria-hidden
                             className="pointer-events-none select-none absolute -right-2 -top-6 font-serif font-bold text-navy-900/[0.06] text-[7rem] leading-none"
@@ -395,13 +407,15 @@ export default function Academics() {
                             isRight ? "sm:col-start-1 sm:justify-end" : "sm:col-start-2 sm:justify-start"
                           }`}
                         >
-                          <Link
-                            href={`/calendario?dia=${d.dataCalendario}`}
-                            className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3"
-                          >
-                            <CalendarDays size={14} />
-                            Ver no calendário
-                          </Link>
+                          <div className="w-full sm:w-auto border-t border-navy-100/80 bg-navy-50/60 px-4 py-3 sm:border sm:border-navy-100/70">
+                            <Link
+                              href={`/calendario?dia=${d.dataCalendario}`}
+                              className="esj-btn-move inline-flex items-center gap-2 bg-navy-800 text-white font-semibold text-xs tracking-wide px-5 py-3"
+                            >
+                              <CalendarDays size={14} />
+                              Ver no calendário
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </EntradaHome>
@@ -411,7 +425,7 @@ export default function Academics() {
             </div>
 
             <EntradaHome atraso={0.48}>
-              <div className="mt-16 flex flex-wrap gap-3 justify-center">
+              <div className="mt-16 border-t border-navy-100/80 bg-navy-50/60 px-4 py-5 sm:px-6 flex flex-wrap gap-3 justify-center">
                 <Link
                   href="/edital"
                   className="esj-btn-move inline-flex items-center bg-navy-800 text-white font-semibold text-xs tracking-wide px-6 py-3.5"
