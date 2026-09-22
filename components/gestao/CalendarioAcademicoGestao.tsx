@@ -527,8 +527,7 @@ export default function CalendarioAcademicoGestao({ onAction }: { onAction: (m: 
                 <textarea
                   value={formDescricao}
                   onChange={(e) => setFormDescricao(e.target.value)}
-                  rows={6}
-                  className="esj-field resize-y"
+                  className="esj-field-area"
                 />
               </label>
 
